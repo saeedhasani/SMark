@@ -29,7 +29,11 @@ Some features communicate with the central SMark Core service for shared API acc
 
 ## Version
 
-Current public release: `1.0.0`
+Current public release: `1.0.1`
+
+## Updates
+
+SMark can receive automatic updates from public GitHub releases. Publish each new version as a GitHub release using a tag like `v1.0.1`, `v1.0.2`, or `v1.1.0`.
 
 ## License
 
