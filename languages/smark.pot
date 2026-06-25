@@ -1,0 +1,444 @@
+﻿msgid ""
+msgstr ""
+"Project-Id-Version: smark\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-12-23 16:38+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: features/headline-analyzer/headline-analyzer.php:485
+msgid "An error occurred. Please try again."
+msgstr ""
+
+#: features/headline-analyzer/headline-analyzer.php:548
+msgid "Analysis Results"
+msgstr ""
+
+#: features/social-media/social-media.php:1440
+msgid "Analysis results and score saved successfully"
+msgstr ""
+
+#: features/headline-analyzer/headline-analyzer.php:484 features/headline-analyzer/headline-analyzer.php:532
+msgid "Analyze Headline"
+msgstr ""
+
+#: features/headline-analyzer/headline-analyzer.php:498
+msgid "Analyze your headlines and get suggestions to improve engagement and SEO."
+msgstr ""
+
+#: features/headline-analyzer/headline-analyzer.php:483
+msgid "Analyzing..."
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:804 features/headline-analyzer/headline-analyzer.php:536
+msgid "Back to Dashboard"
+msgstr ""
+
+#: features/social-media/social-media.php:2205
+msgid "Canva template found"
+msgstr ""
+
+#: features/competitor-analysis/competitor-analysis.php:1869 features/keyword-research/keyword-research.php:453 features/social-media/social-media.php:2494
+msgid "Change Project"
+msgstr ""
+
+#: features/headline-analyzer/headline-analyzer.php:525
+msgid "characters"
+msgstr ""
+
+#: features/headline-analyzer/headline-analyzer.php:565
+msgid "Characters:"
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:814
+msgid "Click on \\"Share\\" button in the top-right corner"
+msgstr ""
+
+#: features/competitor-analysis/competitor-analysis.php:1523 features/competitor-analysis/competitor-analysis.php:1524
+msgid "Competitor Analysis"
+msgstr ""
+
+#: features/competitor-analysis/competitor-analysis.php:1393
+msgid "Competitor item not found"
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:194
+msgid "Conversion failed: %s"
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:800
+msgid "Convert to Blog Post"
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:766
+msgid "Convert your Google Docs documents into WordPress blog posts easily."
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:794
+msgid "Copy and paste the full Google Docs URL here"
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:816
+msgid "Copy the URL from your browser address bar"
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:77
+msgid "Could not extract document ID from the URL. Please make sure the document is publicly accessible."
+msgstr ""
+
+#: features/social-media/social-media.php:1977
+msgid "Could not generate prompt"
+msgstr ""
+
+#: features/keyword-research/keyword-research.php:1168
+msgid "Could not get valid access token"
+msgstr ""
+
+#: smark.php:1563 smark.php:1564
+msgid "Dashboard"
+msgstr ""
+
+#: features/social-media/social-media.php:1660
+msgid "Database error: "
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:145
+msgid "Document appears to be empty or inaccessible. Please check the document permissions."
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:186
+msgid "Document successfully converted to WordPress post!"
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:777
+msgid "Enter Google Docs Link"
+msgstr ""
+
+#: features/headline-analyzer/headline-analyzer.php:512
+msgid "Enter Your Headline"
+msgstr ""
+
+#: features/headline-analyzer/headline-analyzer.php:522
+msgid "Enter your headline here..."
+msgstr ""
+
+#: features/competitor-analysis/competitor-analysis.php:549 features/social-media/social-media.php:657
+msgid "Failed to create project"
+msgstr ""
+
+#: features/competitor-analysis/competitor-analysis.php:1428
+msgid "Failed to create social media suggestions table"
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:179
+msgid "Failed to create WordPress post."
+msgstr ""
+
+#: features/prompt-bank/prompt-bank.php:802
+msgid "Failed to delete prompt"
+msgstr ""
+
+#: features/social-media/social-media.php:1800
+msgid "Failed to delete suggestion"
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:136
+msgid "Failed to fetch document content. Please make sure the document is publicly accessible."
+msgstr ""
+
+#: features/competitor-analysis/competitor-analysis.php:1332
+msgid "Failed to mark page as reviewed"
+msgstr ""
+
+#: features/social-media/social-media.php:1444
+msgid "Failed to save analysis results"
+msgstr ""
+
+#: features/prompt-bank/prompt-bank.php:768
+msgid "Failed to save prompt"
+msgstr ""
+
+#: features/competitor-analysis/competitor-analysis.php:1467
+msgid "Failed to send page to social media"
+msgstr ""
+
+#: features/social-media/social-media.php:1764
+msgid "Failed to transfer suggestion"
+msgstr ""
+
+#: features/social-media/social-media.php:1520
+msgid "Failed to upload file"
+msgstr ""
+
+#: features/social-media/social-media.php:1486
+msgid "File size exceeds 10MB limit"
+msgstr ""
+
+#: features/social-media/social-media.php:1516
+msgid "File uploaded successfully"
+msgstr ""
+
+#: features/social-media/social-media.php:1817 features/social-media/social-media.php:1874 features/social-media/social-media.php:1971
+msgid "Gemini App is not available. Please ensure SMark Core is installed and active."
+msgstr ""
+
+#: features/social-media/social-media.php:2010
+msgid "Generated prompt is empty"
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:28 features/google-docs-converter/google-docs-converter.php:29 features/google-docs-converter/google-docs-converter.php:772
+msgid "Google Docs Converter"
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:765
+msgid "Google Docs to Blog Post Converter"
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:786
+msgid "Google Docs URL"
+msgstr ""
+
+#: features/headline-analyzer/headline-analyzer.php:573
+msgid "Has Numbers:"
+msgstr ""
+
+#: features/headline-analyzer/headline-analyzer.php:518
+msgid "Headline"
+msgstr ""
+
+#: features/headline-analyzer/headline-analyzer.php:43 features/headline-analyzer/headline-analyzer.php:44 features/headline-analyzer/headline-analyzer.php:497 features/headline-analyzer/headline-analyzer.php:504
+msgid "Headline Analyzer"
+msgstr ""
+
+#: features/social-media/social-media.php:1007 features/social-media/social-media.php:1223 features/social-media/social-media.php:1616
+msgid "Headline is required"
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:811
+msgid "How to get your Google Docs URL:"
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:156
+msgid "Imported from Google Docs - %s"
+msgstr ""
+
+#: features/social-media/social-media.php:1478
+msgid "Invalid file type. Only images and videos are allowed."
+msgstr ""
+
+#: features/competitor-analysis/competitor-analysis.php:1505 features/keyword-research/keyword-research.php:604 features/seo-optimization/seo-optimization.php:274 features/social-media/social-media.php:1538 smark.php:2594
+msgid "Invalid language"
+msgstr ""
+
+#: features/prompt-bank/prompt-bank.php:694 features/prompt-bank/prompt-bank.php:790
+msgid "Invalid prompt ID"
+msgstr ""
+
+#: features/keyword-research/keyword-research.php:1162
+msgid "Invalid Search Console tokens"
+msgstr ""
+
+#: features/seo-optimization/seo-optimization.php:225
+msgid "Invalid step identifier."
+msgstr ""
+
+#: features/competitor-analysis/competitor-analysis.php:1103 features/competitor-analysis/competitor-analysis.php:1246 features/competitor-analysis/competitor-analysis.php:1277 features/competitor-analysis/competitor-analysis.php:722 features/competitor-analysis/competitor-analysis.php:784 features/competitor-analysis/competitor-analysis.php:840 features/social-media/social-media.php:1151 features/social-media/social-media.php:1217 features/social-media/social-media.php:1256 features/social-media/social-media.php:1432
+msgid "Item ID is required"
+msgstr ""
+
+#: features/competitor-analysis/competitor-analysis.php:1111 features/competitor-analysis/competitor-analysis.php:732 features/social-media/social-media.php:1161
+msgid "Item not found"
+msgstr ""
+
+#: features/keyword-research/keyword-research.php:319 features/keyword-research/keyword-research.php:320
+msgid "Keyword Research"
+msgstr ""
+
+#: features/competitor-analysis/competitor-analysis.php:1512 features/seo-optimization/seo-optimization.php:280 features/social-media/social-media.php:1554 smark.php:2601
+msgid "Language preference saved"
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:815
+msgid "Make sure the document is accessible (public or anyone with link)"
+msgstr ""
+
+#: features/social-media/social-media.php:2209
+msgid "No Canva template found for this project"
+msgstr ""
+
+#: features/social-media/social-media.php:1458
+msgid "No file was uploaded"
+msgstr ""
+
+#: features/social-media/social-media.php:2676
+msgid "ØªØµØ§ÙˆÛŒØ± Ùˆ ÙˆÛŒØ¯ÛŒÙˆÙ‡Ø§ ØªØ§ Û±Û° Ù…Ú¯Ø§Ø¨Ø§ÛŒØª"
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:813
+msgid "Open your Google Docs document"
+msgstr ""
+
+#: features/competitor-analysis/competitor-analysis.php:1360
+msgid "Page ID and Project Name are required"
+msgstr ""
+
+#: features/competitor-analysis/competitor-analysis.php:1308
+msgid "Page ID is required"
+msgstr ""
+
+#: features/competitor-analysis/competitor-analysis.php:1380
+msgid "Page not found"
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:817
+msgid "Paste it in the field above"
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:778
+msgid "Paste your Google Docs document link below to convert it to a WordPress blog post"
+msgstr ""
+
+#: features/competitor-analysis/competitor-analysis.php:1146 features/competitor-analysis/competitor-analysis.php:1499 features/competitor-analysis/competitor-analysis.php:489 features/competitor-analysis/competitor-analysis.php:517 features/keyword-research/keyword-research.php:598 features/prompt-bank/prompt-bank.php:656 features/prompt-bank/prompt-bank.php:688 features/prompt-bank/prompt-bank.php:718 features/prompt-bank/prompt-bank.php:784 features/seo-optimization/seo-optimization.php:218 features/seo-optimization/seo-optimization.php:249 features/seo-optimization/seo-optimization.php:268 features/social-media/social-media.php:1532 features/social-media/social-media.php:1566 features/social-media/social-media.php:1599 features/social-media/social-media.php:1681 features/social-media/social-media.php:1776 features/social-media/social-media.php:1812 features/social-media/social-media.php:1836 features/social-media/social-media.php:1907 features/social-media/social-media.php:2032 features/social-media/social-media.php:2183 features/social-media/social-media.php:612 features/social-media/social-media.php:626 smark.php:2588
+msgid "Permission denied"
+msgstr ""
+
+#: features/headline-analyzer/headline-analyzer.php:73
+msgid "Please enter a headline to analyze."
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:68
+msgid "Please enter a valid Google Docs document URL."
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:60
+msgid "Please enter a valid Google Docs URL."
+msgstr ""
+
+#: features/competitor-analysis/competitor-analysis.php:527 features/social-media/social-media.php:636
+msgid "Project already exists"
+msgstr ""
+
+#: features/competitor-analysis/competitor-analysis.php:541 features/social-media/social-media.php:649
+msgid "Project created successfully"
+msgstr ""
+
+#: features/competitor-analysis/competitor-analysis.php:597 features/social-media/social-media.php:2189
+msgid "Project ID is required"
+msgstr ""
+
+#: features/competitor-analysis/competitor-analysis.php:523 features/competitor-analysis/competitor-analysis.php:656 features/social-media/social-media.php:1001 features/social-media/social-media.php:632
+msgid "Project name is required"
+msgstr ""
+
+#: features/social-media/social-media.php:798 features/social-media/social-media.php:873
+msgid "Project not specified"
+msgstr ""
+
+#: features/prompt-bank/prompt-bank.php:324 features/prompt-bank/prompt-bank.php:325
+msgid "Prompt Bank"
+msgstr ""
+
+#: features/social-media/social-media.php:1946
+msgid "Prompt Bank feature is not available"
+msgstr ""
+
+#: features/prompt-bank/prompt-bank.php:805
+msgid "Prompt deleted successfully"
+msgstr ""
+
+#: features/prompt-bank/prompt-bank.php:705
+msgid "Prompt not found"
+msgstr ""
+
+#: features/prompt-bank/prompt-bank.php:772
+msgid "Prompt saved successfully"
+msgstr ""
+
+#: features/social-media/social-media.php:2666
+msgid "Remove"
+msgstr ""
+
+#: features/prompt-bank/prompt-bank.php:731
+msgid "Required fields missing"
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:770 features/headline-analyzer/headline-analyzer.php:502
+msgid "SMark Dashboard"
+msgstr ""
+
+#: features/headline-analyzer/headline-analyzer.php:560
+msgid "Score"
+msgstr ""
+
+#: features/keyword-research/keyword-research.php:1154
+msgid "Search Console is not connected to this project"
+msgstr ""
+
+#: features/competitor-analysis/competitor-analysis.php:1348
+msgid "Security check failed"
+msgstr ""
+
+#: features/seo-optimization/seo-optimization.php:38 features/seo-optimization/seo-optimization.php:39
+msgid "SEO Optimization"
+msgstr ""
+
+#: smark.php:1552
+msgid "SMark"
+msgstr ""
+
+#: smark.php:1551
+msgid "SMark Plugin"
+msgstr ""
+
+#: features/social-media/social-media.php:667 features/social-media/social-media.php:668
+msgid "Social Media Designer"
+msgstr ""
+
+#: features/social-media/social-media.php:1843 features/social-media/social-media.php:1920 features/social-media/social-media.php:2040
+msgid "Source URL is required"
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:95
+msgid "Successfully converted Google Docs to WordPress post! <a href=\\"%1$s\\" target=\\"_blank\\" rel=\\"noopener noreferrer\\">Edit Post</a> | <a href=\\"%2$s\\" target=\\"_blank\\" rel=\\"noopener noreferrer\\">View Post</a>"
+msgstr ""
+
+#: features/social-media/social-media.php:1572 features/social-media/social-media.php:1612 features/social-media/social-media.php:1689 features/social-media/social-media.php:1782
+msgid "Suggestion ID is required"
+msgstr ""
+
+#: features/social-media/social-media.php:1584 features/social-media/social-media.php:1634 features/social-media/social-media.php:1707
+msgid "Suggestion not found"
+msgstr ""
+
+#: features/social-media/social-media.php:1667
+msgid "Suggestion updated successfully"
+msgstr ""
+
+#: features/headline-analyzer/headline-analyzer.php:513
+msgid "Type your headline below and click analyze to get instant feedback"
+msgstr ""
+
+#: features/seo-optimization/seo-optimization.php:230
+msgid "Unknown step identifier."
+msgstr ""
+
+#: features/competitor-analysis/competitor-analysis.php:662 features/competitor-analysis/competitor-analysis.php:790
+msgid "Website URL is required"
+msgstr ""
+
+#: features/headline-analyzer/headline-analyzer.php:569
+msgid "Words:"
+msgstr ""
+
+#: features/google-docs-converter/google-docs-converter.php:42 features/seo-optimization/seo-optimization.php:110
+msgid "You do not have sufficient permissions to access this page."
+msgstr ""
+
+#: features/headline-analyzer/headline-analyzer.php:65
+msgid "You do not have sufficient permissions."
+msgstr ""
+

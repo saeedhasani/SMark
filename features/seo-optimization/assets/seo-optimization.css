@@ -1,0 +1,549 @@
+body.smark-plugin-page {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%) !important;
+    min-height: 100vh !important;
+}
+
+body.smark-plugin-page #adminmenuback {
+    min-height: 100vh !important;
+}
+
+body.smark-plugin-page #wpbody {
+    min-height: 100vh !important;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%) !important;
+}
+
+body.smark-plugin-page #wpcontent {
+    padding-left: 0 !important;
+    background: transparent !important;
+}
+
+body.smark-plugin-page #wpfooter {
+    display: none !important;
+}
+
+body.smark-plugin-page #wpbody-content {
+    padding-bottom: 0 !important;
+    background: transparent !important;
+}
+
+.smark-seo-optimization-page {
+    background: transparent;
+    min-height: calc(100vh - 32px);
+    padding: 20px 30px 40px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+.smark-seo-optimization-page * {
+    box-sizing: border-box;
+}
+
+/* RTL Support for Persian */
+.smark-seo-optimization-page.rtl {
+    direction: rtl;
+    font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
+}
+
+.smark-seo-optimization-page.rtl * {
+    font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
+}
+
+/* Page Header */
+.smark-page-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 40px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px;
+    color: white;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.smark-page-header h1 {
+    margin: 0 0 10px 0;
+    font-size: 2.5em;
+    font-weight: 300;
+    color: #ffffff;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.smark-page-header .description {
+    margin: 0;
+    font-size: 1.2em;
+    color: #ffffff;
+    opacity: 0.95;
+    font-weight: 300;
+}
+
+.smark-breadcrumb {
+    margin-bottom: 30px;
+    padding: 15px 20px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.breadcrumb-left {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    order: 1;
+}
+
+.breadcrumb-right {
+    display: flex;
+    align-items: center;
+    order: 2;
+    margin-left: auto;
+}
+
+.smark-breadcrumb a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.smark-breadcrumb a:hover {
+    color: #764ba2;
+}
+
+.smark-breadcrumb .separator {
+    margin: 0 10px;
+    color: #95a5a6;
+}
+
+.smark-breadcrumb .current {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+/* Language Selector */
+.language-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 2px solid #e1e8ed;
+    transition: all 0.3s ease;
+}
+
+.language-selector:hover {
+    border-color: #667eea;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.language-selector .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: #667eea;
+    font-family: dashicons !important;
+}
+
+.language-dropdown {
+    border: none;
+    background: transparent;
+    padding: 4px 8px;
+    font-size: 0.95em;
+    font-weight: 500;
+    color: #2c3e50;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.language-dropdown:hover {
+    color: #667eea;
+}
+
+.language-dropdown option {
+    background: #fff;
+    color: #2c3e50;
+    padding: 10px;
+}
+
+.smark-seo-optimization-page.rtl .smark-breadcrumb .separator {
+    display: inline-block;
+    transform: scaleX(-1);
+}
+
+.smark-seo-optimization-page .seo-grid {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px;
+}
+
+.smark-seo-optimization-page .seo-step-card--full {
+    grid-column: 1 / -1;
+}
+
+.smark-seo-optimization-page .seo-step-card {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 26px;
+    padding-right: 26px !important;
+    box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.smark-seo-optimization-page.rtl .seo-step-card {
+    padding-right: 26px !important;
+    padding-left: 26px !important;
+}
+
+.smark-seo-optimization-page .seo-step-header {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.smark-seo-optimization-page:not(.rtl) .seo-step-header {
+    flex-direction: row-reverse;
+}
+
+.smark-seo-optimization-page .seo-step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #ffafbd 0%, #ffc3a0 100%);
+    color: #ffffff;
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    font-size: 1.2em;
+    font-weight: 600;
+}
+
+.smark-seo-optimization-page .seo-step-header h2 {
+    margin: 0 0 6px 0;
+    color: #1e293b;
+    font-size: 1.4em;
+}
+
+.smark-seo-optimization-page .seo-step-header p {
+    margin: 0;
+    color: #475569;
+    font-size: 0.95em;
+}
+
+.smark-seo-optimization-page .seo-task-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.smark-seo-optimization-page .seo-task {
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 16px 18px;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.smark-seo-optimization-page .seo-task:hover {
+    border-color: rgba(102, 126, 234, 0.5);
+    box-shadow: 0 12px 24px rgba(102, 126, 234, 0.12);
+}
+
+.smark-seo-optimization-page .seo-task-content {
+    display: flex;
+    align-items: flex-start;
+}
+
+.smark-seo-optimization-page .seo-task-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    background: rgba(102, 126, 234, 0.14);
+    color: #4f46e5;
+    font-size: 18px;
+    flex: 0 0 auto;
+    margin-inline-end: 12px;
+    margin-top: 1px;
+    font-family: dashicons !important;
+}
+
+.smark-seo-optimization-page .seo-step-card[data-step="strategy"] .seo-task-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.smark-seo-optimization-page .seo-step-card[data-step="strategy"] .seo-task {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid rgba(102, 126, 234, 0.18);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.smark-seo-optimization-page .seo-step-card[data-step="strategy"] .seo-task::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.18), rgba(118, 75, 162, 0.12));
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.smark-seo-optimization-page .seo-step-card[data-step="strategy"] .seo-task:hover {
+    transform: translateY(-2px);
+}
+
+.smark-seo-optimization-page .seo-step-card[data-step="strategy"] .seo-task:hover::before {
+    opacity: 1;
+}
+
+.smark-seo-optimization-page .seo-step-card[data-step="strategy"] .seo-task-content,
+.smark-seo-optimization-page .seo-step-card[data-step="strategy"] .seo-task-text {
+    position: relative;
+    z-index: 1;
+}
+
+.smark-seo-optimization-page .seo-step-card[data-step="strategy"] .seo-task-title-link {
+    color: #0f172a;
+}
+
+.smark-seo-optimization-page .seo-step-card[data-step="strategy"] .seo-task-title-link:hover {
+    color: #4f46e5;
+    text-decoration: none;
+}
+
+.smark-seo-optimization-page .seo-task-text {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: #1f2937;
+}
+
+.smark-seo-optimization-page .seo-task-text strong {
+    font-size: 1em;
+    line-height: 1.3;
+}
+
+.smark-seo-optimization-page .seo-task-title-link {
+    color: #2563eb;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.smark-seo-optimization-page .seo-task-title-link:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+}
+
+.smark-seo-optimization-page .seo-task-text small {
+    font-size: 0.9em;
+    color: #64748b;
+}
+
+.smark-seo-optimization-page .seo-task-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.smark-seo-optimization-page .seo-task-links a {
+    color: #2563eb;
+    text-decoration: none;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+.smark-seo-optimization-page .seo-task-links a:hover {
+    text-decoration: underline;
+}
+
+/* Keyword map as link button (no checkboxes) */
+.smark-seo-optimization-page .seo-task-link-only {
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+}
+
+.smark-seo-optimization-page .seo-task-link-only:hover {
+    box-shadow: none !important;
+    border: none !important;
+}
+
+.smark-seo-optimization-page .seo-task-link-button {
+    display: block;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #ffffff;
+    padding: 18px 24px;
+    border-radius: 14px;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.smark-seo-optimization-page .seo-task-link-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.smark-seo-optimization-page .seo-task-link-button .seo-task-text {
+    color: #ffffff;
+}
+
+.smark-seo-optimization-page .seo-task-link-button .seo-task-text strong {
+    color: #ffffff;
+    font-size: 1.1em;
+    display: block;
+    margin-bottom: 6px;
+}
+
+.smark-seo-optimization-page .seo-task-link-button .seo-task-text small {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.9em;
+    display: block;
+}
+
+.smark-seo-optimization-page .seo-notes label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.smark-seo-optimization-page .seo-step-notes {
+    width: 100%;
+    border-radius: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    padding: 14px;
+    resize: vertical;
+    font-size: 0.95em;
+    color: #1f2937;
+    transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.smark-seo-optimization-page .seo-step-notes:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.smark-seo-optimization-page .seo-notes-hint {
+    margin: 6px 0 0 0;
+    font-size: 0.85em;
+    color: #64748b;
+}
+
+.smark-seo-optimization-page .seo-saving-indicator,
+.smark-seo-optimization-page .seo-status-message {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 0.85em;
+}
+
+.smark-seo-optimization-page .seo-status-message.state-success,
+.smark-seo-optimization-page .seo-saving-indicator {
+    color: #16a34a;
+}
+
+.smark-seo-optimization-page .seo-status-message.state-error {
+    color: #dc2626;
+}
+
+.smark-version-footer {
+    margin-top: auto;
+    padding: 20px 0;
+    text-align: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.version-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 12px 24px;
+    border-radius: 25px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.version-label {
+    color: #5a6c7d;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+.version-separator {
+    color: #95a5a6;
+    font-size: 1.2em;
+    font-weight: 300;
+}
+
+.version-number {
+    color: #667eea;
+    font-size: 0.9em;
+    font-weight: 600;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+
+
+.smark-seo-optimization-page.rtl .seo-task-links {
+    justify-content: flex-end;
+}
+
+@media (max-width: 1280px) {
+    .smark-seo-optimization-page .seo-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .smark-seo-optimization-page {
+        padding: 20px;
+    }
+
+    .smark-page-header {
+        padding: 30px 15px;
+    }
+
+    .smark-page-header h1 {
+        font-size: 2em;
+    }
+
+    .smark-breadcrumb {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+        padding: 15px;
+    }
+
+    .breadcrumb-left {
+        width: 100%;
+    }
+
+    .smark-seo-optimization-page .seo-step-card[data-step="strategy"] .seo-task-list {
+        grid-template-columns: 1fr;
+    }
+}

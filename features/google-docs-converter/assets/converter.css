@@ -1,0 +1,289 @@
+﻿/* Google Docs Converter Styles */
+
+/* Hide WP Rocket notifications on SMark pages */
+.smark-converter-page .notice.notice-success.is-dismissible {
+    display: none !important;
+}
+
+.smark-converter-page {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    padding: 20px 0;
+    direction: ltr;
+    text-align: left;
+}
+
+.smark-page-header {
+    text-align: center;
+    margin-bottom: 50px;
+    padding: 40px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px;
+    color: white;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.smark-page-header h1 {
+    margin: 0 0 10px 0;
+    font-size: 2.5em;
+    font-weight: 300;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.smark-page-header .description {
+    margin: 0;
+    font-size: 1.2em;
+    opacity: 0.9;
+    font-weight: 300;
+}
+
+.smark-breadcrumb {
+    margin-bottom: 40px;
+    padding: 15px 20px;
+    font-size: 14px;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.smark-breadcrumb a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.smark-breadcrumb a:hover {
+    color: #764ba2;
+}
+
+.smark-breadcrumb .separator {
+    margin: 0 8px;
+    color: #999;
+}
+
+.smark-breadcrumb .current {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+/* Converter Form Section */
+.smark-converter-form-section {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.converter-form-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.converter-form-header h2 {
+    font-size: 2.2em;
+    color: #2c3e50;
+    margin: 0 0 15px 0;
+    font-weight: 300;
+    position: relative;
+    display: inline-block;
+}
+
+.converter-form-header h2:after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 2px;
+}
+
+.converter-form-header p {
+    color: #7f8c8d;
+    font-size: 1.1em;
+    margin: 0;
+    font-weight: 300;
+}
+
+.converter-form-card .card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    border: none;
+}
+
+/* Form Styles */
+.smark-converter-form {
+    margin-bottom: 40px;
+}
+
+.form-group {
+    margin-bottom: 30px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 10px;
+    color: #2c3e50;
+    font-weight: 600;
+    font-size: 1.1em;
+}
+
+.form-control {
+    width: 100%;
+    padding: 15px 20px;
+    border: 2px solid #e1e1e1;
+    border-radius: 12px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #667eea;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-help {
+    display: block;
+    margin-top: 8px;
+    color: #6c757d;
+    font-size: 0.9em;
+    font-style: italic;
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 15px 30px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: none;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    color: white;
+}
+
+.btn-secondary {
+    background: #f8f9fa;
+    color: #6c757d;
+    border: 2px solid #e9ecef;
+}
+
+.btn-secondary:hover {
+    background: #e9ecef;
+    color: #495057;
+    transform: translateY(-1px);
+}
+
+.btn .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+/* Conversion Info */
+.conversion-info {
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 2px solid #f1f1f1;
+}
+
+.info-box {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 30px;
+    border-radius: 15px;
+    border-left: 4px solid #667eea;
+}
+
+.info-box h4 {
+    color: #2c3e50;
+    margin: 0 0 20px 0;
+    font-size: 1.3em;
+    font-weight: 600;
+}
+
+.info-box ol {
+    color: #495057;
+    padding-left: 20px;
+    margin: 0;
+}
+
+.info-box li {
+    margin: 10px 0;
+    line-height: 1.6;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .smark-page-header {
+        padding: 30px 15px;
+    }
+    
+    .smark-page-header h1 {
+        font-size: 2em;
+    }
+    
+    .converter-form-header h2 {
+        font-size: 1.8em;
+    }
+    
+    .converter-form-card .card {
+        padding: 30px 20px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .btn {
+        justify-content: center;
+        padding: 12px 25px;
+    }
+    
+    .info-box {
+        padding: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .smark-page-header h1 {
+        font-size: 1.6em;
+    }
+    
+    .converter-form-header h2 {
+        font-size: 1.5em;
+    }
+    
+    .form-control {
+        padding: 12px 15px;
+        font-size: 14px;
+    }
+}

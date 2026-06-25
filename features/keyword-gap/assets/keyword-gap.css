@@ -1,0 +1,549 @@
+/* Keyword Gap specific tweaks (layout reused from Keyword Research). */
+
+.smark-keyword-gap-page .smark-keyword-gap-card {
+    overflow: visible;
+}
+
+.smark-keyword-gap-page .smark-keyword-gap-card .card-header-with-button {
+    justify-content: flex-end;
+    border-bottom: 2px solid #ecf0f1;
+    margin-bottom: 18px;
+    padding-bottom: 18px;
+}
+
+.smark-keyword-gap-page.rtl #smarkAddCompetitorBtn {
+    flex-direction: row-reverse;
+}
+
+.smark-keyword-gap-page .kg-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.smark-keyword-gap-page .kg-gap-finder-btn,
+#smarkGapFinderSubmit {
+    position: relative;
+}
+
+.kg-modal-alert {
+    position: relative;
+    padding: 12px 44px 12px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    background: rgba(16, 185, 129, 0.12);
+    color: #065f46;
+    margin: 10px 0 14px;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+.kg-modal-alert__close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.7);
+    color: #065f46;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.kg-modal-alert__close:hover {
+    background: rgba(255, 255, 255, 0.95);
+}
+
+.smark-modal.rtl .kg-modal-alert {
+    padding: 12px 14px 12px 44px;
+}
+
+.smark-modal.rtl .kg-modal-alert__close {
+    right: auto;
+    left: 10px;
+}
+
+.smark-notification {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    z-index: 9999999 !important;
+    min-width: 250px !important;
+    max-width: min(720px, calc(100vw - 40px)) !important;
+    padding: 18px 20px 15px 52px !important;
+    border-radius: 10px !important;
+    background: #10b981 !important;
+    color: #fff !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+    line-height: 1.4 !important;
+    white-space: pre-line !important;
+    opacity: 0 !important;
+    transform: translateX(100%) !important;
+    pointer-events: none !important;
+    transition: opacity 0.3s ease, transform 0.3s ease !important;
+}
+
+.smark-notification.visible {
+    opacity: 1 !important;
+    transform: translateX(0) !important;
+    pointer-events: auto !important;
+}
+
+.smark-notification.error {
+    background: #ef4444 !important;
+}
+
+.smark-notification.info {
+    background: #3b82f6 !important;
+}
+
+.smark-notification__body {
+    min-width: 0 !important;
+}
+
+.smark-notification__close {
+    position: absolute !important;
+    top: 8px !important;
+    left: 10px !important;
+    width: 28px !important;
+    height: 28px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 1px solid rgba(255,255,255,0.38) !important;
+    border-radius: 999px !important;
+    background: rgba(15,23,42,0.22) !important;
+    color: #fff !important;
+    cursor: pointer !important;
+    line-height: 1 !important;
+    box-shadow: 0 6px 14px rgba(15,23,42,0.16) !important;
+    transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease !important;
+}
+
+.smark-notification__close:hover,
+.smark-notification__close:focus-visible {
+    background: rgba(255,255,255,0.2) !important;
+    border-color: rgba(255,255,255,0.7) !important;
+    transform: scale(1.04) !important;
+    outline: none !important;
+}
+
+.smark-notification__close .dashicons,
+.smark-notification__close .dashicons:before {
+    width: 16px !important;
+    height: 16px !important;
+    font-size: 16px !important;
+    line-height: 16px !important;
+    font-family: dashicons !important;
+    color: #fff !important;
+}
+
+.smark-keyword-gap-page.rtl .smark-notification,
+.smark-notification.rtl {
+    right: auto !important;
+    left: 20px !important;
+    text-align: right !important;
+    direction: rtl !important;
+    font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif !important;
+    transform: translateX(-100%) !important;
+}
+
+.smark-keyword-gap-page.rtl .smark-notification.visible,
+.smark-notification.rtl.visible {
+    transform: translateX(0) !important;
+}
+
+.kg-smark-cost-badge {
+    position: absolute;
+    top: -6px;
+    left: -6px;
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: #f59e0b;
+    color: #111827;
+    border: 2px solid #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.12);
+    pointer-events: none;
+}
+
+.smark-keyword-gap-page.rtl .kg-smark-cost-badge,
+.smark-modal.rtl .kg-smark-cost-badge {
+    left: auto;
+    right: -6px;
+}
+
+.smark-keyword-gap-page.rtl .kg-actions {
+    justify-content: flex-start;
+}
+
+.smark-keyword-gap-page .kg-actions-cell {
+    text-align: right;
+}
+
+.smark-keyword-gap-page.rtl .kg-actions-cell {
+    text-align: left;
+}
+
+.smark-keyword-gap-page.rtl #smarkKeywordGapCompetitorsTable thead th {
+    text-align: right;
+}
+
+.smark-modal.rtl #smarkCompetitorKeywordsTable thead th {
+    text-align: right !important;
+    direction: rtl;
+    unicode-bidi: plaintext;
+    letter-spacing: 0;
+}
+
+#smarkCompetitorKeywordsTable th.kg-difficulty-filter-header .kg-difficulty-filter-header-inner {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+}
+
+#smarkCompetitorKeywordsTable .kg-difficulty-filter-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.15s ease;
+}
+
+#smarkCompetitorKeywordsTable .kg-difficulty-filter-toggle .kg-filter-icon {
+    width: 14px;
+    height: 14px;
+    display: block;
+}
+
+#smarkCompetitorKeywordsTable .kg-difficulty-filter-toggle:hover {
+    color: #667eea;
+}
+
+#smarkCompetitorKeywordsTable th.kg-difficulty-filter-header.has-active-filter .kg-difficulty-filter-toggle {
+    color: #667eea;
+}
+
+#smarkCompetitorKeywordsTable .kg-difficulty-filter-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 50;
+    min-width: 220px;
+    padding: 10px;
+    background: #fff;
+    border: 1px solid rgba(15, 23, 42, 0.10);
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+
+.smark-modal.rtl #smarkCompetitorKeywordsTable .kg-difficulty-filter-menu {
+    left: auto;
+    right: 0;
+}
+
+#smarkCompetitorKeywordsTable .kg-difficulty-filter-menu.is-open {
+    display: block;
+}
+
+#smarkCompetitorKeywordsTable .kg-difficulty-filter-range {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+#smarkCompetitorKeywordsTable .kg-difficulty-filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+#smarkCompetitorKeywordsTable .kg-difficulty-filter-field-label {
+    font-size: 12px;
+    color: #6b7280;
+    font-weight: 600;
+}
+
+#smarkCompetitorKeywordsTable .kg-difficulty-filter-sep {
+    color: #6b7280;
+    font-size: 12px;
+    padding: 0 2px 6px;
+}
+
+#smarkCompetitorKeywordsTable .kg-difficulty-filter-input.form-control {
+    width: 92px;
+    max-width: 92px;
+}
+
+#smarkCompetitorKeywordsTable .kg-difficulty-filter-sort {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+#smarkCompetitorKeywordsTable .kg-difficulty-sort-option {
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: transparent;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #1f2937;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.smark-modal.rtl #smarkCompetitorKeywordsTable .kg-difficulty-sort-option {
+    text-align: right;
+}
+
+#smarkCompetitorKeywordsTable .kg-difficulty-sort-option:hover {
+    background: rgba(102, 126, 234, 0.10);
+}
+
+#smarkCompetitorKeywordsTable .kg-difficulty-sort-option.is-active {
+    background: rgba(102, 126, 234, 0.16);
+    color: #1d4ed8;
+    font-weight: 700;
+}
+
+#smarkCompetitorKeywordsTable .kg-difficulty-filter-reset {
+    width: 100%;
+    border: 1px solid rgba(15, 23, 42, 0.10);
+    background: #f9fafc;
+    color: #374151;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+#smarkCompetitorKeywordsTable .kg-difficulty-filter-reset:hover {
+    background: #f3f4f6;
+}
+
+.smark-modal-dialog.large.smark-keyword-gap-modal--large {
+    width: 960px;
+    max-width: calc(100vw - 40px);
+}
+
+.smark-modal-dialog.large.smark-keyword-gap-modal--large .data-table {
+    min-width: 920px;
+}
+
+#smarkCompetitorKeywordsTable thead th:first-child {
+    width: 220px;
+}
+
+#smarkCompetitorKeywordsTable thead th:last-child {
+    width: 210px;
+}
+
+#smarkCompetitorKeywordsTable tbody td:last-child {
+    white-space: nowrap;
+}
+
+.smark-modal #smarkCompetitorKeywordsTable tbody td.kg-row-actions-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.smark-modal.rtl #smarkCompetitorKeywordsTable tbody td.kg-row-actions-cell {
+    align-items: flex-end;
+}
+
+.smark-modal #smarkCompetitorKeywordsTable .kg-action-btn {
+    padding: 6px 10px;
+    font-size: 13px;
+    line-height: 1.2;
+    min-height: 34px;
+    width: 50%;
+    max-width: 180px;
+    box-sizing: border-box;
+}
+
+.smark-modal #smarkCompetitorKeywordsTable .kg-inappropriate-btn {
+    background: #ef4444;
+    border: 1px solid #ef4444;
+    color: #fff;
+}
+
+.smark-modal #smarkCompetitorKeywordsTable .kg-inappropriate-btn:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: #fff;
+}
+
+.smark-modal #smarkCompetitorKeywordsTable .kg-inappropriate-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 0;
+    border-radius: 0;
+    background: transparent;
+    border: none;
+    color: #dc2626;
+    font-size: 13px;
+    font-weight: 700;
+    min-height: 34px;
+    width: 50%;
+    max-width: 180px;
+    box-sizing: border-box;
+}
+
+.smark-modal #smarkCompetitorKeywordsTable .kg-used-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 0;
+    border-radius: 0;
+    background: transparent;
+    border: none;
+    color: #6b7280;
+    font-size: 13px;
+    font-weight: 700;
+    min-height: 34px;
+    width: 50%;
+    max-width: 180px;
+    box-sizing: border-box;
+}
+
+.smark-modal #smarkCompetitorKeywordsTable tbody tr.kg-row-inappropriate td {
+    background: rgba(239, 68, 68, 0.06);
+}
+
+.smark-modal #smarkCompetitorKeywordsTable tbody tr.kg-row-inappropriate:hover td {
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.smark-keyword-gap-page #smarkKeywordGapCompetitorsTable thead th:first-child {
+    width: 20%;
+}
+
+.smark-keyword-gap-page #smarkKeywordGapCompetitorsTable thead th:last-child {
+    width: 80%;
+}
+
+.smark-keyword-gap-page .kg-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: rgba(37, 99, 235, 0.12);
+    border: 1px solid rgba(37, 99, 235, 0.18);
+    color: #1d4ed8;
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.smark-keyword-gap-modal__hint {
+    margin: 0 0 10px;
+    color: #4b5563;
+    font-size: 13px;
+}
+
+.smark-keyword-gap-modal__subhint {
+    margin: 10px 0 0;
+    color: #6b7280;
+    font-size: 12px;
+}
+
+.smark-keyword-gap-modal__search-bar {
+    margin-bottom: 12px;
+}
+
+.smark-keyword-gap-modal__results {
+    max-height: 520px;
+    overflow: auto;
+}
+
+.smark-keyword-gap-modal--large .modal-body {
+    padding-bottom: 10px;
+}
+
+.kg-finder-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 10px;
+}
+
+.kg-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.kg-filter-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.kg-filter-range {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.kg-filter-range .form-control {
+    width: 100%;
+    max-width: 220px;
+}
+
+.kg-filter-sep {
+    color: #6b7280;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.smark-keyword-gap-page .kg-used-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    color: #6b7280;
+    font-size: 12px;
+    font-weight: 600;
+    opacity: 0.85;
+    white-space: nowrap;
+}

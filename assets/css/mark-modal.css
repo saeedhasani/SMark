@@ -1,0 +1,166 @@
+.smark-mark-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+}
+
+.smark-mark-modal.is-open {
+    display: flex;
+}
+
+body.smark-mark-modal-open {
+    overflow: hidden;
+}
+
+.smark-mark-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(3px);
+}
+
+.smark-mark-modal__dialog {
+    position: relative;
+    width: min(560px, 100%);
+    border-radius: 18px;
+    background: #fff;
+    border: 1px solid rgba(15, 23, 42, 0.10);
+    box-shadow: 0 30px 80px rgba(15, 23, 42, 0.25);
+    overflow: hidden;
+}
+
+.smark-mark-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 18px 12px;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.smark-mark-modal__title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.smark-mark-modal__icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    background: rgba(245, 158, 11, 0.18);
+    color: #b45309;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.smark-mark-modal__title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.smark-mark-modal__close {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    border: 1px solid rgba(15, 23, 42, 0.10);
+    background: rgba(255, 255, 255, 0.85);
+    color: #334155;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.smark-mark-modal__close:hover {
+    background: rgba(248, 250, 252, 0.95);
+}
+
+.smark-mark-modal__body {
+    padding: 16px 18px 6px;
+}
+
+.smark-mark-modal__desc {
+    margin: 0 0 12px;
+    color: #475569;
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+.smark-mark-modal__card {
+    border: 1px solid rgba(245, 158, 11, 0.22);
+    background: rgba(245, 158, 11, 0.10);
+    border-radius: 14px;
+    padding: 12px 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    color: #92400e;
+    font-weight: 700;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.smark-mark-modal__card .dashicons {
+    margin-top: 1px;
+}
+
+.smark-mark-modal__footer {
+    padding: 14px 18px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.smark-mark-modal__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(37, 99, 235, 0.25);
+    background: rgba(37, 99, 235, 0.10);
+    color: #1d4ed8;
+    font-weight: 900;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.05s ease;
+}
+
+.smark-mark-modal__cta:hover {
+    background: rgba(37, 99, 235, 0.14);
+}
+
+.smark-mark-modal__cta:active {
+    transform: translateY(1px);
+}
+
+.smark-mark-modal__secondary {
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    background: #fff;
+    color: #334155;
+    cursor: pointer;
+    font-weight: 800;
+}
+
+.smark-mark-modal__secondary:hover {
+    background: rgba(248, 250, 252, 0.95);
+}
+
+.smark-mark-modal.rtl .smark-mark-modal__dialog {
+    direction: rtl;
+    text-align: right;
+}
+
+.smark-mark-modal.rtl .smark-mark-modal__footer {
+    justify-content: flex-start;
+}

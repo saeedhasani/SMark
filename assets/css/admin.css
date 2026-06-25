@@ -1,0 +1,223 @@
+﻿/* SMark Plugin Admin Styles */
+
+/* Hide WP Rocket notifications on all SMark pages */
+.smark-dashboard .notice.notice-success.is-dismissible,
+.smark-competitor-analysis-page .notice.notice-success.is-dismissible,
+.smark-social-media-page .notice.notice-success.is-dismissible,
+.smark-headline-analyzer-page .notice.notice-success.is-dismissible,
+.smark-gemini-app-page .notice.notice-success.is-dismissible,
+.smark-converter-page .notice.notice-success.is-dismissible {
+    display: none !important;
+}
+
+.smark-admin-page {
+    direction: ltr;
+    text-align: left;
+}
+
+.smark-admin-page .notice {
+    border-left: 4px solid #46b450;
+    padding: 15px;
+    margin: 20px 0;
+}
+
+.smark-admin-page .card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+    direction: ltr;
+}
+
+.smark-admin-page .card h2 {
+    margin-top: 0;
+    color: #23282d;
+    border-bottom: 1px solid #f1f1f1;
+    padding-bottom: 10px;
+}
+
+.smark-admin-page .widefat {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+}
+
+.smark-admin-page .widefat td {
+    padding: 10px;
+    border-bottom: 1px solid #f1f1f1;
+    text-align: left;
+}
+
+.smark-admin-page .widefat td:first-child {
+    font-weight: bold;
+    width: 200px;
+}
+
+.smark-admin-page ul {
+    list-style-type: disc;
+    margin-left: 20px;
+}
+
+.smark-admin-page li {
+    margin: 5px 0;
+}
+
+/* LTR Support */
+.smark-admin-page {
+    direction: ltr;
+}
+
+.smark-admin-page h1,
+.smark-admin-page h2,
+.smark-admin-page h3 {
+    direction: ltr;
+    text-align: left;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .smark-admin-page .card {
+        padding: 15px;
+        margin: 10px 0;
+    }
+    
+    .smark-admin-page .widefat td {
+        padding: 8px;
+        font-size: 14px;
+    }
+}
+
+/* Shared SMark toast notification */
+.smark-notification {
+    position: fixed;
+    top: 44px;
+    right: 24px;
+    z-index: 100001;
+    width: min(464px, calc(100vw - 40px));
+    min-height: 70px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 14px 14px 14px 16px;
+    border-radius: 15px;
+    background: rgba(255, 255, 255, 0.72);
+    color: #0f172a;
+    border: 1.5px solid rgba(148, 163, 184, 0.34);
+    box-shadow: 0 22px 58px rgba(15, 23, 42, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.62);
+    backdrop-filter: blur(18px) saturate(150%);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+    transform: translateY(-12px) scale(0.98);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease, transform 0.22s ease;
+    font-family: "Vazirmatn", -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, sans-serif;
+}
+
+.smark-notification.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+.smark-notification.success {
+    border-color: rgba(34, 197, 94, 0.78);
+    background: linear-gradient(135deg, rgba(240, 253, 244, 0.82), rgba(255, 255, 255, 0.68));
+}
+
+.smark-notification.error {
+    border-color: rgba(248, 113, 113, 0.82);
+    background: linear-gradient(135deg, rgba(254, 242, 242, 0.84), rgba(255, 255, 255, 0.68));
+}
+
+.smark-notification.info {
+    border-color: rgba(59, 130, 246, 0.78);
+    background: linear-gradient(135deg, rgba(239, 246, 255, 0.84), rgba(255, 255, 255, 0.68));
+}
+
+.smark-notification.warning {
+    border-color: rgba(245, 158, 11, 0.82);
+    background: linear-gradient(135deg, rgba(255, 251, 235, 0.86), rgba(255, 255, 255, 0.68));
+}
+
+.smark-notification.rtl {
+    direction: rtl;
+    right: 24px;
+    left: auto;
+}
+
+.smark-notification__icon {
+    width: 39px;
+    height: 39px;
+    flex: 0 0 39px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    color: #fff;
+    font-size: 20px;
+    font-weight: 900;
+    line-height: 1;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34), 0 8px 20px rgba(15, 23, 42, 0.12);
+}
+
+.smark-notification.success .smark-notification__icon {
+    background: linear-gradient(135deg, #5ee787, #22c55e);
+}
+
+.smark-notification.info .smark-notification__icon {
+    background: linear-gradient(135deg, #60a5fa, #2563eb);
+}
+
+.smark-notification.warning .smark-notification__icon {
+    background: linear-gradient(135deg, #facc15, #f59e0b);
+}
+
+.smark-notification.error .smark-notification__icon {
+    background: linear-gradient(135deg, #fb7185, #ef4444);
+}
+
+.smark-notification__body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    line-height: 1.55;
+}
+
+.smark-notification__title {
+    color: #111827;
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.smark-notification__message {
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.smark-notification__close {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 34px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    color: #475569;
+    cursor: pointer;
+    transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+
+.smark-notification__close:hover,
+.smark-notification__close:focus-visible {
+    background: rgba(15, 23, 42, 0.06);
+    border-color: rgba(148, 163, 184, 0.24);
+    color: #111827;
+    outline: none;
+}

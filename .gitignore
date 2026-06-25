@@ -1,0 +1,32 @@
+.DS_Store
+Thumbs.db
+
+# Editors and IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS and temporary files
+*.tmp
+*.temp
+*.bak
+*.orig
+*.log
+
+# Dependency/build folders, if added locally later
+node_modules/
+vendor/
+dist/
+build/
+
+# WordPress/runtime artifacts
+*.zip
+smark.zip
+smark-*.zip
+wp-cli.local.yml
+
+# Environment files
+.env
+.env.*
+!.env.example
