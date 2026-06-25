@@ -38,3 +38,11 @@ SMark can receive automatic updates from public GitHub releases. Publish each ne
 ## License
 
 GPLv2 or later. See [LICENSE.txt](LICENSE.txt).
+
+## Brand and Trademarks
+
+The SMark name, logo, and related branding are trademarks of Saeed Hasani.
+
+The plugin code is licensed under GPLv2 or later, but the SMark brand is protected separately. Modified, forked, repackaged, or redistributed versions must not use the SMark name, logo, or branding in a way that suggests they are official, endorsed, or maintained by the SMark project unless written permission is granted.
+
+See [TRADEMARKS.md](TRADEMARKS.md).

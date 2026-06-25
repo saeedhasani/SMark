@@ -4,3 +4,8 @@ SMark is distributed in the hope that it will be useful, but WITHOUT ANY WARRANT
 
 You should have received a copy of the GNU General Public License along with this program. If not, see https://www.gnu.org/licenses/gpl-2.0.html.
 
+Trademark notice:
+
+The SMark name, logo, and related branding are trademarks of Saeed Hasani. The GPL license applies to the plugin code and does not grant permission to use the SMark name, logo, or branding for modified, forked, repackaged, competing, or unrelated products in a way that suggests official endorsement or maintenance by the SMark project.
+
+See TRADEMARKS.md for the SMark trademark and brand usage policy.
