@@ -148,7 +148,7 @@ class SMarkProjectSettings {
             'en' => array(
                 'menu' => 'Project Settings',
                 'title' => 'Project Settings',
-                'subtitle' => 'Please complete the required project settings to start using SMark.',
+                'subtitle' => '',
                 'setup_notice' => 'Please complete the required project settings to start using SMark.',
                 'projects_table_missing' => 'Projects table not found. Please activate SMark Core (Project Management) and try again.',
                 'project_name' => 'Project Name',
@@ -183,7 +183,7 @@ class SMarkProjectSettings {
             'fa' => array(
                 'menu' => 'تنظیمات پروژه',
                 'title' => 'تنظیمات پروژه',
-                'subtitle' => 'برای شروع کار با اسمارک، تنظیمات ضروری پروژه را تکمیل کنید.',
+                'subtitle' => '',
                 'setup_notice' => 'برای شروع کار با اسمارک، تنظیمات ضروری پروژه را تکمیل کنید.',
                 'projects_table_missing' => 'جدول پروژه‌ها پیدا نشد. لطفاً SMark Core (Project Management) را فعال کنید و دوباره تلاش کنید.',
                 'project_name' => 'نام پروژه',
@@ -1569,7 +1569,7 @@ class SMarkProjectSettings {
  
         if ($project_name === '') {
             add_settings_error('smark_project_settings', 'project_name_required', $strings['project_name_required'], 'error');
-            return;
+            return false;
         }
  
         if (!in_array($brand_language, array('en', 'fa'), true)) {
@@ -1614,7 +1614,7 @@ class SMarkProjectSettings {
             );
             if ($updated === false) {
                 add_settings_error('smark_project_settings', 'save_failed', __('Failed to save project settings.', 'smark'), 'error');
-                return;
+                return false;
             }
             $this->set_current_project_db_id($db_id);
         } else {
@@ -1636,7 +1636,7 @@ class SMarkProjectSettings {
             );
             if ($inserted === false) {
                 add_settings_error('smark_project_settings', 'create_failed', __('Failed to create project.', 'smark'), 'error');
-                return;
+                return false;
             }
  
             $db_id = (int) $wpdb->insert_id;
@@ -1649,6 +1649,7 @@ class SMarkProjectSettings {
   
         update_option(self::OPTION_SETUP_COMPLETED, true, false);
         add_settings_error('smark_project_settings', 'saved', $strings['project_settings_saved'], 'updated');
+        return true;
     }
 
     private function get_central_base_url() {
@@ -2187,7 +2188,10 @@ class SMarkProjectSettings {
 
         if (isset($_POST['smark_project_settings_submit'])) {
             check_admin_referer('smark_project_settings_save', 'smark_project_settings_nonce');
-            $this->handle_submit();
+            if ($this->handle_submit()) {
+                wp_safe_redirect(admin_url('admin.php?page=smark-dashboard'));
+                exit;
+            }
         }
  
         $project = $this->ensure_site_project_row();
@@ -2275,7 +2279,9 @@ class SMarkProjectSettings {
         <div class="wrap smark-project-settings-page <?php echo esc_attr($rtl_class); ?>" data-lang="<?php echo esc_attr($current_lang); ?>">
             <div class="smark-page-header">
                 <h1><?php echo esc_html($strings['title']); ?></h1>
-                <p class="description"><?php echo esc_html($strings['subtitle']); ?></p>
+                <?php if (!empty($strings['subtitle'])) : ?>
+                    <p class="description"><?php echo esc_html($strings['subtitle']); ?></p>
+                <?php endif; ?>
             </div>
 
             <div class="smark-breadcrumb">
@@ -2296,12 +2302,6 @@ class SMarkProjectSettings {
             </div>
 
             <div class="smark-project-settings-content">
-                <?php if (isset($_GET['setup']) && $_GET['setup'] === '1') : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only UI flag. ?>
-                    <div class="notice notice-warning">
-                        <p><?php echo esc_html($strings['setup_notice']); ?></p>
-                    </div>
-                <?php endif; ?>
-
                 <?php settings_errors('smark_project_settings'); ?>
 
                 <div class="smark-card smark-project-settings-card">

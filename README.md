@@ -29,7 +29,7 @@ Some features communicate with the central SMark Core service for shared API acc
 
 ## Version
 
-Current public release: `1.0.1`
+Current public release: `1.0.2`
 
 ## Updates
 

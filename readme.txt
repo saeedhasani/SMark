@@ -4,7 +4,7 @@ Tags: marketing, seo, ai, content
 Requires at least: 5.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -27,6 +27,13 @@ Some features may require common PHP extensions (for example `zip` for reading `
 
 == Changelog ==
 
+= 1.0.2 =
+* Improve email open tracking with public tracking URLs and 1x1 pixel responses.
+* Infer opens from tracked clicks and group campaign performance activity by recipient.
+* Support regular SMTP email accounts alongside Gmail accounts.
+* Redirect successful project setup saves back to the SMark dashboard.
+* Add SMark trademark and brand usage policy.
+
 = 1.0.1 =
 * Add automatic plugin updates from public GitHub releases.
 
@@ -34,6 +41,9 @@ Some features may require common PHP extensions (for example `zip` for reading `
 * Initial public release.
 
 == Upgrade Notice ==
+
+= 1.0.2 =
+Improves email open tracking and broadens email account SMTP support.
 
 = 1.0.1 =
 Adds automatic updates from public GitHub releases.

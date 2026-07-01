@@ -2,7 +2,7 @@
 /**
  * Plugin Name: SMark
  * Description: A comprehensive multi-purpose WordPress plugin
- * Version: 1.0.1
+ * Version: 1.0.2
  * Author: Saeed Hasani
  * Author URI: https://saeedhasani.com
  * License: GPL v2 or later
@@ -18,6 +18,11 @@
  * and should remain public distribution metadata.
  *
  * Changelog:
+ * Version 1.0.2 - Email tracking and SMTP account improvements
+ * - Improve email open tracking with public tracking URLs and 1x1 pixel responses
+ * - Infer opens from tracked clicks and group campaign activity by recipient
+ * - Support regular SMTP email accounts alongside Gmail accounts
+ * - Redirect successful project setup saves back to the SMark dashboard
  * Version 1.0.1 - GitHub release updater
  * - Add automatic plugin updates from public GitHub releases
  * Version 1.0.0 - Initial public release
@@ -1747,7 +1752,7 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('SMARK_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('SMARK_PLUGIN_PATH', plugin_dir_path(__FILE__));
-define('SMARK_VERSION', '1.0.1');
+define('SMARK_VERSION', '1.0.2');
 define('SMARK_PLUGIN_FILE', __FILE__);
 
 require_once SMARK_PLUGIN_PATH . 'includes/class-smark-github-updater.php';

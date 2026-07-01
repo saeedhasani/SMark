@@ -38,6 +38,7 @@ class SMarkEmailMarketing {
         add_action('wp_ajax_nopriv_smark_email_track_open', array($this, 'track_campaign_open'));
         add_action('wp_ajax_smark_email_track_click', array($this, 'track_campaign_click'));
         add_action('wp_ajax_nopriv_smark_email_track_click', array($this, 'track_campaign_click'));
+        add_action('template_redirect', array($this, 'maybe_handle_public_campaign_tracking'), 0);
     }
 
     public function add_submenu_page() {
@@ -162,7 +163,7 @@ class SMarkEmailMarketing {
 
             <div class="seo-grid">
                 <section class="seo-step-card seo-step-card--full" data-step="strategy">
-                    <header class="seo-step-header">
+                    <header class="seo-step-header smark-email-workflow-header">
                         <div>
                             <h2><?php echo esc_html($strings['section_title']); ?></h2>
                             <p><?php echo esc_html($strings['section_description']); ?></p>
@@ -219,22 +220,28 @@ class SMarkEmailMarketing {
 
             <div class="seo-grid">
                 <section class="seo-step-card seo-step-card--full" data-step="strategy">
-                    <header class="seo-step-header">
+                    <header class="seo-step-header smark-email-account-form-header">
                         <div>
-                            <h2><?php echo esc_html($strings['form_title']); ?></h2>
-                            <p><?php echo esc_html($strings['form_description']); ?></p>
+                            <h2 data-smark-provider-text data-email-text="<?php echo esc_attr($strings['form_title_email']); ?>" data-gmail-text="<?php echo esc_attr($strings['form_title_gmail']); ?>"><?php echo esc_html($strings['form_title_email']); ?></h2>
+                            <p data-smark-provider-text data-email-text="<?php echo esc_attr($strings['form_description_email']); ?>" data-gmail-text="<?php echo esc_attr($strings['form_description_gmail']); ?>"><?php echo esc_html($strings['form_description_email']); ?></p>
+                        </div>
+                        <div class="smark-email-provider-switch">
+                            <label for="smark_email_provider"><?php echo esc_html($strings['provider_label']); ?></label>
+                            <select id="smark_email_provider" name="provider" form="smarkEmailAccountForm">
+                                <option value="email"><?php echo esc_html($strings['provider_email']); ?></option>
+                                <option value="gmail"><?php echo esc_html($strings['provider_gmail']); ?></option>
+                            </select>
                         </div>
                     </header>
 
-                    <form class="smark-email-account-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                    <form id="smarkEmailAccountForm" class="smark-email-account-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
                         <?php wp_nonce_field('smark_email_account_save', 'smark_email_account_nonce'); ?>
                         <input type="hidden" name="action" value="smark_email_account_save">
-                        <input type="hidden" name="provider" value="gmail">
 
                         <div class="smark-email-form-grid">
                             <label>
                                 <span><?php echo esc_html($strings['field_label']); ?></span>
-                                <input type="text" name="account_label" required placeholder="<?php echo esc_attr($strings['field_label_placeholder']); ?>">
+                                <input type="text" name="account_label" required placeholder="<?php echo esc_attr($strings['field_label_placeholder_email']); ?>" data-email-placeholder="<?php echo esc_attr($strings['field_label_placeholder_email']); ?>" data-gmail-placeholder="<?php echo esc_attr($strings['field_label_placeholder_gmail']); ?>">
                             </label>
 
                             <label>
@@ -243,13 +250,33 @@ class SMarkEmailMarketing {
                             </label>
 
                             <label>
-                                <span><?php echo esc_html($strings['field_email']); ?></span>
-                                <input type="email" name="email_address" required placeholder="name@gmail.com">
+                                <span data-smark-provider-text data-email-text="<?php echo esc_attr($strings['field_email_email']); ?>" data-gmail-text="<?php echo esc_attr($strings['field_email_gmail']); ?>"><?php echo esc_html($strings['field_email_email']); ?></span>
+                                <input type="email" name="email_address" required placeholder="name@example.com" data-email-placeholder="name@example.com" data-gmail-placeholder="name@gmail.com">
                             </label>
 
                             <label>
-                                <span><?php echo esc_html($strings['field_app_password']); ?></span>
-                                <input type="password" name="app_password" required autocomplete="new-password" placeholder="<?php echo esc_attr($strings['field_app_password_placeholder']); ?>">
+                                <span>
+                                    <span data-smark-provider-text data-email-text="<?php echo esc_attr($strings['field_password_email']); ?>" data-gmail-text="<?php echo esc_attr($strings['field_password_gmail']); ?>"><?php echo esc_html($strings['field_password_email']); ?></span>
+                                    <span class="smark-email-gmail-app-link" data-smark-gmail-only>
+                                        (<?php echo wp_kses_post(sprintf(
+                                            '<a href="%1$s" target="_blank" rel="noopener noreferrer">%2$s <span class="dashicons dashicons-external" aria-hidden="true"></span></a>',
+                                            esc_url('https://myaccount.google.com/apppasswords'),
+                                            esc_html($strings['gmail_app_password_link'])
+                                        )); ?>)
+                                    </span>
+                                    <span class="smark-email-gmail-app-info" data-smark-gmail-only>
+                                        <button type="button" class="smark-email-info-button" aria-label="<?php echo esc_attr($strings['gmail_app_password_tooltip_label']); ?>">
+                                            <span class="dashicons dashicons-info-outline" aria-hidden="true"></span>
+                                        </button>
+                                        <span class="smark-email-info-tooltip" role="tooltip">
+                                            <strong><?php echo esc_html($strings['gmail_app_password_tooltip_title']); ?></strong>
+                                            <span><?php echo esc_html($strings['gmail_app_password_tooltip_step_1']); ?></span>
+                                            <span><?php echo esc_html($strings['gmail_app_password_tooltip_step_2']); ?></span>
+                                            <span><?php echo esc_html($strings['gmail_app_password_tooltip_step_3']); ?></span>
+                                        </span>
+                                    </span>
+                                </span>
+                                <input type="password" name="app_password" required autocomplete="new-password" placeholder="<?php echo esc_attr($strings['field_password_placeholder_email']); ?>" data-email-placeholder="<?php echo esc_attr($strings['field_password_placeholder_email']); ?>" data-gmail-placeholder="<?php echo esc_attr($strings['field_password_placeholder_gmail']); ?>">
                             </label>
 
                             <label>
@@ -259,7 +286,7 @@ class SMarkEmailMarketing {
 
                             <label>
                                 <span><?php echo esc_html($strings['field_smtp_host']); ?></span>
-                                <input type="text" name="smtp_host" required value="smtp.gmail.com">
+                                <input type="text" name="smtp_host" required placeholder="mail.example.com" data-email-value="" data-gmail-value="smtp.gmail.com">
                             </label>
 
                             <label>
@@ -267,6 +294,8 @@ class SMarkEmailMarketing {
                                 <select name="smtp_port" required>
                                     <option value="587">587 - TLS</option>
                                     <option value="465">465 - SSL</option>
+                                    <option value="25">25</option>
+                                    <option value="2525">2525</option>
                                 </select>
                             </label>
 
@@ -275,11 +304,12 @@ class SMarkEmailMarketing {
                                 <select name="encryption" required>
                                     <option value="tls">TLS</option>
                                     <option value="ssl">SSL</option>
+                                    <option value="none"><?php echo esc_html($strings['encryption_none']); ?></option>
                                 </select>
                             </label>
                         </div>
 
-                        <p class="smark-email-help"><?php echo esc_html($strings['gmail_help']); ?></p>
+                        <p class="smark-email-help" data-smark-provider-text data-email-text="<?php echo esc_attr($strings['email_help']); ?>" data-gmail-text="<?php echo esc_attr($strings['gmail_help']); ?>"><?php echo esc_html($strings['email_help']); ?></p>
 
                         <div class="smark-email-form-actions">
                             <button type="submit" class="button button-primary"><?php echo esc_html($strings['save_button']); ?></button>
@@ -649,7 +679,7 @@ class SMarkEmailMarketing {
 
             <div class="seo-grid">
                 <section class="seo-step-card seo-step-card--full smark-email-performance-card" data-step="strategy">
-                    <header class="seo-step-header">
+                    <header class="seo-step-header smark-email-performance-header">
                         <div>
                             <h2><?php echo esc_html($strings['overview_title']); ?></h2>
                             <p><?php echo esc_html($strings['overview_description']); ?></p>
@@ -668,7 +698,7 @@ class SMarkEmailMarketing {
                 </section>
 
                 <section class="seo-step-card seo-step-card--full" data-step="strategy">
-                    <header class="seo-step-header">
+                    <header class="seo-step-header smark-email-performance-header">
                         <div>
                             <h2><?php echo esc_html($strings['campaign_title']); ?></h2>
                             <p><?php echo esc_html($strings['campaign_description']); ?></p>
@@ -986,11 +1016,14 @@ class SMarkEmailMarketing {
             $this->redirect_to_accounts('error');
         }
 
+        $provider = isset($_POST['provider']) ? sanitize_key(wp_unslash($_POST['provider'])) : 'email';
+        $provider = in_array($provider, array('email', 'gmail'), true) ? $provider : 'email';
+
         $smtp_port = isset($_POST['smtp_port']) ? absint($_POST['smtp_port']) : 587;
-        $smtp_port = in_array($smtp_port, array(465, 587), true) ? $smtp_port : 587;
+        $smtp_port = in_array($smtp_port, array(25, 465, 587, 2525), true) ? $smtp_port : 587;
 
         $encryption = isset($_POST['encryption']) ? sanitize_key(wp_unslash($_POST['encryption'])) : 'tls';
-        $encryption = in_array($encryption, array('tls', 'ssl'), true) ? $encryption : 'tls';
+        $encryption = in_array($encryption, array('none', 'tls', 'ssl'), true) ? $encryption : 'tls';
 
         $daily_limit = isset($_POST['daily_limit']) ? absint($_POST['daily_limit']) : 1;
         $daily_limit = max(1, min(2000, $daily_limit));
@@ -999,13 +1032,13 @@ class SMarkEmailMarketing {
 
         $account = array(
             'id'            => wp_generate_uuid4(),
-            'provider'      => 'gmail',
+            'provider'      => $provider,
             'account_label' => isset($_POST['account_label']) ? sanitize_text_field(wp_unslash($_POST['account_label'])) : '',
             'sender_name'   => isset($_POST['sender_name']) ? sanitize_text_field(wp_unslash($_POST['sender_name'])) : '',
             'email_address' => $email_address,
             'app_password'  => $app_password,
             'daily_limit'   => $daily_limit,
-            'smtp_host'     => isset($_POST['smtp_host']) ? sanitize_text_field(wp_unslash($_POST['smtp_host'])) : 'smtp.gmail.com',
+            'smtp_host'     => isset($_POST['smtp_host']) ? sanitize_text_field(wp_unslash($_POST['smtp_host'])) : '',
             'smtp_port'     => $smtp_port,
             'encryption'    => $encryption,
             'created_at'    => current_time('mysql'),
@@ -1016,7 +1049,11 @@ class SMarkEmailMarketing {
         }
 
         if ($account['smtp_host'] === '') {
-            $account['smtp_host'] = 'smtp.gmail.com';
+            if ($provider === 'gmail') {
+                $account['smtp_host'] = 'smtp.gmail.com';
+            } else {
+                $this->redirect_to_accounts('error');
+            }
         }
 
         $accounts = $this->get_email_accounts();
@@ -1574,7 +1611,7 @@ class SMarkEmailMarketing {
     }
 
     private function get_campaign_open_grace_period() {
-        return (int) apply_filters('smark_email_open_tracking_grace_period', 60);
+        return (int) apply_filters('smark_email_open_tracking_grace_period', 0);
     }
 
     private function is_countable_campaign_open_event($event, $sent_times) {
@@ -1595,7 +1632,8 @@ class SMarkEmailMarketing {
             return false;
         }
 
-        return ($opened_at - (int) $sent_times[$key]) >= $this->get_campaign_open_grace_period();
+        $grace_period = max(0, $this->get_campaign_open_grace_period());
+        return ($opened_at - (int) $sent_times[$key]) >= $grace_period;
     }
 
     private function is_suspected_campaign_open_scanner() {
@@ -1639,11 +1677,11 @@ class SMarkEmailMarketing {
         return false;
     }
 
-    private function should_record_campaign_open($campaign_id, $recipient_hash) {
+    private function is_recordable_campaign_open($campaign_id, $recipient_hash) {
         $campaign_id = sanitize_text_field($campaign_id);
         $recipient_hash = sanitize_text_field($recipient_hash);
 
-        if ($campaign_id === '' || $recipient_hash === '' || $this->is_suspected_campaign_open_scanner()) {
+        if ($campaign_id === '' || $recipient_hash === '') {
             return false;
         }
 
@@ -1655,7 +1693,13 @@ class SMarkEmailMarketing {
             return false;
         }
 
-        return (current_time('timestamp') - (int) $sent_times[$key]) >= $this->get_campaign_open_grace_period();
+        $grace_period = max(0, $this->get_campaign_open_grace_period());
+        $now = current_time('timestamp');
+        if ($grace_period > 0 && ($now - (int) $sent_times[$key]) < $grace_period) {
+            return false;
+        }
+
+        return true;
     }
 
     private function get_campaign_performance_metrics($campaign_id = '') {
@@ -1693,7 +1737,6 @@ class SMarkEmailMarketing {
         $unique_opens = array();
         $unique_clicks = array();
         $event_sent_count = 0;
-
         foreach ($events as $event) {
             $event_campaign_id = isset($event['campaign_id']) ? (string) $event['campaign_id'] : '';
             if ($event_campaign_id === '' || !isset($campaign_ids[$event_campaign_id])) {
@@ -1792,11 +1835,63 @@ class SMarkEmailMarketing {
             return true;
         }));
 
-        usort($events, function($a, $b) {
-            return strcmp((string) ($b['created_at'] ?? ''), (string) ($a['created_at'] ?? ''));
+        $rows = array();
+        foreach ($events as $event) {
+            $recipient_hash = isset($event['recipient_hash']) ? (string) $event['recipient_hash'] : '';
+            if ($recipient_hash === '') {
+                $recipient_hash = 'unknown:' . (isset($event['recipient_label']) ? (string) $event['recipient_label'] : '');
+            }
+
+            $key = (isset($event['campaign_id']) ? (string) $event['campaign_id'] : '') . ':' . $recipient_hash;
+            if (!isset($rows[$key])) {
+                $rows[$key] = array(
+                    'recipient_label' => '',
+                    'events' => array(),
+                    'links' => array(),
+                    'times' => array(),
+                    'latest_at' => '',
+                );
+            }
+
+            $type = isset($event['type']) ? sanitize_key($event['type']) : '';
+            $created_at = isset($event['created_at']) ? (string) $event['created_at'] : '';
+            $recipient_label = isset($event['recipient_label']) ? (string) $event['recipient_label'] : '';
+
+            if ($rows[$key]['recipient_label'] === '' && $recipient_label !== '') {
+                $rows[$key]['recipient_label'] = $recipient_label;
+            }
+
+            if ($type !== '') {
+                if ($type === 'click' && !isset($rows[$key]['events']['open'])) {
+                    $rows[$key]['events']['open'] = $created_at;
+                    if ($created_at !== '') {
+                        $rows[$key]['times'][] = $this->get_campaign_event_label('open', $strings) . ': ' . $created_at;
+                    }
+                }
+
+                if ($type === 'open' && isset($rows[$key]['events']['open'])) {
+                    continue;
+                }
+
+                $rows[$key]['events'][$type] = $created_at;
+                if ($created_at !== '') {
+                    $rows[$key]['times'][] = $this->get_campaign_event_label($type, $strings) . ': ' . $created_at;
+                    if ($rows[$key]['latest_at'] === '' || strcmp($created_at, $rows[$key]['latest_at']) > 0) {
+                        $rows[$key]['latest_at'] = $created_at;
+                    }
+                }
+            }
+
+            if (!empty($event['url'])) {
+                $rows[$key]['links'][(string) $event['url']] = true;
+            }
+        }
+
+        usort($rows, function($a, $b) {
+            return strcmp((string) ($b['latest_at'] ?? ''), (string) ($a['latest_at'] ?? ''));
         });
 
-        $events = array_slice($events, 0, 20);
+        $rows = array_slice($rows, 0, 20);
         ?>
         <div class="smark-email-table-wrap smark-email-activity-table">
             <table class="smark-email-accounts-table">
@@ -1809,17 +1904,39 @@ class SMarkEmailMarketing {
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (empty($events)) : ?>
+                    <?php if (empty($rows)) : ?>
                         <tr>
                             <td colspan="4"><?php echo esc_html($strings['no_events']); ?></td>
                         </tr>
                     <?php else : ?>
-                        <?php foreach ($events as $event) : ?>
+                        <?php foreach ($rows as $row) : ?>
                             <tr>
-                                <td><span class="smark-email-status smark-email-status--<?php echo esc_attr($event['type'] ?? 'draft'); ?>"><?php echo esc_html($this->get_campaign_event_label($event['type'] ?? '', $strings)); ?></span></td>
-                                <td><?php echo esc_html($event['recipient_label'] ?? $strings['unknown_recipient']); ?></td>
-                                <td><?php echo !empty($event['url']) ? esc_html($event['url']) : esc_html($strings['not_available']); ?></td>
-                                <td><?php echo esc_html($event['created_at'] ?? ''); ?></td>
+                                <td>
+                                    <div class="smark-email-event-badges">
+                                        <?php foreach ($row['events'] as $type => $created_at) : ?>
+                                            <span class="smark-email-status smark-email-status--<?php echo esc_attr($type); ?>"><?php echo esc_html($this->get_campaign_event_label($type, $strings)); ?></span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </td>
+                                <td><?php echo esc_html($row['recipient_label'] !== '' ? $row['recipient_label'] : $strings['unknown_recipient']); ?></td>
+                                <td>
+                                    <?php if (empty($row['links'])) : ?>
+                                        <?php echo esc_html($strings['not_available']); ?>
+                                    <?php else : ?>
+                                        <div class="smark-email-event-links">
+                                            <?php foreach (array_keys($row['links']) as $url) : ?>
+                                                <span><?php echo esc_html($url); ?></span>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <div class="smark-email-event-times">
+                                        <?php foreach ($row['times'] as $time_label) : ?>
+                                            <span><?php echo esc_html($time_label); ?></span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
@@ -2161,18 +2278,19 @@ class SMarkEmailMarketing {
 
         $html_body = preg_replace_callback('/href=(["\'])(.*?)\1/i', function($matches) use ($campaign_id, $recipient_hash) {
             $url = html_entity_decode($matches[2], ENT_QUOTES, get_bloginfo('charset'));
-            if ($url === '' || strpos($url, 'mailto:') === 0 || strpos($url, 'tel:') === 0 || strpos($url, '#') === 0 || strpos($url, 'smark_email_track_click') !== false) {
+            if ($url === '' || strpos($url, 'mailto:') === 0 || strpos($url, 'tel:') === 0 || strpos($url, '#') === 0 || strpos($url, 'smark_email_track') !== false) {
                 return $matches[0];
             }
 
             $tracked_url = add_query_arg(
                 array(
-                    'action' => 'smark_email_track_click',
+                    'smark_email_track' => 'click',
                     'cid' => $campaign_id,
                     'rh' => $recipient_hash,
+                    'tk' => $this->get_campaign_tracking_token($campaign_id, $recipient_hash, 'click'),
                     'url' => $url,
                 ),
-                admin_url('admin-ajax.php')
+                home_url('/')
             );
 
             return 'href=' . $matches[1] . esc_url($tracked_url) . $matches[1];
@@ -2180,27 +2298,73 @@ class SMarkEmailMarketing {
 
         $open_url = add_query_arg(
             array(
-                'action' => 'smark_email_track_open',
+                'smark_email_track' => 'open',
                 'cid' => $campaign_id,
                 'rh' => $recipient_hash,
+                'tk' => $this->get_campaign_tracking_token($campaign_id, $recipient_hash, 'open'),
+                'v' => time(),
             ),
-            admin_url('admin-ajax.php')
+            home_url('/')
         );
 
-        return $html_body . '<img src="' . esc_url($open_url) . '" width="1" height="1" alt="" style="display:none;width:1px;height:1px;border:0;opacity:0;" />';
+        return $html_body . '<img src="' . esc_url($open_url) . '" width="1" height="1" alt="" style="width:1px;height:1px;border:0;opacity:0;outline:none;text-decoration:none;" />';
+    }
+
+    public function maybe_handle_public_campaign_tracking() {
+        $tracking_type = isset($_GET['smark_email_track']) ? sanitize_key(wp_unslash($_GET['smark_email_track'])) : '';
+
+        if ($tracking_type === 'open') {
+            $this->track_campaign_open();
+        }
+
+        if ($tracking_type === 'click') {
+            $this->track_campaign_click();
+        }
+    }
+
+    private function get_campaign_tracking_token($campaign_id, $recipient_hash, $type) {
+        $campaign_id = sanitize_text_field($campaign_id);
+        $recipient_hash = sanitize_text_field($recipient_hash);
+        $type = sanitize_key($type);
+
+        if ($campaign_id === '' || $recipient_hash === '' || $type === '') {
+            return '';
+        }
+
+        return hash_hmac('sha256', $type . '|' . $campaign_id . '|' . $recipient_hash, wp_salt('nonce'));
+    }
+
+    private function is_valid_campaign_tracking_request($campaign_id, $recipient_hash, $type) {
+        $token = isset($_GET['tk']) ? sanitize_text_field(wp_unslash(rawurldecode($_GET['tk']))) : '';
+
+        if ($token === '') {
+            return true;
+        }
+
+        $expected = $this->get_campaign_tracking_token($campaign_id, $recipient_hash, $type);
+        return $expected !== '' && hash_equals($expected, $token);
     }
 
     public function track_campaign_open() {
         $campaign_id = isset($_GET['cid']) ? sanitize_text_field(wp_unslash(rawurldecode($_GET['cid']))) : '';
         $recipient_hash = isset($_GET['rh']) ? sanitize_text_field(wp_unslash(rawurldecode($_GET['rh']))) : '';
 
-        if ($this->should_record_campaign_open($campaign_id, $recipient_hash)) {
+        if ($this->is_valid_campaign_tracking_request($campaign_id, $recipient_hash, 'open') && $this->is_recordable_campaign_open($campaign_id, $recipient_hash)) {
             $this->record_campaign_event($campaign_id, 'open', '', $recipient_hash);
+            $this->log_campaign_mail_debug('open_tracked', array(
+                'campaign_id' => $campaign_id,
+                'recipient_hash' => substr($recipient_hash, 0, 12),
+            ));
+        } else {
+            $this->log_campaign_mail_debug('open_ignored', array(
+                'campaign_id' => $campaign_id,
+                'recipient_hash' => substr($recipient_hash, 0, 12),
+                'suspected_scanner' => $this->is_suspected_campaign_open_scanner(),
+                'valid_token' => $this->is_valid_campaign_tracking_request($campaign_id, $recipient_hash, 'open'),
+            ));
         }
 
-        header('Content-Type: image/gif');
-        header('Cache-Control: no-cache, no-store, must-revalidate');
-        echo base64_decode('R0lGODlhAQABAPAAAP///wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==');
+        $this->output_campaign_tracking_pixel();
         exit;
     }
 
@@ -2209,12 +2373,22 @@ class SMarkEmailMarketing {
         $recipient_hash = isset($_GET['rh']) ? sanitize_text_field(wp_unslash(rawurldecode($_GET['rh']))) : '';
         $url = isset($_GET['url']) ? esc_url_raw(wp_unslash(rawurldecode($_GET['url']))) : '';
 
-        if ($campaign_id !== '' && $recipient_hash !== '') {
+        if ($this->is_valid_campaign_tracking_request($campaign_id, $recipient_hash, 'click') && $campaign_id !== '' && $recipient_hash !== '') {
+            if ($this->is_recordable_campaign_open($campaign_id, $recipient_hash)) {
+                $this->record_campaign_event($campaign_id, 'open', '', $recipient_hash);
+            }
+
             $this->record_campaign_event($campaign_id, 'click', '', $recipient_hash, $url);
             $this->log_campaign_mail_debug('click_tracked', array(
                 'campaign_id' => $campaign_id,
                 'recipient_hash' => substr($recipient_hash, 0, 12),
                 'has_url' => $url !== '',
+            ));
+        } else {
+            $this->log_campaign_mail_debug('click_ignored', array(
+                'campaign_id' => $campaign_id,
+                'recipient_hash' => substr($recipient_hash, 0, 12),
+                'valid_token' => $this->is_valid_campaign_tracking_request($campaign_id, $recipient_hash, 'click'),
             ));
         }
 
@@ -2224,6 +2398,14 @@ class SMarkEmailMarketing {
 
         wp_redirect($url);
         exit;
+    }
+
+    private function output_campaign_tracking_pixel() {
+        nocache_headers();
+        header('Content-Type: image/gif');
+        header('Content-Length: 43');
+        header('X-Robots-Tag: noindex, nofollow', true);
+        echo base64_decode('R0lGODlhAQABAPAAAP///wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==');
     }
 
     private function record_campaign_event($campaign_id, $type, $recipient_email = '', $recipient_hash = '', $url = '') {
@@ -2893,6 +3075,39 @@ class SMarkEmailMarketing {
         $('body').removeClass('smark-email-modal-open');
     }
 
+    function updateEmailProviderForm(provider) {
+        var normalizedProvider = provider === 'gmail' ? 'gmail' : 'email';
+        var $form = $('#smarkEmailAccountForm');
+
+        $('[data-smark-provider-text]').each(function () {
+            var $el = $(this);
+            var text = $el.attr('data-' + normalizedProvider + '-text');
+            if (typeof text === 'string') {
+                $el.text(text);
+            }
+        });
+
+        $form.find('[data-' + normalizedProvider + '-placeholder]').each(function () {
+            var $el = $(this);
+            $el.attr('placeholder', $el.attr('data-' + normalizedProvider + '-placeholder') || '');
+        });
+
+        $('[data-smark-gmail-only]').toggle(normalizedProvider === 'gmail');
+
+        var $smtpHost = $form.find('[name="smtp_host"]');
+        if ($smtpHost.length && !$smtpHost.val()) {
+            $smtpHost.val($smtpHost.attr('data-' + normalizedProvider + '-value') || '');
+        }
+
+        if (normalizedProvider === 'gmail') {
+            $form.find('[name="smtp_port"]').val('587');
+            $form.find('[name="encryption"]').val('tls');
+            $smtpHost.val($smtpHost.attr('data-gmail-value') || 'smtp.gmail.com');
+        } else if ($smtpHost.val() === ($smtpHost.attr('data-gmail-value') || 'smtp.gmail.com')) {
+            $smtpHost.val('');
+        }
+    }
+
     $(function () {
         var $page = $('.wrap.smark-seo-optimization-page');
         showNotification($page.attr('data-smark-notice-message') || '', $page.attr('data-smark-notice-type') || 'info');
@@ -2900,6 +3115,12 @@ class SMarkEmailMarketing {
         if ($page.attr('data-smark-open-import') === '1') {
             openImportModal();
         }
+
+        updateEmailProviderForm($('#smark_email_provider').val() || 'email');
+
+        $(document).on('change', '#smark_email_provider', function () {
+            updateEmailProviderForm($(this).val());
+        });
 
         $(document).on('click', '[data-open-smark-import]', function (event) {
             event.preventDefault();
@@ -3182,19 +3403,42 @@ JS;
                 'breadcrumb_dashboard'          => 'داشبورد',
                 'breadcrumb_parent'             => 'ایمیل مارکتینگ',
                 'breadcrumb_current'            => 'حساب‌های ایمیل',
-                'form_title'                    => 'افزودن حساب جیمیل',
-                'form_description'              => 'برای ارسال از جیمیل، ایمیل، نام فرستنده، App Password و محدودیت ارسال روزانه لازم است.',
+                'form_title'                    => 'افزودن حساب ایمیل',
+                'form_title_email'              => 'افزودن حساب ایمیل',
+                'form_title_gmail'              => 'افزودن حساب جیمیل',
+                'form_description'              => 'حساب ارسال ایمیل را با مشخصات SMTP ثبت کنید.',
+                'form_description_email'        => 'برای ارسال از ایمیل معمولی، مشخصات SMTP، رمز عبور و سقف ارسال روزانه را وارد کنید.',
+                'form_description_gmail'        => 'برای ارسال از جیمیل، آدرس ایمیل، نام فرستنده، App Password و سقف ارسال روزانه لازم است.',
+                'provider_label'                => 'نوع حساب',
+                'provider_email'                => 'ایمیل',
+                'provider_gmail'                => 'جیمیل',
                 'field_label'                   => 'عنوان حساب',
-                'field_label_placeholder'       => 'مثلا جیمیل فروش',
+                'field_label_placeholder'       => 'مثلا ایمیل فروش',
+                'field_label_placeholder_email' => 'مثلا ایمیل فروش',
+                'field_label_placeholder_gmail' => 'مثلا جیمیل فروش',
                 'field_sender_name'             => 'نام فرستنده',
                 'field_sender_name_placeholder' => 'مثلا تیم اسمارک',
-                'field_email'                   => 'آدرس جیمیل',
-                'field_app_password'            => 'App Password جیمیل',
-                'field_app_password_placeholder'=> 'رمز برنامه ۱۶ کاراکتری گوگل',
+                'field_email'                   => 'آدرس ایمیل',
+                'field_email_email'             => 'آدرس ایمیل',
+                'field_email_gmail'             => 'آدرس جیمیل',
+                'field_app_password'            => 'رمز SMTP',
+                'field_password_email'          => 'رمز SMTP / ایمیل',
+                'field_password_gmail'          => 'App Password جیمیل',
+                'gmail_app_password_link'       => 'دریافت App Password',
+                'gmail_app_password_tooltip_label'=> 'راهنمای دریافت App Password جیمیل',
+                'gmail_app_password_tooltip_title'=> 'راهنمای سریع',
+                'gmail_app_password_tooltip_step_1'=> 'ابتدا مطمئن شوید ورود دو مرحله‌ای حساب گوگل فعال است.',
+                'gmail_app_password_tooltip_step_2'=> 'در صفحه App passwords، نام برنامه را SMark وارد کنید.',
+                'gmail_app_password_tooltip_step_3'=> 'کدی را که گوگل می‌دهد در همین فیلد SMark قرار دهید.',
+                'field_app_password_placeholder'=> 'رمز SMTP یا رمز برنامه',
+                'field_password_placeholder_email'=> 'رمز SMTP یا رمز ایمیل',
+                'field_password_placeholder_gmail'=> 'رمز برنامه ۱۶ کاراکتری گوگل',
                 'field_daily_limit'             => 'تعداد ارسال روزانه',
                 'field_smtp_host'               => 'SMTP Host',
                 'field_smtp_port'               => 'SMTP Port',
                 'field_encryption'              => 'نوع رمزنگاری',
+                'encryption_none'               => 'بدون رمزنگاری',
+                'email_help'                    => 'برای ایمیل معمولی، اطلاعات SMTP را از هاست یا سرویس‌دهنده ایمیل خود وارد کنید.',
                 'gmail_help'                    => 'برای جیمیل باید تایید دو مرحله‌ای فعال باشد و از Google Account > Security > App passwords رمز برنامه بسازید. پسورد اصلی جیمیل را وارد نکنید.',
                 'save_button'                   => 'افزودن حساب',
                 'list_title'                    => 'حساب‌های ثبت‌شده',
@@ -3223,19 +3467,42 @@ JS;
             'breadcrumb_dashboard'          => 'Dashboard',
             'breadcrumb_parent'             => 'Email Marketing',
             'breadcrumb_current'            => 'Email Accounts',
-            'form_title'                    => 'Add Gmail Account',
-            'form_description'              => 'Gmail sending requires the email address, sender name, app password, and daily send limit.',
+            'form_title'                    => 'Add Email Account',
+            'form_title_email'              => 'Add Email Account',
+            'form_title_gmail'              => 'Add Gmail Account',
+            'form_description'              => 'Add a sending account with SMTP details.',
+            'form_description_email'        => 'For regular email, enter the SMTP details, password, and daily send limit.',
+            'form_description_gmail'        => 'Gmail sending requires the email address, sender name, app password, and daily send limit.',
+            'provider_label'                => 'Account Type',
+            'provider_email'                => 'Email',
+            'provider_gmail'                => 'Gmail',
             'field_label'                   => 'Account Label',
-            'field_label_placeholder'       => 'Example: Sales Gmail',
+            'field_label_placeholder'       => 'Example: Sales Email',
+            'field_label_placeholder_email' => 'Example: Sales Email',
+            'field_label_placeholder_gmail' => 'Example: Sales Gmail',
             'field_sender_name'             => 'Sender Name',
             'field_sender_name_placeholder' => 'Example: SMark Team',
-            'field_email'                   => 'Gmail Address',
-            'field_app_password'            => 'Gmail App Password',
-            'field_app_password_placeholder'=> '16-character Google app password',
+            'field_email'                   => 'Email Address',
+            'field_email_email'             => 'Email Address',
+            'field_email_gmail'             => 'Gmail Address',
+            'field_app_password'            => 'SMTP Password',
+            'field_password_email'          => 'SMTP / Email Password',
+            'field_password_gmail'          => 'Gmail App Password',
+            'gmail_app_password_link'       => 'Get app password',
+            'gmail_app_password_tooltip_label'=> 'Gmail app password help',
+            'gmail_app_password_tooltip_title'=> 'Quick guide',
+            'gmail_app_password_tooltip_step_1'=> 'Make sure 2-Step Verification is enabled on your Google account.',
+            'gmail_app_password_tooltip_step_2'=> 'On the App passwords page, use SMark as the app name.',
+            'gmail_app_password_tooltip_step_3'=> 'Paste the password Google gives you into this SMark field.',
+            'field_app_password_placeholder'=> 'SMTP password or app password',
+            'field_password_placeholder_email'=> 'SMTP or email password',
+            'field_password_placeholder_gmail'=> '16-character Google app password',
             'field_daily_limit'             => 'Daily Send Limit',
             'field_smtp_host'               => 'SMTP Host',
             'field_smtp_port'               => 'SMTP Port',
             'field_encryption'              => 'Encryption',
+            'encryption_none'               => 'None',
+            'email_help'                    => 'For regular email, use the SMTP details provided by your host or email service.',
             'gmail_help'                    => 'For Gmail, enable 2-Step Verification and create an app password from Google Account > Security > App passwords. Do not enter the regular Gmail password.',
             'save_button'                   => 'Add Account',
             'list_title'                    => 'Saved Accounts',
@@ -3589,10 +3856,10 @@ JS;
                 'metric_failed_help'        => 'تعداد گیرنده‌هایی که ارسال برایشان ناموفق بوده است.',
                 'metric_unsub_bounce'       => 'لغو/برگشت',
                 'metric_unsub_bounce_help'  => '%s لغو عضویت، %s برگشت ایمیل',
-                'column_event'              => 'رویداد',
+                'column_event'              => 'رویدادها',
                 'column_recipient'          => 'مخاطب',
                 'column_link'               => 'لینک',
-                'column_time'               => 'زمان',
+                'column_time'               => 'زمان‌ها',
                 'no_events'                 => 'هنوز رویدادی برای این کمپین ثبت نشده است. آمار باز شدن و کلیک از ارسال‌های جدید به بعد ثبت می‌شود.',
                 'unknown_recipient'         => 'مخاطب ناشناس',
                 'not_available'             => '-',
@@ -3635,10 +3902,10 @@ JS;
             'metric_failed_help'        => 'Recipients whose send attempt failed.',
             'metric_unsub_bounce'       => 'Unsub/Bounce',
             'metric_unsub_bounce_help'  => '%s unsubscribes, %s bounces',
-            'column_event'              => 'Event',
+            'column_event'              => 'Events',
             'column_recipient'          => 'Recipient',
             'column_link'               => 'Link',
-            'column_time'               => 'Time',
+            'column_time'               => 'Times',
             'no_events'                 => 'No event has been recorded for this campaign yet. Opens and clicks are tracked for new sends.',
             'unknown_recipient'         => 'Unknown recipient',
             'not_available'             => '-',
@@ -3741,6 +4008,196 @@ JS;
             .smark-email-task-link:hover {
                 color: inherit;
                 text-decoration: none;
+            }
+
+            .smark-seo-optimization-page[data-lang="en"] .smark-email-workflow-header {
+                flex-direction: row;
+                justify-content: flex-start;
+                text-align: left;
+            }
+
+            .smark-seo-optimization-page[data-lang="en"] .smark-email-workflow-header > div {
+                width: 100%;
+            }
+
+            .smark-seo-optimization-page[data-lang="en"] .smark-email-account-form-header {
+                flex-direction: row;
+                align-items: flex-start;
+                justify-content: space-between;
+                text-align: left;
+            }
+
+            .smark-seo-optimization-page[data-lang="en"] .smark-email-performance-header {
+                flex-direction: row;
+                justify-content: flex-start;
+                text-align: left;
+            }
+
+            .smark-seo-optimization-page[data-lang="en"] .smark-email-performance-header > div {
+                width: 100%;
+            }
+
+            .smark-email-account-form-header > div:first-child {
+                min-width: 0;
+            }
+
+            .smark-email-provider-switch {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                flex: 0 0 auto;
+            }
+
+            .smark-email-provider-switch label {
+                color: #1f2937;
+                font-weight: 600;
+                white-space: nowrap;
+            }
+
+            .smark-email-provider-switch select {
+                min-width: 132px;
+                min-height: 42px;
+                border: 1px solid rgba(148, 163, 184, 0.35);
+                border-radius: 12px;
+                padding: 8px 34px 8px 12px;
+                color: #1f2937;
+                background-color: #ffffff;
+                box-shadow: none;
+            }
+
+            .smark-email-provider-switch select:focus {
+                border-color: #6366f1;
+                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+                outline: none;
+            }
+
+            .smark-seo-optimization-page.rtl .smark-email-provider-switch {
+                flex-direction: row-reverse;
+            }
+
+            .smark-email-gmail-app-link {
+                display: inline-flex;
+                align-items: center;
+                gap: 3px;
+                margin-left: 6px;
+                font-size: 0.92em;
+                font-weight: 500;
+            }
+
+            .smark-email-gmail-app-link a {
+                display: inline-flex;
+                align-items: center;
+                gap: 3px;
+                color: #4f46e5;
+                text-decoration: none;
+            }
+
+            .smark-email-gmail-app-link a:hover,
+            .smark-email-gmail-app-link a:focus {
+                color: #3730a3;
+                text-decoration: underline;
+            }
+
+            .smark-email-gmail-app-link .dashicons {
+                width: 14px;
+                height: 14px;
+                font-size: 14px;
+                line-height: 14px;
+            }
+
+            .smark-email-gmail-app-info {
+                position: relative;
+                display: inline-flex;
+                align-items: center;
+                margin-left: 6px;
+                vertical-align: middle;
+            }
+
+            .smark-email-info-button {
+                width: 18px;
+                height: 18px;
+                min-height: 18px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0;
+                border: 0;
+                border-radius: 50%;
+                color: #4f46e5;
+                background: transparent;
+                cursor: help;
+            }
+
+            .smark-email-info-button .dashicons {
+                width: 16px;
+                height: 16px;
+                font-size: 16px;
+                line-height: 16px;
+            }
+
+            .smark-email-info-button:hover,
+            .smark-email-info-button:focus {
+                color: #3730a3;
+                outline: none;
+            }
+
+            .smark-email-info-tooltip {
+                position: absolute;
+                left: 50%;
+                bottom: calc(100% + 10px);
+                z-index: 20;
+                width: min(320px, 82vw);
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                padding: 12px 14px;
+                border: 1px solid rgba(99, 102, 241, 0.18);
+                border-radius: 10px;
+                background: #ffffff;
+                color: #1f2937;
+                box-shadow: 0 18px 42px rgba(15, 23, 42, 0.18);
+                font-size: 12px;
+                font-weight: 500;
+                line-height: 1.55;
+                opacity: 0;
+                pointer-events: none;
+                transform: translate(-50%, 6px);
+                transition: opacity 0.16s ease, transform 0.16s ease;
+            }
+
+            .smark-email-info-tooltip strong {
+                color: #111827;
+                font-size: 12.5px;
+                font-weight: 700;
+            }
+
+            .smark-email-info-tooltip::after {
+                content: "";
+                position: absolute;
+                left: 50%;
+                top: 100%;
+                width: 10px;
+                height: 10px;
+                background: #ffffff;
+                border-right: 1px solid rgba(99, 102, 241, 0.18);
+                border-bottom: 1px solid rgba(99, 102, 241, 0.18);
+                transform: translate(-50%, -5px) rotate(45deg);
+            }
+
+            .smark-email-gmail-app-info:hover .smark-email-info-tooltip,
+            .smark-email-gmail-app-info:focus-within .smark-email-info-tooltip {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+
+            .smark-seo-optimization-page.rtl .smark-email-gmail-app-link {
+                margin-right: 6px;
+                margin-left: 0;
+            }
+
+            .smark-seo-optimization-page.rtl .smark-email-gmail-app-info {
+                margin-right: 6px;
+                margin-left: 0;
             }
 
             .smark-email-page-actions {
@@ -4383,6 +4840,27 @@ JS;
                 color: #64748b;
             }
 
+            .smark-email-event-badges,
+            .smark-email-event-links,
+            .smark-email-event-times {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+
+            .smark-email-event-links,
+            .smark-email-event-times {
+                color: #475569;
+                font-size: 0.9em;
+                line-height: 1.55;
+            }
+
+            .smark-email-event-links span,
+            .smark-email-event-times span {
+                overflow-wrap: anywhere;
+            }
+
             .smark-email-status {
                 display: inline-flex;
                 align-items: center;
@@ -4410,6 +4888,17 @@ JS;
                 color: #15803d;
             }
 
+            .smark-email-status--open {
+                background: rgba(34, 197, 94, 0.12);
+                color: #15803d;
+            }
+
+            .smark-email-status--click {
+                background: rgba(79, 70, 229, 0.12);
+                color: #4338ca;
+            }
+
+            .smark-email-status--failed,
             .smark-email-status--unsubscribed {
                 background: rgba(220, 38, 38, 0.12);
                 color: #b91c1c;
@@ -4426,6 +4915,17 @@ JS;
 
                 .smark-email-card-header-actions {
                     flex-direction: column;
+                }
+
+                .smark-seo-optimization-page[data-lang="en"] .smark-email-account-form-header,
+                .smark-email-account-form-header {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+
+                .smark-email-provider-switch {
+                    justify-content: flex-start;
+                    flex-wrap: wrap;
                 }
 
                 .smark-email-import-modal {
