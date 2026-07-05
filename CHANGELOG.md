@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 1.0.5
+
+### Conservative email open tracking
+
+- Restored a post-send grace window for open pixels so immediate mail-provider fetches do not count as recipient opens.
+- Ignored suspected bot, scanner, proxy, preview, and prefetch open requests.
+- Filtered stored scanner/proxy open events out of open-rate calculations.
+- Stopped inferring opens from clicks in metrics and campaign activity rows.
+- Required signed tracking tokens for open and click tracking requests.
+
 ## 1.0.4
 
 ### Manual install replacement safeguards

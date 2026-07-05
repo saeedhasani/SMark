@@ -1611,7 +1611,7 @@ class SMarkEmailMarketing {
     }
 
     private function get_campaign_open_grace_period() {
-        return (int) apply_filters('smark_email_open_tracking_grace_period', 0);
+        return (int) apply_filters('smark_email_open_tracking_grace_period', 120);
     }
 
     private function is_countable_campaign_open_event($event, $sent_times) {
@@ -1632,15 +1632,31 @@ class SMarkEmailMarketing {
             return false;
         }
 
+        if ($this->is_suspected_campaign_open_scanner(isset($event['user_agent']) ? (string) $event['user_agent'] : '')) {
+            return false;
+        }
+
         $grace_period = max(0, $this->get_campaign_open_grace_period());
         return ($opened_at - (int) $sent_times[$key]) >= $grace_period;
     }
 
-    private function is_suspected_campaign_open_scanner() {
-        $user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? strtolower((string) wp_unslash($_SERVER['HTTP_USER_AGENT'])) : '';
+    private function is_suspected_campaign_open_scanner($user_agent = null) {
+        if ($user_agent === null) {
+            $user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? (string) wp_unslash($_SERVER['HTTP_USER_AGENT']) : '';
+        }
+
+        $user_agent = strtolower((string) $user_agent);
 
         if ($user_agent === '') {
-            return false;
+            return true;
+        }
+
+        $prefetch_headers = array('HTTP_PURPOSE', 'HTTP_SEC_PURPOSE', 'HTTP_X_PURPOSE', 'HTTP_X_MOZ');
+        foreach ($prefetch_headers as $header) {
+            $value = isset($_SERVER[$header]) ? strtolower((string) wp_unslash($_SERVER[$header])) : '';
+            if ($value !== '' && (strpos($value, 'prefetch') !== false || strpos($value, 'preview') !== false)) {
+                return true;
+            }
         }
 
         $scanner_signatures = array(
@@ -1666,6 +1682,13 @@ class SMarkEmailMarketing {
             'barracuda',
             'proofpoint',
             'mimecast',
+            'googleimageproxy',
+            'googleusercontent',
+            'proxy',
+            'prefetch',
+            'mailprivacy',
+            'mail privacy',
+            'dataprovider',
         );
 
         foreach ($scanner_signatures as $signature) {
@@ -1682,6 +1705,10 @@ class SMarkEmailMarketing {
         $recipient_hash = sanitize_text_field($recipient_hash);
 
         if ($campaign_id === '' || $recipient_hash === '') {
+            return false;
+        }
+
+        if ($this->is_suspected_campaign_open_scanner()) {
             return false;
         }
 
@@ -1762,7 +1789,6 @@ class SMarkEmailMarketing {
                 $metrics['clicks']++;
                 if ($recipient_hash !== '') {
                     $unique_clicks[$event_campaign_id . ':' . $recipient_hash] = true;
-                    $unique_opens[$event_campaign_id . ':' . $recipient_hash] = true;
                 }
             } elseif ($type === 'unsubscribe') {
                 $metrics['unsubscribes']++;
@@ -1862,13 +1888,6 @@ class SMarkEmailMarketing {
             }
 
             if ($type !== '') {
-                if ($type === 'click' && !isset($rows[$key]['events']['open'])) {
-                    $rows[$key]['events']['open'] = $created_at;
-                    if ($created_at !== '') {
-                        $rows[$key]['times'][] = $this->get_campaign_event_label('open', $strings) . ': ' . $created_at;
-                    }
-                }
-
                 if ($type === 'open' && isset($rows[$key]['events']['open'])) {
                     continue;
                 }
@@ -2338,7 +2357,7 @@ class SMarkEmailMarketing {
         $token = isset($_GET['tk']) ? sanitize_text_field(wp_unslash(rawurldecode($_GET['tk']))) : '';
 
         if ($token === '') {
-            return true;
+            return false;
         }
 
         $expected = $this->get_campaign_tracking_token($campaign_id, $recipient_hash, $type);
@@ -2374,10 +2393,6 @@ class SMarkEmailMarketing {
         $url = isset($_GET['url']) ? esc_url_raw(wp_unslash(rawurldecode($_GET['url']))) : '';
 
         if ($this->is_valid_campaign_tracking_request($campaign_id, $recipient_hash, 'click') && $campaign_id !== '' && $recipient_hash !== '') {
-            if ($this->is_recordable_campaign_open($campaign_id, $recipient_hash)) {
-                $this->record_campaign_event($campaign_id, 'open', '', $recipient_hash);
-            }
-
             $this->record_campaign_event($campaign_id, 'click', '', $recipient_hash, $url);
             $this->log_campaign_mail_debug('click_tracked', array(
                 'campaign_id' => $campaign_id,

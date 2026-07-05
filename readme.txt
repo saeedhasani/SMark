@@ -4,7 +4,7 @@ Tags: marketing, seo, ai, content
 Requires at least: 5.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.4
+Stable tag: 1.0.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,13 @@ The plugin helps WordPress site owners and marketing teams manage project setup,
 Some features may require common PHP extensions (for example `zip` for reading `.xlsx` files). If a feature needs an extension, it should show an error message when unavailable.
 
 == Changelog ==
+
+= 1.0.5 =
+* Made campaign open tracking more conservative to reduce false opens.
+* Ignored immediate post-send open pixel requests during the grace window.
+* Excluded suspected proxy, scanner, bot, preview, and prefetch requests from open metrics.
+* Stopped treating clicks as inferred opens in reports and activity rows.
+* Required signed tracking tokens for open and click tracking requests.
 
 = 1.0.4 =
 * Normalized uploaded SMark packages into the canonical `smark` plugin directory when SMark is already active.
@@ -63,6 +70,9 @@ Some features may require common PHP extensions (for example `zip` for reading `
 * Initial public release.
 
 == Upgrade Notice ==
+
+= 1.0.5 =
+Improves email campaign reporting accuracy by reducing false open events from mail-provider proxies, scanners, and immediate image fetches.
 
 = 1.0.4 =
 Adds safeguards so manual SMark uploads replace the canonical plugin more reliably and duplicate source-code folders do not load beside it.

@@ -31,9 +31,19 @@ Some features communicate with the central SMark Core service for shared API acc
 
 ## Version
 
-Current public release: `1.0.4`
+Current public release: `1.0.5`
 
 ## Current Release Highlights
+
+### SMark 1.0.5
+
+Version 1.0.5 makes campaign open tracking more conservative so reports do not mark emails as opened simply because a mail provider, proxy, or scanner fetched the tracking pixel.
+
+- Open pixel requests are ignored during the initial post-send grace window.
+- Known proxy, scanner, bot, preview, and prefetch requests are excluded from open metrics.
+- Click events no longer create an inferred open event or open badge.
+- Tracking requests now require a signed token before open or click events are recorded.
+- Existing reports also filter stored scanner/proxy open events when calculating open rate.
 
 ### SMark 1.0.4
 
