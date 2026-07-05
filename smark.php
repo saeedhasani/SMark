@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: SMark
- * Description: A comprehensive multi-purpose WordPress plugin
+ * Description: SEO, content, email marketing, social media, backlink, keyword research, and project workflow tools for WordPress.
  * Version: 1.0.2
  * Author: Saeed Hasani
  * Author URI: https://saeedhasani.com

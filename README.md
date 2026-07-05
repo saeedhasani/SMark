@@ -2,6 +2,8 @@
 
 SMark is a comprehensive WordPress plugin for SEO, content, email marketing, social media, backlink management, keyword research, competitor analysis, and project workflow tools.
 
+It brings the day-to-day marketing workspace into WordPress: project setup, content planning, keyword workflows, backlink tracking, campaign sending, campaign performance review, and connected-service management live under one admin experience.
+
 ## Requirements
 
 - WordPress 5.0 or later
@@ -30,6 +32,21 @@ Some features communicate with the central SMark Core service for shared API acc
 ## Version
 
 Current public release: `1.0.2`
+
+## Current Release Highlights
+
+### SMark 1.0.2
+
+Version 1.0.2 focuses on email campaign reliability, account flexibility, and public-release documentation.
+
+- Email open tracking now uses public tracking URLs and returns a proper 1x1 pixel response, making campaign opens easier to record across recipients and mail clients.
+- Campaign click activity can now imply an open event for the same recipient, so performance reports better reflect real engagement when image loading is blocked.
+- Campaign performance activity is grouped by recipient, which makes the reporting view easier to scan and reduces noisy duplicate event rows.
+- Email account setup now supports standard SMTP mailboxes in addition to Gmail accounts.
+- SMTP configuration supports more common ports and a no-encryption option for mail providers that require it.
+- Gmail-specific help remains available when Gmail is selected, including app-password guidance.
+- Successful first project setup now returns the user to the main SMark dashboard.
+- Public-release documentation now includes SMark trademark and brand usage terms.
 
 ## Updates
 
