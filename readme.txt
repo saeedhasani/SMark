@@ -4,7 +4,7 @@ Tags: marketing, seo, ai, content
 Requires at least: 5.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -29,6 +29,14 @@ Some features may require common PHP extensions (for example `zip` for reading `
 
 == Changelog ==
 
+= 1.0.3 =
+* Fixed WordPress admin update failures caused by GitHub archive folder validation.
+* Prepared downloaded update packages before WordPress checks for a valid plugin.
+* Detected the plugin folder by `smark.php` instead of relying on GitHub-generated folder names.
+* Normalized update packages into the expected `smark` directory.
+* Preferred release asset zip packages named `smark.zip` or `smark-plugin.zip` when available.
+* Added clearer updater errors for invalid or unmovable packages.
+
 = 1.0.2 =
 * Added public campaign tracking URLs for email opens and clicks.
 * Improved email open tracking with proper transparent 1x1 pixel responses.
@@ -48,6 +56,9 @@ Some features may require common PHP extensions (for example `zip` for reading `
 * Initial public release.
 
 == Upgrade Notice ==
+
+= 1.0.3 =
+Fixes WordPress admin update installation failures for GitHub release packages.
 
 = 1.0.2 =
 Improves campaign tracking, adds regular SMTP account support beside Gmail, clarifies campaign performance reporting, and documents SMark brand usage terms.

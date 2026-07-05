@@ -31,9 +31,18 @@ Some features communicate with the central SMark Core service for shared API acc
 
 ## Version
 
-Current public release: `1.0.2`
+Current public release: `1.0.3`
 
 ## Current Release Highlights
+
+### SMark 1.0.3
+
+Version 1.0.3 is a hotfix for WordPress admin updates.
+
+- The GitHub updater now prepares the downloaded package before WordPress validates the plugin archive.
+- Update packages are detected by the presence of `smark.php`, so GitHub-generated folder names no longer break plugin validation.
+- Release asset zip files named `smark.zip` or `smark-plugin.zip` are preferred when available, with the GitHub tag archive kept as a fallback.
+- Update failures now return clearer SMark-specific errors when the downloaded package is invalid or cannot be moved into the expected plugin folder.
 
 ### SMark 1.0.2
 

@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 1.0.3
+
+### WordPress updater reliability
+
+- Prepared GitHub update packages before WordPress runs plugin archive validation during AJAX and bulk plugin updates.
+- Detected the real SMark plugin source directory by checking for `smark.php` instead of relying on GitHub archive folder names.
+- Normalized downloaded update packages into the expected `smark` plugin directory before installation.
+- Preferred release asset zip packages named `smark.zip` or `smark-plugin.zip` when available.
+- Added clearer SMark-specific errors for invalid or unmovable update packages.
+
 ## 1.0.2
 
 ### Email campaign tracking

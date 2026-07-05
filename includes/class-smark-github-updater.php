@@ -32,7 +32,7 @@ if (!class_exists('SMark_GitHub_Updater')) {
 
             add_filter('pre_set_site_transient_update_plugins', array($this, 'check_for_update'));
             add_filter('plugins_api', array($this, 'plugin_info'), 20, 3);
-            add_filter('upgrader_source_selection', array($this, 'fix_github_zip_folder_name'), 10, 4);
+            add_filter('upgrader_source_selection', array($this, 'fix_github_zip_folder_name'), 9, 4);
             add_filter('http_request_args', array($this, 'add_github_headers'), 10, 2);
         }
 
@@ -103,20 +103,69 @@ if (!class_exists('SMark_GitHub_Updater')) {
             }
 
             global $wp_filesystem;
-            if (!$wp_filesystem || strpos(basename($source), $this->github_repo . '-') !== 0) {
+            if (!$wp_filesystem || is_wp_error($source)) {
                 return $source;
             }
 
-            $target = trailingslashit($remote_source) . $this->slug;
+            $source = trailingslashit($source);
+            $plugin_source = $this->find_plugin_source_directory($source);
+            if (!$plugin_source) {
+                return new WP_Error(
+                    'smark_invalid_update_package',
+                    __('The SMark update package could not be installed.', 'smark'),
+                    __('The downloaded package does not contain smark.php in the expected plugin directory.', 'smark')
+                );
+            }
+
+            $target = trailingslashit($remote_source) . $this->slug . '/';
+            if (trailingslashit($plugin_source) === $target) {
+                return $target;
+            }
+
             if ($wp_filesystem->exists($target)) {
                 $wp_filesystem->delete($target, true);
             }
 
-            if ($wp_filesystem->move($source, $target, true)) {
+            if ($wp_filesystem->move($plugin_source, $target, true)) {
                 return $target;
             }
 
-            return $source;
+            if (function_exists('copy_dir') && true === copy_dir($plugin_source, $target)) {
+                return $target;
+            }
+
+            return new WP_Error(
+                'smark_update_source_rename_failed',
+                __('The SMark update package could not be prepared.', 'smark'),
+                __('WordPress could not move the downloaded SMark plugin folder into the expected smark directory.', 'smark')
+            );
+        }
+
+        private function find_plugin_source_directory($source) {
+            global $wp_filesystem;
+
+            $source = trailingslashit($source);
+            if ($wp_filesystem->exists($source . 'smark.php')) {
+                return $source;
+            }
+
+            $dirlist = $wp_filesystem->dirlist($source);
+            if (!is_array($dirlist)) {
+                return false;
+            }
+
+            foreach ($dirlist as $name => $entry) {
+                if (empty($entry['type']) || $entry['type'] !== 'd') {
+                    continue;
+                }
+
+                $candidate = trailingslashit($source . $name);
+                if ($wp_filesystem->exists($candidate . 'smark.php')) {
+                    return $candidate;
+                }
+            }
+
+            return false;
         }
 
         public function add_github_headers($args, $url) {
@@ -171,7 +220,7 @@ if (!class_exists('SMark_GitHub_Updater')) {
             $release = array(
                 'version' => $tag,
                 'tag_name' => (string) $data['tag_name'],
-                'package' => $this->build_release_zip_url((string) $data['tag_name']),
+                'package' => $this->get_release_package_url($data),
                 'body' => isset($data['body']) ? (string) $data['body'] : '',
                 'published_at' => isset($data['published_at']) ? (string) $data['published_at'] : '',
                 'requires' => '5.0',
@@ -181,6 +230,23 @@ if (!class_exists('SMark_GitHub_Updater')) {
 
             set_site_transient($this->cache_key, $release, 6 * HOUR_IN_SECONDS);
             return $release;
+        }
+
+        private function get_release_package_url($data) {
+            if (!empty($data['assets']) && is_array($data['assets'])) {
+                foreach ($data['assets'] as $asset) {
+                    if (empty($asset['name']) || empty($asset['browser_download_url'])) {
+                        continue;
+                    }
+
+                    $asset_name = strtolower((string) $asset['name']);
+                    if (in_array($asset_name, array('smark.zip', 'smark-plugin.zip'), true)) {
+                        return (string) $asset['browser_download_url'];
+                    }
+                }
+            }
+
+            return $this->build_release_zip_url((string) $data['tag_name']);
         }
 
         private function build_release_zip_url($tag_name) {
