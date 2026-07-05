@@ -31,9 +31,18 @@ Some features communicate with the central SMark Core service for shared API acc
 
 ## Version
 
-Current public release: `1.0.3`
+Current public release: `1.0.4`
 
 ## Current Release Highlights
+
+### SMark 1.0.4
+
+Version 1.0.4 adds safeguards for manual plugin uploads.
+
+- Uploaded SMark packages are normalized into the canonical `smark/` folder when SMark is already active.
+- Non-canonical duplicate folders, such as GitHub source-code folders, do not load beside the canonical plugin.
+- The plugin header now includes an Update URI for a more stable plugin identity in WordPress.
+- Release downloads should use the `smark.zip` asset, which is packaged with the correct root folder for WordPress.
 
 ### SMark 1.0.3
 

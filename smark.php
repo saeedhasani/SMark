@@ -2,9 +2,10 @@
 /**
  * Plugin Name: SMark
  * Description: SEO, content, email marketing, social media, backlink, keyword research, and project workflow tools for WordPress.
- * Version: 1.0.3
+ * Version: 1.0.4
  * Author: Saeed Hasani
  * Author URI: https://saeedhasani.com
+ * Update URI: https://github.com/saeedhasani/SMark
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: smark
@@ -18,6 +19,10 @@
  * and should remain public distribution metadata.
  *
  * Changelog:
+ * Version 1.0.4 - Manual install replacement safeguards
+ * - Normalize uploaded SMark packages into the canonical smark folder when SMark is already active
+ * - Prevent duplicate non-canonical SMark folders from loading beside the canonical plugin
+ * - Add an Update URI header for stable plugin identity
  * Version 1.0.3 - WordPress updater reliability
  * - Prepare GitHub release packages before WordPress validates the plugin archive
  * - Detect the SMark plugin folder by smark.php instead of relying on GitHub archive folder names
@@ -1753,10 +1758,25 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+if (!defined('SMARK_CANONICAL_PLUGIN_BASENAME')) {
+    define('SMARK_CANONICAL_PLUGIN_BASENAME', 'smark/smark.php');
+}
+
+if (
+    function_exists('plugin_basename') &&
+    plugin_basename(__FILE__) !== SMARK_CANONICAL_PLUGIN_BASENAME &&
+    file_exists(dirname(__DIR__) . '/' . SMARK_CANONICAL_PLUGIN_BASENAME)
+) {
+    if (function_exists('deactivate_plugins')) {
+        deactivate_plugins(plugin_basename(__FILE__), true);
+    }
+    return;
+}
+
 // Define plugin constants
 define('SMARK_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('SMARK_PLUGIN_PATH', plugin_dir_path(__FILE__));
-define('SMARK_VERSION', '1.0.3');
+define('SMARK_VERSION', '1.0.4');
 define('SMARK_PLUGIN_FILE', __FILE__);
 
 require_once SMARK_PLUGIN_PATH . 'includes/class-smark-github-updater.php';

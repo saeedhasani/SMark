@@ -4,7 +4,7 @@ Tags: marketing, seo, ai, content
 Requires at least: 5.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,13 @@ The plugin helps WordPress site owners and marketing teams manage project setup,
 Some features may require common PHP extensions (for example `zip` for reading `.xlsx` files). If a feature needs an extension, it should show an error message when unavailable.
 
 == Changelog ==
+
+= 1.0.4 =
+* Normalized uploaded SMark packages into the canonical `smark` plugin directory when SMark is already active.
+* Reduced accidental duplicate installations from GitHub source-code zip folders.
+* Prevented non-canonical duplicate SMark folders from loading beside the canonical plugin.
+* Added an Update URI plugin header for stable WordPress update identity.
+* Clarified that the release asset zip is the correct WordPress install package.
 
 = 1.0.3 =
 * Fixed WordPress admin update failures caused by GitHub archive folder validation.
@@ -56,6 +63,9 @@ Some features may require common PHP extensions (for example `zip` for reading `
 * Initial public release.
 
 == Upgrade Notice ==
+
+= 1.0.4 =
+Adds safeguards so manual SMark uploads replace the canonical plugin more reliably and duplicate source-code folders do not load beside it.
 
 = 1.0.3 =
 Fixes WordPress admin update installation failures for GitHub release packages.

@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 1.0.4
+
+### Manual install replacement safeguards
+
+- Normalized uploaded SMark packages into the canonical `smark` plugin directory when SMark is already active.
+- Allowed uploaded GitHub source-code packages to be prepared before WordPress installs them, reducing accidental duplicate SMark folders.
+- Added a runtime guard so non-canonical duplicate SMark folders do not load beside the canonical `smark/smark.php` plugin.
+- Added an `Update URI` plugin header for stable update identity.
+- Documented that the release asset zip is the correct WordPress install package.
+
 ## 1.0.3
 
 ### WordPress updater reliability

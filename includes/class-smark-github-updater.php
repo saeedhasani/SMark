@@ -98,7 +98,7 @@ if (!class_exists('SMark_GitHub_Updater')) {
         }
 
         public function fix_github_zip_folder_name($source, $remote_source, $upgrader, $hook_extra = array()) {
-            if (empty($hook_extra['plugin']) || $hook_extra['plugin'] !== $this->plugin_basename) {
+            if (!$this->is_smark_upgrade_context($source, $hook_extra)) {
                 return $source;
             }
 
@@ -141,8 +141,32 @@ if (!class_exists('SMark_GitHub_Updater')) {
             );
         }
 
+        private function is_smark_upgrade_context($source, $hook_extra) {
+            if (!empty($hook_extra['plugin']) && $hook_extra['plugin'] === $this->plugin_basename) {
+                return true;
+            }
+
+            if (is_wp_error($source) || !is_string($source) || $source === '') {
+                return false;
+            }
+
+            if (empty($hook_extra['type']) || $hook_extra['type'] !== 'plugin') {
+                return false;
+            }
+
+            if (empty($hook_extra['action']) || $hook_extra['action'] !== 'install') {
+                return false;
+            }
+
+            return (bool) $this->find_plugin_source_directory($source);
+        }
+
         private function find_plugin_source_directory($source) {
             global $wp_filesystem;
+
+            if (!$wp_filesystem || is_wp_error($source) || !is_string($source) || $source === '') {
+                return false;
+            }
 
             $source = trailingslashit($source);
             if ($wp_filesystem->exists($source . 'smark.php')) {
