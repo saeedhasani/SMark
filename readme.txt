@@ -4,7 +4,7 @@ Tags: marketing, seo, ai, content
 Requires at least: 5.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.5
+Stable tag: 1.0.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,13 @@ The plugin helps WordPress site owners and marketing teams manage project setup,
 Some features may require common PHP extensions (for example `zip` for reading `.xlsx` files). If a feature needs an extension, it should show an error message when unavailable.
 
 == Changelog ==
+
+= 1.0.6 =
+* Reduced the email open tracking grace window from 120 seconds to 10 seconds.
+* Continued filtering scanner, bot, preview, and prefetch open requests.
+* Allowed Gmail and similar privacy proxy image loads to count after the grace window, so real Gmail opens can be recorded.
+* Kept clicks separate from opens so click activity no longer creates artificial open badges.
+* Added privacy-proxy context to ignored-open debug logs.
 
 = 1.0.5 =
 * Made campaign open tracking more conservative to reduce false opens.
@@ -70,6 +77,9 @@ Some features may require common PHP extensions (for example `zip` for reading `
 * Initial public release.
 
 == Upgrade Notice ==
+
+= 1.0.6 =
+Balances open tracking accuracy by using a shorter 10-second grace window while allowing Gmail proxy opens after that window.
 
 = 1.0.5 =
 Improves email campaign reporting accuracy by reducing false open events from mail-provider proxies, scanners, and immediate image fetches.

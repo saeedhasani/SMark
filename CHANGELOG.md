@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 1.0.6
+
+### Balanced email open tracking
+
+- Reduced the open tracking grace window from 120 seconds to 10 seconds after live Gmail testing.
+- Continued filtering scanner, bot, preview, and prefetch open requests.
+- Allowed Gmail and similar privacy proxy image loads to count as opens after the grace window instead of rejecting them solely by proxy user-agent.
+- Kept click tracking separate from open tracking so clicks do not create inferred open events or open badges.
+- Added privacy-proxy context to ignored-open debug logs for easier investigation.
+
 ## 1.0.5
 
 ### Conservative email open tracking

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: SMark
  * Description: SEO, content, email marketing, social media, backlink, keyword research, and project workflow tools for WordPress.
- * Version: 1.0.5
+ * Version: 1.0.6
  * Author: Saeed Hasani
  * Author URI: https://saeedhasani.com
  * Update URI: https://github.com/saeedhasani/SMark
@@ -19,6 +19,11 @@
  * and should remain public distribution metadata.
  *
  * Changelog:
+ * Version 1.0.6 - Balanced email open tracking
+ * - Reduce the open tracking grace window to 10 seconds
+ * - Keep scanner, bot, preview, and prefetch open filtering
+ * - Allow Gmail/Apple privacy proxy image loads after the grace window so real Gmail opens can be counted
+ * - Keep click events separate from open events
  * Version 1.0.5 - Conservative email open tracking
  * - Ignore immediate/proxy/scanner open pixel requests to reduce false opens
  * - Stop inferring opens from clicks in campaign reports
@@ -1780,7 +1785,7 @@ if (
 // Define plugin constants
 define('SMARK_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('SMARK_PLUGIN_PATH', plugin_dir_path(__FILE__));
-define('SMARK_VERSION', '1.0.5');
+define('SMARK_VERSION', '1.0.6');
 define('SMARK_PLUGIN_FILE', __FILE__);
 
 require_once SMARK_PLUGIN_PATH . 'includes/class-smark-github-updater.php';

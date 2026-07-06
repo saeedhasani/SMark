@@ -31,9 +31,19 @@ Some features communicate with the central SMark Core service for shared API acc
 
 ## Version
 
-Current public release: `1.0.5`
+Current public release: `1.0.6`
 
 ## Current Release Highlights
+
+### SMark 1.0.6
+
+Version 1.0.6 refines campaign open tracking after live Gmail testing.
+
+- The open tracking grace window is now 10 seconds instead of 120 seconds, reducing false opens without missing fast real opens as aggressively.
+- Scanner, bot, preview, and prefetch requests are still excluded from open metrics.
+- Gmail and other privacy proxy image loads are no longer rejected solely because they come through a proxy; after the grace window, they can count as opens.
+- Campaign reports still keep click events separate from open events, so a click no longer creates an artificial open badge.
+- Debug logging now includes whether an ignored open request looked like a privacy proxy, making future tracking audits easier.
 
 ### SMark 1.0.5
 

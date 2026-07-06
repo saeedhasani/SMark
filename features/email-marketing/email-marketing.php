@@ -1611,7 +1611,7 @@ class SMarkEmailMarketing {
     }
 
     private function get_campaign_open_grace_period() {
-        return (int) apply_filters('smark_email_open_tracking_grace_period', 120);
+        return (int) apply_filters('smark_email_open_tracking_grace_period', 10);
     }
 
     private function is_countable_campaign_open_event($event, $sent_times) {
@@ -1632,7 +1632,8 @@ class SMarkEmailMarketing {
             return false;
         }
 
-        if ($this->is_suspected_campaign_open_scanner(isset($event['user_agent']) ? (string) $event['user_agent'] : '')) {
+        $event_user_agent = isset($event['user_agent']) ? (string) $event['user_agent'] : '';
+        if ($this->is_suspected_campaign_open_scanner($event_user_agent)) {
             return false;
         }
 
@@ -1682,16 +1683,37 @@ class SMarkEmailMarketing {
             'barracuda',
             'proofpoint',
             'mimecast',
+            'prefetch',
+        );
+
+        foreach ($scanner_signatures as $signature) {
+            if (strpos($user_agent, $signature) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function is_campaign_open_privacy_proxy($user_agent = null) {
+        if ($user_agent === null) {
+            $user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? (string) wp_unslash($_SERVER['HTTP_USER_AGENT']) : '';
+        }
+
+        $user_agent = strtolower((string) $user_agent);
+        if ($user_agent === '') {
+            return true;
+        }
+
+        $proxy_signatures = array(
             'googleimageproxy',
             'googleusercontent',
-            'proxy',
-            'prefetch',
             'mailprivacy',
             'mail privacy',
             'dataprovider',
         );
 
-        foreach ($scanner_signatures as $signature) {
+        foreach ($proxy_signatures as $signature) {
             if (strpos($user_agent, $signature) !== false) {
                 return true;
             }
@@ -2379,6 +2401,7 @@ class SMarkEmailMarketing {
                 'campaign_id' => $campaign_id,
                 'recipient_hash' => substr($recipient_hash, 0, 12),
                 'suspected_scanner' => $this->is_suspected_campaign_open_scanner(),
+                'privacy_proxy' => $this->is_campaign_open_privacy_proxy(),
                 'valid_token' => $this->is_valid_campaign_tracking_request($campaign_id, $recipient_hash, 'open'),
             ));
         }
