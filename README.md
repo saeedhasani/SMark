@@ -31,9 +31,23 @@ Some features communicate with the central SMark Core service for shared API acc
 
 ## Version
 
-Current public release: `1.0.6`
+Current public release: `1.0.7`
 
 ## Current Release Highlights
+
+### SMark 1.0.7
+
+Version 1.0.7 improves email campaign sender management, account maintenance, and capacity safety.
+
+- Email accounts can now be edited from a modal window directly inside the Email Accounts screen.
+- Saved email accounts show today's sent count beside the daily capacity in the format `sent / limit`.
+- Daily usage is color-coded so available accounts stay easy to scan and fully used accounts stand out.
+- Campaign messages can now select multiple sender accounts using a checkbox dropdown instead of a plain multi-select field.
+- Campaign sending rotates through the selected sender accounts in order and switches to the next account when the current account reaches its daily limit.
+- Campaign forms show a capacity warning when the selected audience is larger than the remaining capacity of the selected sender accounts.
+- Sending is blocked with a clear capacity message when the selected sender accounts cannot cover the audience.
+- The campaign audience selector now includes an `All` option for targeting every subscribed contact.
+- English email marketing screens have cleaner left-aligned section headers for the account list, contacts, and campaign message form.
 
 ### SMark 1.0.6
 

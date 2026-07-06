@@ -2,7 +2,7 @@
 /**
  * Plugin Name: SMark
  * Description: SEO, content, email marketing, social media, backlink, keyword research, and project workflow tools for WordPress.
- * Version: 1.0.6
+ * Version: 1.0.7
  * Author: Saeed Hasani
  * Author URI: https://saeedhasani.com
  * Update URI: https://github.com/saeedhasani/SMark
@@ -19,6 +19,14 @@
  * and should remain public distribution metadata.
  *
  * Changelog:
+ * Version 1.0.7 - Email sender capacity and account editing
+ * - Add modal-based editing for saved email accounts
+ * - Show daily sent usage beside each email account limit
+ * - Add multi-account sender selection for campaigns with checkbox dropdown controls
+ * - Rotate campaign sends across selected sender accounts when daily capacity is reached
+ * - Warn users when the selected audience exceeds remaining sender capacity
+ * - Add an All audience segment option for campaign messages
+ * - Improve English layout alignment in email marketing screens
  * Version 1.0.6 - Balanced email open tracking
  * - Reduce the open tracking grace window to 10 seconds
  * - Keep scanner, bot, preview, and prefetch open filtering
@@ -1785,7 +1793,7 @@ if (
 // Define plugin constants
 define('SMARK_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('SMARK_PLUGIN_PATH', plugin_dir_path(__FILE__));
-define('SMARK_VERSION', '1.0.6');
+define('SMARK_VERSION', '1.0.7');
 define('SMARK_PLUGIN_FILE', __FILE__);
 
 require_once SMARK_PLUGIN_PATH . 'includes/class-smark-github-updater.php';

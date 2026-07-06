@@ -2,6 +2,35 @@
 
 ## Unreleased
 
+## 1.0.7
+
+### Email account management
+
+- Added modal-based editing for saved email accounts so account details can be updated without leaving the Email Accounts screen.
+- Preserved existing encrypted account passwords when editing an account and leaving the password field blank.
+- Added an Edit action beside Delete in the saved accounts table.
+- Displayed daily account usage as `sent / daily limit` in the Email Accounts table.
+- Color-coded daily usage so active capacity remains green and exhausted account capacity turns red.
+- Added simple hover tooltips for the sent-today number and daily-limit number.
+
+### Campaign sender capacity
+
+- Added multi-account campaign sender selection using a checkbox dropdown instead of a native multi-select field.
+- Kept the default sender selected by default while allowing additional accounts to be checked from the dropdown.
+- Stored selected sender accounts as an ordered list while preserving compatibility with older single-sender campaign messages.
+- Rotated campaign sends across selected sender accounts in order.
+- Switched to the next selected sender account when the current sender reaches its daily capacity.
+- Recorded sender account IDs on sent and failed campaign events for more accurate daily capacity tracking.
+- Counted today's sent events per sender account, including older events where the sender can be inferred from the campaign message.
+- Blocked campaign sending when selected sender accounts do not have enough remaining daily capacity for the selected audience.
+- Added a live capacity warning when the selected audience exceeds the remaining capacity of selected sender accounts.
+
+### Campaign audience and UI
+
+- Added an `All` option to campaign segment selection so campaigns can target every subscribed contact.
+- Improved English-only left alignment for the Email Accounts list header, Contacts header actions, and Campaign Message form header.
+- Kept capacity warning calculations based on unique selected recipients, including segment and individual-contact combinations.
+
 ## 1.0.6
 
 ### Balanced email open tracking

@@ -4,7 +4,7 @@ Tags: marketing, seo, ai, content
 Requires at least: 5.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.6
+Stable tag: 1.0.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,18 @@ The plugin helps WordPress site owners and marketing teams manage project setup,
 Some features may require common PHP extensions (for example `zip` for reading `.xlsx` files). If a feature needs an extension, it should show an error message when unavailable.
 
 == Changelog ==
+
+= 1.0.7 =
+* Added modal-based editing for saved email accounts.
+* Displayed daily account usage as sent / daily limit in the Email Accounts table.
+* Color-coded account usage so remaining capacity and exhausted capacity are easier to scan.
+* Replaced the campaign sender multi-select with a checkbox dropdown that starts with the default account selected.
+* Allowed campaigns to select multiple sender accounts and send through them in order.
+* Switched campaign sending to the next selected sender account when the current account reaches its daily capacity.
+* Added capacity warnings when the selected audience is larger than the remaining capacity of the selected sender accounts.
+* Blocked sending with a clear capacity error when the selected sender accounts cannot cover the selected audience.
+* Added an All audience option for campaign segment selection.
+* Improved English-only header alignment on email marketing account, contact, and campaign screens.
 
 = 1.0.6 =
 * Reduced the email open tracking grace window from 120 seconds to 10 seconds.
@@ -77,6 +89,9 @@ Some features may require common PHP extensions (for example `zip` for reading `
 * Initial public release.
 
 == Upgrade Notice ==
+
+= 1.0.7 =
+Adds safer multi-account email sending, visible account capacity usage, account editing in a modal, and capacity warnings before campaigns are sent.
 
 = 1.0.6 =
 Balances open tracking accuracy by using a shorter 10-second grace window while allowing Gmail proxy opens after that window.
