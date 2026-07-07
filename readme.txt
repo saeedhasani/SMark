@@ -4,7 +4,7 @@ Tags: marketing, seo, ai, content
 Requires at least: 5.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.7
+Stable tag: 1.0.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,16 @@ The plugin helps WordPress site owners and marketing teams manage project setup,
 Some features may require common PHP extensions (for example `zip` for reading `.xlsx` files). If a feature needs an extension, it should show an error message when unavailable.
 
 == Changelog ==
+
+= 1.0.8 =
+* Added contact list management with assignment controls on the Contacts screen.
+* Added contact tag management, including system tags that cannot be deleted.
+* Added the system All list and a daily Received Email Today system tag.
+* Removed segment-focused contact table fields and aligned Contacts copy around lists and tags.
+* Replaced campaign segment/contact multi-selects with Include and Exclude audience pickers.
+* Allowed campaign audiences to include or exclude lists, tags, system tags, and individual contacts.
+* Added live contact search, selected-contact counts, and capped contact results in campaign audience picker modals.
+* Replaced the campaign body textarea with the classic WordPress editor.
 
 = 1.0.7 =
 * Added modal-based editing for saved email accounts.
@@ -89,6 +99,9 @@ Some features may require common PHP extensions (for example `zip` for reading `
 * Initial public release.
 
 == Upgrade Notice ==
+
+= 1.0.8 =
+Adds list/tag audience management and Include/Exclude campaign targeting with the classic WordPress editor for campaign email bodies.
 
 = 1.0.7 =
 Adds safer multi-account email sending, visible account capacity usage, account editing in a modal, and capacity warnings before campaigns are sent.

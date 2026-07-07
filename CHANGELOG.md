@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+## 1.0.8
+
+### Contact audience management
+
+- Added contact lists with modal creation, deletion, and contact assignment controls on the Contacts screen.
+- Added contact tags with modal creation, deletion, and contact assignment controls.
+- Added the system `All` list and a daily `Received Email Today` system tag that is derived from same-day send events.
+- Updated the Contacts screen copy and saved contacts table to focus on lists and tags instead of segments.
+- Allowed new contacts to be assigned to existing lists and tags while they are created.
+
+### Campaign audience targeting
+
+- Replaced the campaign segment and contact multi-select fields with Include and Exclude audience pickers.
+- Allowed both Include and Exclude pickers to select lists, custom tags, system tags, and individual contacts.
+- Resolved final campaign recipients by expanding Include selections and subtracting Exclude selections.
+- Added live search, selected-contact counts, and a 10-contact display cap to the contact section in audience picker modals.
+- Preserved compatibility with older saved campaign audiences by translating legacy segment/contact selections into Include tokens.
+
+### Campaign editor
+
+- Replaced the campaign email body textarea with the classic WordPress editor.
+- Tuned the editor styling so Visual and Code modes display correctly inside the SMark campaign form.
+
 ## 1.0.7
 
 ### Email account management

@@ -31,23 +31,24 @@ Some features communicate with the central SMark Core service for shared API acc
 
 ## Version
 
-Current public release: `1.0.7`
+Current public release: `1.0.8`
 
 ## Current Release Highlights
+
+### SMark 1.0.8
+
+Version 1.0.8 expands email audience management with reusable contact lists, tags, and Include/Exclude campaign targeting.
+
+- Contacts can now be organized with lists and tags from the Contacts screen.
+- The system `All` list and daily `Received Email Today` tag are available for campaign targeting.
+- Campaign messages now use Include and Exclude audience pickers for lists, tags, system tags, and individual contacts.
+- Audience picker modals include live contact search, selected-contact counts, and capped contact result previews.
+- Campaign recipient resolution expands Include selections and subtracts Exclude selections before sending.
+- The campaign email body now uses the classic WordPress editor for richer formatting, HTML, links, and visual editing.
 
 ### SMark 1.0.7
 
 Version 1.0.7 improves email campaign sender management, account maintenance, and capacity safety.
-
-- Email accounts can now be edited from a modal window directly inside the Email Accounts screen.
-- Saved email accounts show today's sent count beside the daily capacity in the format `sent / limit`.
-- Daily usage is color-coded so available accounts stay easy to scan and fully used accounts stand out.
-- Campaign messages can now select multiple sender accounts using a checkbox dropdown instead of a plain multi-select field.
-- Campaign sending rotates through the selected sender accounts in order and switches to the next account when the current account reaches its daily limit.
-- Campaign forms show a capacity warning when the selected audience is larger than the remaining capacity of the selected sender accounts.
-- Sending is blocked with a clear capacity message when the selected sender accounts cannot cover the audience.
-- The campaign audience selector now includes an `All` option for targeting every subscribed contact.
-- English email marketing screens have cleaner left-aligned section headers for the account list, contacts, and campaign message form.
 
 ### SMark 1.0.6
 

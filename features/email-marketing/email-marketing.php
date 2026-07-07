@@ -10,6 +10,8 @@ if (!defined('WPINC')) {
 class SMarkEmailMarketing {
     const OPTION_EMAIL_ACCOUNTS = 'smark_email_marketing_email_accounts';
     const OPTION_CONTACTS = 'smark_email_marketing_contacts';
+    const OPTION_CONTACT_LISTS = 'smark_email_marketing_contact_lists';
+    const OPTION_CONTACT_TAGS = 'smark_email_marketing_contact_tags';
     const OPTION_CAMPAIGN_MESSAGES = 'smark_email_marketing_campaign_messages';
     const OPTION_CAMPAIGN_EVENTS = 'smark_email_marketing_campaign_events';
     const EMAIL_SECRET_PREFIX = 'smarkenc:v1:';
@@ -26,6 +28,10 @@ class SMarkEmailMarketing {
         add_action('admin_post_smark_email_account_delete', array($this, 'handle_email_account_delete'));
         add_action('admin_post_smark_email_contact_save', array($this, 'handle_email_contact_save'));
         add_action('admin_post_smark_email_contact_delete', array($this, 'handle_email_contact_delete'));
+        add_action('admin_post_smark_email_contact_list_save', array($this, 'handle_email_contact_list_save'));
+        add_action('admin_post_smark_email_contact_list_delete', array($this, 'handle_email_contact_list_delete'));
+        add_action('admin_post_smark_email_contact_tag_save', array($this, 'handle_email_contact_tag_save'));
+        add_action('admin_post_smark_email_contact_tag_delete', array($this, 'handle_email_contact_tag_delete'));
         add_action('admin_post_smark_email_campaign_message_save', array($this, 'handle_campaign_message_save'));
         add_action('admin_post_smark_email_campaign_message_delete', array($this, 'handle_campaign_message_delete'));
         add_action('admin_post_smark_email_campaign_message_send', array($this, 'handle_campaign_message_send'));
@@ -63,8 +69,8 @@ class SMarkEmailMarketing {
 
         add_submenu_page(
             null,
-            __('Audience Segments', 'smark'),
-            __('Audience Segments', 'smark'),
+            __('Contacts', 'smark'),
+            __('Contacts', 'smark'),
             'smark_access',
             'smark-email-contacts',
             array($this, 'render_contacts_page')
@@ -117,6 +123,7 @@ class SMarkEmailMarketing {
             SMARK_VERSION,
             true
         );
+        wp_enqueue_editor();
 
         $lang = get_option('smark_panel_language', 'en');
         $lang = ($lang === 'fa') ? 'fa' : 'en';
@@ -416,6 +423,9 @@ class SMarkEmailMarketing {
         $rtl_class = ($current_lang === 'fa') ? 'rtl' : '';
         $strings = $this->get_contact_strings($current_lang);
         $contacts = $this->get_contacts();
+        $contact_lists = $this->get_contact_lists();
+        $contact_tags = $this->get_contact_tags();
+        $daily_sent_hashes = $this->get_daily_sent_contact_hashes();
         $message = isset($_GET['smark_message']) ? sanitize_key(wp_unslash($_GET['smark_message'])) : '';
         $import_token = isset($_GET['import_token']) ? sanitize_key(wp_unslash($_GET['import_token'])) : '';
         $import_preview = $import_token ? $this->get_contacts_import_payload($import_token) : array();
@@ -469,7 +479,12 @@ class SMarkEmailMarketing {
 
                             <label>
                                 <span><?php echo esc_html($strings['field_segment']); ?></span>
-                                <input type="text" name="segment" placeholder="<?php echo esc_attr($strings['field_segment_placeholder']); ?>">
+                                <select name="contact_list_id">
+                                    <option value=""><?php echo esc_html($strings['field_list_empty']); ?></option>
+                                    <?php foreach ($contact_lists as $contact_list) : ?>
+                                        <option value="<?php echo esc_attr($contact_list['id']); ?>"><?php echo esc_html($contact_list['name']); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                             </label>
 
                             <label>
@@ -484,6 +499,16 @@ class SMarkEmailMarketing {
                                     <option value="lead"><?php echo esc_html($strings['status_lead']); ?></option>
                                     <option value="unsubscribed"><?php echo esc_html($strings['status_unsubscribed']); ?></option>
                                 </select>
+                            </label>
+
+                            <label>
+                                <span><?php echo esc_html($strings['field_tags']); ?></span>
+                                <select name="contact_tag_ids[]" multiple size="4">
+                                    <?php foreach ($contact_tags as $contact_tag) : ?>
+                                        <option value="<?php echo esc_attr($contact_tag['id']); ?>"><?php echo esc_html($contact_tag['name']); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <small class="smark-email-field-note"><?php echo esc_html($strings['field_tags_help']); ?></small>
                             </label>
 
                             <label class="smark-email-form-field--wide">
@@ -501,7 +526,35 @@ class SMarkEmailMarketing {
                 </section>
 
                 <section class="seo-step-card seo-step-card--full smark-email-accounts-card" data-step="strategy">
-                    <header class="seo-step-header">
+                    <header class="seo-step-header smark-email-card-header-actions smark-email-contact-lists-header">
+                        <div>
+                            <h2><?php echo esc_html($strings['lists_title']); ?></h2>
+                            <p><?php echo esc_html($strings['lists_description']); ?></p>
+                        </div>
+                        <button type="button" class="button button-primary" data-open-smark-contact-list>
+                            <?php echo esc_html($strings['add_list_button']); ?>
+                        </button>
+                    </header>
+
+                    <?php $this->render_contact_lists_content($strings, $contacts, $contact_lists); ?>
+                </section>
+
+                <section class="seo-step-card seo-step-card--full smark-email-accounts-card" data-step="strategy">
+                    <header class="seo-step-header smark-email-card-header-actions smark-email-contact-tags-header">
+                        <div>
+                            <h2><?php echo esc_html($strings['tags_title']); ?></h2>
+                            <p><?php echo esc_html($strings['tags_description']); ?></p>
+                        </div>
+                        <button type="button" class="button button-primary" data-open-smark-contact-tag>
+                            <?php echo esc_html($strings['add_tag_button']); ?>
+                        </button>
+                    </header>
+
+                    <?php $this->render_contact_tags_content($strings, $contacts, $contact_tags, $daily_sent_hashes); ?>
+                </section>
+
+                <section class="seo-step-card seo-step-card--full smark-email-accounts-card" data-step="strategy">
+                    <header class="seo-step-header smark-email-saved-contacts-header">
                         <div>
                             <h2><?php echo esc_html($strings['list_title']); ?></h2>
                             <p><?php echo esc_html($strings['list_description']); ?></p>
@@ -509,11 +562,13 @@ class SMarkEmailMarketing {
                     </header>
 
                     <div id="smarkEmailContactsList">
-                        <?php $this->render_contacts_list_content($strings, $contacts); ?>
+                        <?php $this->render_contacts_list_content($strings, $contacts, $contact_lists, $contact_tags, $daily_sent_hashes); ?>
                     </div>
                 </section>
             </div>
 
+            <?php $this->render_contact_list_modal($strings); ?>
+            <?php $this->render_contact_tag_modal($strings); ?>
             <?php $this->render_contacts_import_modal($strings, $import_token, $import_preview); ?>
 
             <?php $this->render_version_footer($current_lang); ?>
@@ -531,7 +586,8 @@ class SMarkEmailMarketing {
         $rtl_class = ($current_lang === 'fa') ? 'rtl' : '';
         $strings = $this->get_campaign_message_strings($current_lang);
         $contacts = $this->get_contacts();
-        $segments = $this->get_contact_segments($contacts);
+        $contact_lists = $this->get_contact_lists();
+        $contact_tags = $this->get_contact_tags();
         $accounts = $this->get_email_accounts();
         $messages = $this->get_campaign_messages();
         $editing_message_id = isset($_GET['edit_message']) ? sanitize_text_field(wp_unslash($_GET['edit_message'])) : '';
@@ -549,11 +605,18 @@ class SMarkEmailMarketing {
                 'message_status'    => 'draft',
                 'target_segments'   => array(),
                 'target_contacts'   => array(),
+                'target_includes'   => array(),
+                'target_excludes'   => array(),
                 'email_body'        => '',
                 'internal_notes'    => '',
             ),
             $editing_message
         );
+        $form_values['target_includes'] = $this->normalize_campaign_audience_tokens($form_values['target_includes']);
+        $form_values['target_excludes'] = $this->normalize_campaign_audience_tokens($form_values['target_excludes']);
+        if (empty($form_values['target_includes']) && (!empty($form_values['target_segments']) || !empty($form_values['target_contacts']))) {
+            $form_values['target_includes'] = $this->get_legacy_campaign_audience_tokens($form_values);
+        }
         $form_values['sender_account_ids'] = $this->get_campaign_sender_account_ids($form_values);
         if (empty($form_values['sender_account_ids']) && !empty($form_values['sender_account_id'])) {
             $form_values['sender_account_ids'] = array((string) $form_values['sender_account_id']);
@@ -664,35 +727,30 @@ class SMarkEmailMarketing {
                                 </select>
                             </label>
 
-                            <label class="smark-email-audience-field">
-                                <span><?php echo esc_html($strings['field_segments']); ?></span>
-                                <select name="target_segments[]" multiple size="7">
-                                    <option value="<?php echo esc_attr(self::AUDIENCE_ALL_SEGMENTS); ?>" data-all="1" <?php selected(in_array(self::AUDIENCE_ALL_SEGMENTS, (array) $form_values['target_segments'], true)); ?>><?php echo esc_html($strings['field_segments_all']); ?></option>
-                                    <?php foreach ($segments as $segment) : ?>
-                                        <option value="<?php echo esc_attr($segment); ?>" <?php selected(in_array($segment, (array) $form_values['target_segments'], true)); ?>><?php echo esc_html($segment); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <small class="smark-email-field-note"><?php echo esc_html($strings['field_segments_help']); ?></small>
-                            </label>
+                            <?php $this->render_campaign_audience_picker_field('include', $strings, $form_values['target_includes']); ?>
 
-                            <label class="smark-email-audience-field">
-                                <span><?php echo esc_html($strings['field_contacts']); ?></span>
-                                <select name="target_contacts[]" multiple size="7">
-                                    <?php foreach ($contacts as $contact) : ?>
-                                        <?php
-                                        $contact_name = trim((string) ($contact['first_name'] ?? '') . ' ' . (string) ($contact['last_name'] ?? ''));
-                                        $contact_label = ($contact_name !== '' ? $contact_name . ' - ' : '') . (string) ($contact['email_address'] ?? '');
-                                        ?>
-                                        <option value="<?php echo esc_attr($contact['id']); ?>" data-segment="<?php echo esc_attr((string) ($contact['segment'] ?? '')); ?>" data-status="<?php echo esc_attr((string) ($contact['status'] ?? 'subscribed')); ?>" <?php selected(in_array((string) $contact['id'], (array) $form_values['target_contacts'], true)); ?>><?php echo esc_html($contact_label); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <small class="smark-email-field-note"><?php echo esc_html($strings['field_contacts_help']); ?></small>
-                            </label>
+                            <?php $this->render_campaign_audience_picker_field('exclude', $strings, $form_values['target_excludes']); ?>
 
-                            <label class="smark-email-form-field--wide">
+                            <div class="smark-email-form-field--wide smark-email-editor-field">
                                 <span><?php echo esc_html($strings['field_body']); ?></span>
-                                <textarea name="email_body" rows="12" required placeholder="<?php echo esc_attr($strings['field_body_placeholder']); ?>"><?php echo esc_textarea($form_values['email_body']); ?></textarea>
-                            </label>
+                                <?php
+                                wp_editor(
+                                    $form_values['email_body'],
+                                    'smark_email_body_editor',
+                                    array(
+                                        'textarea_name' => 'email_body',
+                                        'textarea_rows' => 12,
+                                        'media_buttons' => false,
+                                        'teeny' => false,
+                                        'quicktags' => true,
+                                        'tinymce' => array(
+                                            'toolbar1' => 'formatselect,bold,italic,bullist,numlist,blockquote,alignleft,aligncenter,alignright,link,unlink,forecolor,undo,redo',
+                                            'toolbar2' => 'strikethrough,hr,pastetext,removeformat,charmap,outdent,indent,wp_adv',
+                                        ),
+                                    )
+                                );
+                                ?>
+                            </div>
 
                             <label class="smark-email-form-field--wide">
                                 <span><?php echo esc_html($strings['field_notes']); ?></span>
@@ -724,6 +782,7 @@ class SMarkEmailMarketing {
             </div>
 
             <?php $this->render_version_footer($current_lang); ?>
+            <?php $this->render_campaign_audience_picker_modal($strings, $contacts, $contact_lists, $contact_tags); ?>
         </div>
         <?php
     }
@@ -899,6 +958,118 @@ class SMarkEmailMarketing {
         <?php
     }
 
+    private function render_campaign_audience_picker_field($mode, $strings, $selected_tokens) {
+        $mode = ($mode === 'exclude') ? 'exclude' : 'include';
+        $field_name = $mode === 'include' ? 'target_includes[]' : 'target_excludes[]';
+        $title = $mode === 'include' ? $strings['field_include_audience'] : $strings['field_exclude_audience'];
+        $button = $mode === 'include' ? $strings['select_include_button'] : $strings['select_exclude_button'];
+        $help = $mode === 'include' ? $strings['field_include_help'] : $strings['field_exclude_help'];
+        ?>
+        <div class="smark-email-form-field smark-email-audience-builder" data-smark-audience-builder="<?php echo esc_attr($mode); ?>">
+            <span><?php echo esc_html($title); ?></span>
+            <div class="smark-email-audience-builder__box" data-smark-audience-display>
+                <button type="button" class="button smark-email-secondary-action" data-open-smark-audience-picker data-mode="<?php echo esc_attr($mode); ?>">
+                    <?php echo esc_html($button); ?>
+                </button>
+                <div class="smark-email-audience-builder__chips" data-smark-audience-chips data-empty-text="<?php echo esc_attr($strings['audience_picker_empty']); ?>" data-more-text="<?php echo esc_attr($strings['audience_picker_more']); ?>"></div>
+                <div class="smark-email-audience-builder__inputs" data-smark-audience-inputs data-field-name="<?php echo esc_attr($field_name); ?>">
+                    <?php foreach ($this->normalize_campaign_audience_tokens($selected_tokens) as $token) : ?>
+                        <input type="hidden" name="<?php echo esc_attr($field_name); ?>" value="<?php echo esc_attr($token); ?>">
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <small class="smark-email-field-note"><?php echo esc_html($help); ?></small>
+        </div>
+        <?php
+    }
+
+    private function render_campaign_audience_picker_modal($strings, $contacts, $contact_lists, $contact_tags) {
+        $today_sent_contact_ids = $this->get_today_sent_contact_ids($contacts);
+        ?>
+        <div class="smark-email-import-modal smark-email-audience-modal" id="smarkEmailAudiencePickerModal" aria-hidden="true">
+            <div class="smark-email-import-modal__overlay" data-close-smark-audience-picker></div>
+            <div class="smark-email-import-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="smarkEmailAudiencePickerTitle">
+                <header class="smark-email-import-modal__header">
+                    <div>
+                        <h2 id="smarkEmailAudiencePickerTitle" data-include-title="<?php echo esc_attr($strings['audience_picker_include_title']); ?>" data-exclude-title="<?php echo esc_attr($strings['audience_picker_exclude_title']); ?>">
+                            <?php echo esc_html($strings['audience_picker_include_title']); ?>
+                        </h2>
+                        <p><?php echo esc_html($strings['audience_picker_description']); ?></p>
+                    </div>
+                    <button type="button" class="smark-email-import-modal__close" data-close-smark-audience-picker aria-label="<?php echo esc_attr($strings['audience_picker_close']); ?>">
+                        <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+                    </button>
+                </header>
+
+                <div class="smark-email-import-modal__body">
+                    <div class="smark-email-audience-modal__section">
+                        <h3><?php echo esc_html($strings['audience_picker_lists']); ?></h3>
+                        <label class="smark-email-audience-option">
+                            <input type="checkbox" value="all:all" data-label="<?php echo esc_attr($strings['system_list_all']); ?>" data-contact-ids="<?php echo esc_attr(implode(',', $this->get_contact_ids_from_contacts($contacts))); ?>" data-smark-audience-option>
+                            <span><?php echo esc_html($strings['system_list_all']); ?></span>
+                            <small><?php echo esc_html($strings['audience_picker_all_help']); ?></small>
+                        </label>
+                        <?php foreach ($contact_lists as $list) : ?>
+                            <label class="smark-email-audience-option">
+                                <input type="checkbox" value="<?php echo esc_attr('list:' . $list['id']); ?>" data-label="<?php echo esc_attr($list['name']); ?>" data-contact-ids="<?php echo esc_attr(implode(',', $this->get_assigned_contact_ids_for_entity($list))); ?>" data-smark-audience-option>
+                                <span><?php echo esc_html($list['name']); ?></span>
+                                <small><?php echo esc_html(sprintf($strings['assigned_contacts_count'], number_format_i18n(count($this->get_assigned_contact_ids_for_entity($list))))); ?></small>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <div class="smark-email-audience-modal__section">
+                        <h3><?php echo esc_html($strings['audience_picker_tags']); ?></h3>
+                        <label class="smark-email-audience-option">
+                            <input type="checkbox" value="system:today_sent" data-label="<?php echo esc_attr($strings['system_tag_today_sent']); ?>" data-contact-ids="<?php echo esc_attr(implode(',', $today_sent_contact_ids)); ?>" data-smark-audience-option>
+                            <span><?php echo esc_html($strings['system_tag_today_sent']); ?></span>
+                            <small><?php echo esc_html(sprintf($strings['system_tag_today_sent_help'], number_format_i18n(count($today_sent_contact_ids)))); ?></small>
+                        </label>
+                        <?php if (!empty($contact_tags)) : ?>
+                            <?php foreach ($contact_tags as $tag) : ?>
+                                <label class="smark-email-audience-option">
+                                    <input type="checkbox" value="<?php echo esc_attr('tag:' . $tag['id']); ?>" data-label="<?php echo esc_attr($tag['name']); ?>" data-contact-ids="<?php echo esc_attr(implode(',', $this->get_assigned_contact_ids_for_entity($tag))); ?>" data-smark-audience-option>
+                                    <span><?php echo esc_html($tag['name']); ?></span>
+                                    <small><?php echo esc_html(sprintf($strings['assigned_contacts_count'], number_format_i18n(count($this->get_assigned_contact_ids_for_entity($tag))))); ?></small>
+                                </label>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="smark-email-audience-modal__section smark-email-audience-modal__section--contacts">
+                        <div class="smark-email-audience-contacts-header">
+                            <h3><?php echo esc_html($strings['audience_picker_contacts']); ?></h3>
+                            <div class="smark-email-audience-contacts-tools">
+                                <span class="smark-email-audience-selected-count" data-smark-audience-selected-count data-template="<?php echo esc_attr($strings['audience_picker_selected_count']); ?>">
+                                    <?php echo esc_html(sprintf($strings['audience_picker_selected_count'], number_format_i18n(0))); ?>
+                                </span>
+                                <input type="search" data-smark-audience-contact-search placeholder="<?php echo esc_attr($strings['audience_picker_search_placeholder']); ?>" autocomplete="off">
+                            </div>
+                        </div>
+                        <?php foreach ($contacts as $contact) : ?>
+                            <?php
+                            $contact_name = trim((string) ($contact['first_name'] ?? '') . ' ' . (string) ($contact['last_name'] ?? ''));
+                            $contact_label = ($contact_name !== '' ? $contact_name . ' - ' : '') . (string) ($contact['email_address'] ?? '');
+                            $contact_search = trim($contact_label . ' ' . (string) ($contact['phone'] ?? '') . ' ' . (string) ($contact['source'] ?? '') . ' ' . (string) ($contact['status'] ?? 'subscribed'));
+                            ?>
+                            <label class="smark-email-audience-option" data-smark-audience-contact-row data-search="<?php echo esc_attr(strtolower($contact_search)); ?>">
+                                <input type="checkbox" value="<?php echo esc_attr('contact:' . $contact['id']); ?>" data-label="<?php echo esc_attr($contact_label); ?>" data-contact-ids="<?php echo esc_attr((string) $contact['id']); ?>" data-status="<?php echo esc_attr((string) ($contact['status'] ?? 'subscribed')); ?>" data-smark-audience-option>
+                                <span><?php echo esc_html($contact_label); ?></span>
+                                <small><?php echo esc_html((string) ($contact['status'] ?? 'subscribed')); ?></small>
+                            </label>
+                        <?php endforeach; ?>
+                        <p class="smark-email-audience-contact-limit-note" data-smark-audience-contact-limit-note><?php echo esc_html($strings['audience_picker_contact_limit_note']); ?></p>
+                    </div>
+
+                    <div class="smark-email-form-actions">
+                        <button type="button" class="button button-primary" data-apply-smark-audience-picker><?php echo esc_html($strings['audience_picker_apply']); ?></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+
     private function render_email_account_edit_modal($strings) {
         ?>
         <div class="smark-email-import-modal smark-email-account-edit-modal" id="smarkEmailAccountEditModal" aria-hidden="true">
@@ -983,6 +1154,77 @@ class SMarkEmailMarketing {
                         <div class="smark-email-form-actions">
                             <button type="submit" class="button button-primary"><?php echo esc_html($strings['update_button']); ?></button>
                             <button type="button" class="button smark-email-secondary-action" data-close-smark-account-edit><?php echo esc_html($strings['cancel_edit_button']); ?></button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+
+    private function render_contact_list_modal($strings) {
+        ?>
+        <div class="smark-email-import-modal" id="smarkEmailContactListModal" aria-hidden="true">
+            <div class="smark-email-import-modal__overlay" data-close-smark-contact-list></div>
+            <div class="smark-email-import-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="smarkEmailContactListTitle">
+                <header class="smark-email-import-modal__header">
+                    <div>
+                        <h2 id="smarkEmailContactListTitle"><?php echo esc_html($strings['list_modal_title']); ?></h2>
+                        <p><?php echo esc_html($strings['list_modal_description']); ?></p>
+                    </div>
+                    <button type="button" class="smark-email-import-modal__close" data-close-smark-contact-list aria-label="<?php echo esc_attr($strings['bulk_close']); ?>">
+                        <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+                    </button>
+                </header>
+
+                <div class="smark-email-import-modal__body">
+                    <form class="smark-email-account-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                        <?php wp_nonce_field('smark_email_contact_list_save', 'smark_email_contact_list_nonce'); ?>
+                        <input type="hidden" name="action" value="smark_email_contact_list_save">
+                        <div class="smark-email-form-grid">
+                            <label class="smark-email-form-field--wide">
+                                <span><?php echo esc_html($strings['list_name_label']); ?></span>
+                                <input type="text" name="list_name" required placeholder="<?php echo esc_attr($strings['list_name_placeholder']); ?>">
+                            </label>
+                        </div>
+                        <div class="smark-email-form-actions">
+                            <button type="submit" class="button button-primary"><?php echo esc_html($strings['create_list_button']); ?></button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+
+    private function render_contact_tag_modal($strings) {
+        ?>
+        <div class="smark-email-import-modal" id="smarkEmailContactTagModal" aria-hidden="true">
+            <div class="smark-email-import-modal__overlay" data-close-smark-contact-tag></div>
+            <div class="smark-email-import-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="smarkEmailContactTagTitle">
+                <header class="smark-email-import-modal__header">
+                    <div>
+                        <h2 id="smarkEmailContactTagTitle"><?php echo esc_html($strings['tag_modal_title']); ?></h2>
+                        <p><?php echo esc_html($strings['tag_modal_description']); ?></p>
+                    </div>
+                    <button type="button" class="smark-email-import-modal__close" data-close-smark-contact-tag aria-label="<?php echo esc_attr($strings['bulk_close']); ?>">
+                        <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+                    </button>
+                </header>
+
+                <div class="smark-email-import-modal__body">
+                    <form class="smark-email-account-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                        <?php wp_nonce_field('smark_email_contact_tag_save', 'smark_email_contact_tag_nonce'); ?>
+                        <input type="hidden" name="action" value="smark_email_contact_tag_save">
+                        <div class="smark-email-form-grid">
+                            <label class="smark-email-form-field--wide">
+                                <span><?php echo esc_html($strings['tag_name_label']); ?></span>
+                                <input type="text" name="tag_name" required placeholder="<?php echo esc_attr($strings['tag_name_placeholder']); ?>">
+                            </label>
+                        </div>
+                        <p class="smark-email-help"><?php echo esc_html($strings['system_tags_help']); ?></p>
+                        <div class="smark-email-form-actions">
+                            <button type="submit" class="button button-primary"><?php echo esc_html($strings['create_tag_button']); ?></button>
                         </div>
                     </form>
                 </div>
@@ -1112,7 +1354,127 @@ class SMarkEmailMarketing {
         <?php
     }
 
-    private function render_contacts_list_content($strings, $contacts) {
+    private function render_contact_lists_content($strings, $contacts, $contact_lists) {
+        ?>
+        <div class="smark-email-system-tags smark-email-system-tags--list">
+            <span class="smark-email-status smark-email-status--system"><?php echo esc_html($strings['system_list_label']); ?></span>
+            <strong><?php echo esc_html($strings['system_list_all']); ?></strong>
+            <small><?php echo esc_html(sprintf($strings['system_list_all_help'], number_format_i18n(count($contacts)))); ?></small>
+        </div>
+        <?php
+
+        if (empty($contact_lists)) : ?>
+            <div class="smark-email-empty">
+                <?php echo esc_html($strings['lists_empty_state']); ?>
+            </div>
+        <?php else : ?>
+            <div class="smark-email-management-grid">
+                <?php foreach ($contact_lists as $list) : ?>
+                    <?php $assigned_count = count($this->get_assigned_contact_ids_for_entity($list)); ?>
+                    <article class="smark-email-management-card">
+                        <header>
+                            <div>
+                                <h3><?php echo esc_html($list['name']); ?></h3>
+                                <p><?php echo esc_html(sprintf($strings['assigned_contacts_count'], number_format_i18n($assigned_count))); ?></p>
+                            </div>
+                            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" onsubmit="return confirm('<?php echo esc_js($strings['delete_list_confirm']); ?>');">
+                                <?php wp_nonce_field('smark_email_contact_list_delete', 'smark_email_contact_list_nonce'); ?>
+                                <input type="hidden" name="action" value="smark_email_contact_list_delete">
+                                <input type="hidden" name="list_id" value="<?php echo esc_attr($list['id']); ?>">
+                                <button type="submit" class="button button-link-delete"><?php echo esc_html($strings['delete_button']); ?></button>
+                            </form>
+                        </header>
+
+                        <form class="smark-email-account-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                            <?php wp_nonce_field('smark_email_contact_list_save', 'smark_email_contact_list_nonce'); ?>
+                            <input type="hidden" name="action" value="smark_email_contact_list_save">
+                            <input type="hidden" name="list_id" value="<?php echo esc_attr($list['id']); ?>">
+                            <input type="hidden" name="list_name" value="<?php echo esc_attr($list['name']); ?>">
+                            <?php $this->render_contact_assignment_picker($strings, $contacts, $this->get_assigned_contact_ids_for_entity($list)); ?>
+                            <div class="smark-email-form-actions">
+                                <button type="submit" class="button button-primary"><?php echo esc_html($strings['save_assignments_button']); ?></button>
+                            </div>
+                        </form>
+                    </article>
+                <?php endforeach; ?>
+            </div>
+        <?php endif;
+    }
+
+    private function render_contact_tags_content($strings, $contacts, $contact_tags, $daily_sent_hashes) {
+        $system_count = 0;
+        foreach ($contacts as $contact) {
+            $email = isset($contact['email_address']) ? sanitize_email($contact['email_address']) : '';
+            if ($email !== '' && isset($daily_sent_hashes[$this->get_campaign_recipient_hash($email)])) {
+                $system_count++;
+            }
+        }
+        ?>
+        <div class="smark-email-system-tags">
+            <span class="smark-email-status smark-email-status--system"><?php echo esc_html($strings['system_tag_label']); ?></span>
+            <strong><?php echo esc_html($strings['system_tag_today_sent']); ?></strong>
+            <small><?php echo esc_html(sprintf($strings['system_tag_today_sent_help'], number_format_i18n($system_count))); ?></small>
+        </div>
+
+        <?php if (empty($contact_tags)) : ?>
+            <div class="smark-email-empty">
+                <?php echo esc_html($strings['tags_empty_state']); ?>
+            </div>
+        <?php else : ?>
+            <div class="smark-email-management-grid">
+                <?php foreach ($contact_tags as $tag) : ?>
+                    <?php $assigned_count = count($this->get_assigned_contact_ids_for_entity($tag)); ?>
+                    <article class="smark-email-management-card">
+                        <header>
+                            <div>
+                                <h3><?php echo esc_html($tag['name']); ?></h3>
+                                <p><?php echo esc_html(sprintf($strings['assigned_contacts_count'], number_format_i18n($assigned_count))); ?></p>
+                            </div>
+                            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" onsubmit="return confirm('<?php echo esc_js($strings['delete_tag_confirm']); ?>');">
+                                <?php wp_nonce_field('smark_email_contact_tag_delete', 'smark_email_contact_tag_nonce'); ?>
+                                <input type="hidden" name="action" value="smark_email_contact_tag_delete">
+                                <input type="hidden" name="tag_id" value="<?php echo esc_attr($tag['id']); ?>">
+                                <button type="submit" class="button button-link-delete"><?php echo esc_html($strings['delete_button']); ?></button>
+                            </form>
+                        </header>
+
+                        <form class="smark-email-account-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                            <?php wp_nonce_field('smark_email_contact_tag_save', 'smark_email_contact_tag_nonce'); ?>
+                            <input type="hidden" name="action" value="smark_email_contact_tag_save">
+                            <input type="hidden" name="tag_id" value="<?php echo esc_attr($tag['id']); ?>">
+                            <input type="hidden" name="tag_name" value="<?php echo esc_attr($tag['name']); ?>">
+                            <?php $this->render_contact_assignment_picker($strings, $contacts, $this->get_assigned_contact_ids_for_entity($tag)); ?>
+                            <div class="smark-email-form-actions">
+                                <button type="submit" class="button button-primary"><?php echo esc_html($strings['save_assignments_button']); ?></button>
+                            </div>
+                        </form>
+                    </article>
+                <?php endforeach; ?>
+            </div>
+        <?php endif;
+    }
+
+    private function render_contact_assignment_picker($strings, $contacts, $selected_contact_ids) {
+        $selected_contact_ids = array_map('strval', (array) $selected_contact_ids);
+        ?>
+        <label class="smark-email-form-field">
+            <span><?php echo esc_html($strings['assignment_contacts_label']); ?></span>
+            <select name="contact_ids[]" multiple size="6">
+                <?php foreach ($contacts as $contact) : ?>
+                    <?php
+                    $contact_id = isset($contact['id']) ? (string) $contact['id'] : '';
+                    $contact_name = trim((string) ($contact['first_name'] ?? '') . ' ' . (string) ($contact['last_name'] ?? ''));
+                    $contact_label = ($contact_name !== '' ? $contact_name . ' - ' : '') . (string) ($contact['email_address'] ?? '');
+                    ?>
+                    <option value="<?php echo esc_attr($contact_id); ?>" <?php selected(in_array($contact_id, $selected_contact_ids, true)); ?>><?php echo esc_html($contact_label); ?></option>
+                <?php endforeach; ?>
+            </select>
+            <small><?php echo esc_html($strings['assignment_contacts_help']); ?></small>
+        </label>
+        <?php
+    }
+
+    private function render_contacts_list_content($strings, $contacts, $contact_lists = array(), $contact_tags = array(), $daily_sent_hashes = array()) {
         if (empty($contacts)) : ?>
             <div class="smark-email-empty">
                 <?php echo esc_html($strings['empty_state']); ?>
@@ -1124,7 +1486,8 @@ class SMarkEmailMarketing {
                         <tr>
                             <th><?php echo esc_html($strings['column_contact']); ?></th>
                             <th><?php echo esc_html($strings['column_email']); ?></th>
-                            <th><?php echo esc_html($strings['column_segment']); ?></th>
+                            <th><?php echo esc_html($strings['column_lists']); ?></th>
+                            <th><?php echo esc_html($strings['column_tags']); ?></th>
                             <th><?php echo esc_html($strings['column_source']); ?></th>
                             <th><?php echo esc_html($strings['column_status']); ?></th>
                             <th><?php echo esc_html($strings['column_actions']); ?></th>
@@ -1142,6 +1505,12 @@ class SMarkEmailMarketing {
                             } elseif ($status === 'unsubscribed') {
                                 $status_label = $strings['status_unsubscribed'];
                             }
+                            $contact_list_names = $this->get_contact_entity_names_for_contact($contact['id'] ?? '', $contact_lists);
+                            $contact_tag_names = $this->get_contact_entity_names_for_contact($contact['id'] ?? '', $contact_tags);
+                            $contact_email = isset($contact['email_address']) ? sanitize_email($contact['email_address']) : '';
+                            if ($contact_email !== '' && isset($daily_sent_hashes[$this->get_campaign_recipient_hash($contact_email)])) {
+                                $contact_tag_names[] = $strings['system_tag_today_sent_short'];
+                            }
                             ?>
                             <tr>
                                 <td>
@@ -1151,7 +1520,8 @@ class SMarkEmailMarketing {
                                     <?php endif; ?>
                                 </td>
                                 <td><?php echo esc_html($contact['email_address']); ?></td>
-                                <td><?php echo esc_html($contact['segment']); ?></td>
+                                <td><?php echo esc_html(!empty($contact_list_names) ? implode(', ', $contact_list_names) : '-'); ?></td>
+                                <td><?php echo esc_html(!empty($contact_tag_names) ? implode(', ', $contact_tag_names) : '-'); ?></td>
                                 <td><?php echo esc_html($contact['source']); ?></td>
                                 <td><span class="smark-email-status smark-email-status--<?php echo esc_attr($status); ?>"><?php echo esc_html($status_label); ?></span></td>
                                 <td>
@@ -1282,7 +1652,13 @@ class SMarkEmailMarketing {
             $this->redirect_to_contacts('error');
         }
 
-        $segment = isset($_POST['segment']) ? sanitize_text_field(wp_unslash($_POST['segment'])) : '';
+        $contact_list_id = isset($_POST['contact_list_id']) ? sanitize_text_field(wp_unslash($_POST['contact_list_id'])) : '';
+        $contact_tag_ids = isset($_POST['contact_tag_ids']) && is_array($_POST['contact_tag_ids'])
+            ? array_map('sanitize_text_field', wp_unslash($_POST['contact_tag_ids']))
+            : array();
+        $contact_tag_ids = array_values(array_filter(array_unique($contact_tag_ids)));
+        $selected_list = $this->get_contact_entity_by_id($contact_list_id, $this->get_contact_lists());
+        $segment = !empty($selected_list['name']) ? (string) $selected_list['name'] : '';
 
         $status = isset($_POST['status']) ? sanitize_key(wp_unslash($_POST['status'])) : 'subscribed';
         $status = in_array($status, array('subscribed', 'lead', 'unsubscribed'), true) ? $status : 'subscribed';
@@ -1294,8 +1670,9 @@ class SMarkEmailMarketing {
             }
         }
 
+        $contact_id = wp_generate_uuid4();
         $contacts[] = array(
-            'id'            => wp_generate_uuid4(),
+            'id'            => $contact_id,
             'first_name'    => isset($_POST['first_name']) ? sanitize_text_field(wp_unslash($_POST['first_name'])) : '',
             'last_name'     => isset($_POST['last_name']) ? sanitize_text_field(wp_unslash($_POST['last_name'])) : '',
             'email_address' => $email_address,
@@ -1308,6 +1685,8 @@ class SMarkEmailMarketing {
         );
 
         update_option(self::OPTION_CONTACTS, $contacts, false);
+        $this->add_contact_to_contact_entities($contact_id, array($contact_list_id), self::OPTION_CONTACT_LISTS);
+        $this->add_contact_to_contact_entities($contact_id, $contact_tag_ids, self::OPTION_CONTACT_TAGS);
         $this->redirect_to_contacts('saved');
     }
 
@@ -1324,7 +1703,80 @@ class SMarkEmailMarketing {
         }));
 
         update_option(self::OPTION_CONTACTS, $contacts, false);
+        $this->remove_contact_from_contact_entities($contact_id);
         $this->redirect_to_contacts('deleted');
+    }
+
+    public function handle_email_contact_list_save() {
+        if (!current_user_can('smark_access')) {
+            wp_die(esc_html__('You do not have sufficient permissions to perform this action.', 'smark'));
+        }
+
+        check_admin_referer('smark_email_contact_list_save', 'smark_email_contact_list_nonce');
+
+        $list_id = isset($_POST['list_id']) ? sanitize_text_field(wp_unslash($_POST['list_id'])) : '';
+        $list_name = isset($_POST['list_name']) ? sanitize_text_field(wp_unslash($_POST['list_name'])) : '';
+        $contact_ids = $this->sanitize_contact_ids_from_request();
+
+        if ($list_name === '') {
+            $this->redirect_to_contacts('error');
+        }
+
+        $lists = $this->upsert_contact_entity($this->get_contact_lists(), $list_id, $list_name, $contact_ids);
+        update_option(self::OPTION_CONTACT_LISTS, $lists, false);
+        $this->redirect_to_contacts('list_saved');
+    }
+
+    public function handle_email_contact_list_delete() {
+        if (!current_user_can('smark_access')) {
+            wp_die(esc_html__('You do not have sufficient permissions to perform this action.', 'smark'));
+        }
+
+        check_admin_referer('smark_email_contact_list_delete', 'smark_email_contact_list_nonce');
+
+        $list_id = isset($_POST['list_id']) ? sanitize_text_field(wp_unslash($_POST['list_id'])) : '';
+        $lists = array_values(array_filter($this->get_contact_lists(), function($list) use ($list_id) {
+            return isset($list['id']) && $list['id'] !== $list_id;
+        }));
+
+        update_option(self::OPTION_CONTACT_LISTS, $lists, false);
+        $this->redirect_to_contacts('list_deleted');
+    }
+
+    public function handle_email_contact_tag_save() {
+        if (!current_user_can('smark_access')) {
+            wp_die(esc_html__('You do not have sufficient permissions to perform this action.', 'smark'));
+        }
+
+        check_admin_referer('smark_email_contact_tag_save', 'smark_email_contact_tag_nonce');
+
+        $tag_id = isset($_POST['tag_id']) ? sanitize_text_field(wp_unslash($_POST['tag_id'])) : '';
+        $tag_name = isset($_POST['tag_name']) ? sanitize_text_field(wp_unslash($_POST['tag_name'])) : '';
+        $contact_ids = $this->sanitize_contact_ids_from_request();
+
+        if ($tag_name === '') {
+            $this->redirect_to_contacts('error');
+        }
+
+        $tags = $this->upsert_contact_entity($this->get_contact_tags(), $tag_id, $tag_name, $contact_ids);
+        update_option(self::OPTION_CONTACT_TAGS, $tags, false);
+        $this->redirect_to_contacts('tag_saved');
+    }
+
+    public function handle_email_contact_tag_delete() {
+        if (!current_user_can('smark_access')) {
+            wp_die(esc_html__('You do not have sufficient permissions to perform this action.', 'smark'));
+        }
+
+        check_admin_referer('smark_email_contact_tag_delete', 'smark_email_contact_tag_nonce');
+
+        $tag_id = isset($_POST['tag_id']) ? sanitize_text_field(wp_unslash($_POST['tag_id'])) : '';
+        $tags = array_values(array_filter($this->get_contact_tags(), function($tag) use ($tag_id) {
+            return isset($tag['id']) && $tag['id'] !== $tag_id;
+        }));
+
+        update_option(self::OPTION_CONTACT_TAGS, $tags, false);
+        $this->redirect_to_contacts('tag_deleted');
     }
 
     public function handle_campaign_message_save() {
@@ -1604,7 +2056,7 @@ class SMarkEmailMarketing {
         }
 
         ob_start();
-        $this->render_contacts_list_content($strings, $this->get_contacts());
+        $this->render_contacts_list_content($strings, $this->get_contacts(), $this->get_contact_lists(), $this->get_contact_tags(), $this->get_daily_sent_contact_hashes());
         $list_html = ob_get_clean();
 
         wp_send_json_success(array(
@@ -1739,6 +2191,177 @@ class SMarkEmailMarketing {
         return is_array($contacts) ? $contacts : array();
     }
 
+    private function get_contact_lists() {
+        return $this->normalize_contact_entities(get_option(self::OPTION_CONTACT_LISTS, array()));
+    }
+
+    private function get_contact_tags() {
+        return $this->normalize_contact_entities(get_option(self::OPTION_CONTACT_TAGS, array()));
+    }
+
+    private function normalize_contact_entities($entities) {
+        if (!is_array($entities)) {
+            return array();
+        }
+
+        $normalized = array();
+        foreach ($entities as $entity) {
+            if (!is_array($entity) || empty($entity['id']) || empty($entity['name'])) {
+                continue;
+            }
+
+            $normalized[] = array(
+                'id' => sanitize_text_field((string) $entity['id']),
+                'name' => sanitize_text_field((string) $entity['name']),
+                'contact_ids' => isset($entity['contact_ids']) && is_array($entity['contact_ids'])
+                    ? array_values(array_filter(array_unique(array_map('sanitize_text_field', $entity['contact_ids']))))
+                    : array(),
+                'created_at' => isset($entity['created_at']) ? sanitize_text_field((string) $entity['created_at']) : current_time('mysql'),
+                'updated_at' => isset($entity['updated_at']) ? sanitize_text_field((string) $entity['updated_at']) : '',
+            );
+        }
+
+        return $normalized;
+    }
+
+    private function sanitize_contact_ids_from_request() {
+        $contact_ids = isset($_POST['contact_ids']) && is_array($_POST['contact_ids'])
+            ? array_map('sanitize_text_field', wp_unslash($_POST['contact_ids']))
+            : array();
+        $valid_contact_ids = array();
+
+        foreach ($this->get_contacts() as $contact) {
+            if (!empty($contact['id'])) {
+                $valid_contact_ids[(string) $contact['id']] = true;
+            }
+        }
+
+        return array_values(array_filter(array_unique($contact_ids), function($contact_id) use ($valid_contact_ids) {
+            return isset($valid_contact_ids[(string) $contact_id]);
+        }));
+    }
+
+    private function upsert_contact_entity($entities, $entity_id, $name, $contact_ids) {
+        $entities = $this->normalize_contact_entities($entities);
+        $entity_id = sanitize_text_field($entity_id);
+        $name = sanitize_text_field($name);
+        $contact_ids = array_values(array_filter(array_unique(array_map('sanitize_text_field', (array) $contact_ids))));
+        $updated = false;
+
+        foreach ($entities as $index => $entity) {
+            if ($entity_id !== '' && isset($entity['id']) && $entity['id'] === $entity_id) {
+                $entities[$index]['name'] = $name;
+                $entities[$index]['contact_ids'] = $contact_ids;
+                $entities[$index]['updated_at'] = current_time('mysql');
+                $updated = true;
+                break;
+            }
+        }
+
+        if (!$updated) {
+            $entities[] = array(
+                'id' => wp_generate_uuid4(),
+                'name' => $name,
+                'contact_ids' => $contact_ids,
+                'created_at' => current_time('mysql'),
+                'updated_at' => current_time('mysql'),
+            );
+        }
+
+        return array_values($entities);
+    }
+
+    private function remove_contact_from_contact_entities($contact_id) {
+        $contact_id = sanitize_text_field($contact_id);
+        if ($contact_id === '') {
+            return;
+        }
+
+        foreach (array(self::OPTION_CONTACT_LISTS, self::OPTION_CONTACT_TAGS) as $option_name) {
+            $entities = $this->normalize_contact_entities(get_option($option_name, array()));
+            foreach ($entities as $index => $entity) {
+                $entities[$index]['contact_ids'] = array_values(array_filter($entity['contact_ids'], function($saved_contact_id) use ($contact_id) {
+                    return (string) $saved_contact_id !== $contact_id;
+                }));
+            }
+            update_option($option_name, $entities, false);
+        }
+    }
+
+    private function get_assigned_contact_ids_for_entity($entity) {
+        return isset($entity['contact_ids']) && is_array($entity['contact_ids']) ? array_values($entity['contact_ids']) : array();
+    }
+
+    private function get_contact_ids_from_contacts($contacts) {
+        $contact_ids = array();
+        foreach ($contacts as $contact) {
+            if (!empty($contact['id'])) {
+                $contact_ids[] = (string) $contact['id'];
+            }
+        }
+        return $contact_ids;
+    }
+
+    private function get_contact_entity_by_id($entity_id, $entities) {
+        $entity_id = sanitize_text_field($entity_id);
+        if ($entity_id === '') {
+            return array();
+        }
+
+        foreach ($entities as $entity) {
+            if (!empty($entity['id']) && (string) $entity['id'] === $entity_id) {
+                return $entity;
+            }
+        }
+
+        return array();
+    }
+
+    private function add_contact_to_contact_entities($contact_id, $entity_ids, $option_name) {
+        $contact_id = sanitize_text_field($contact_id);
+        $entity_ids = array_values(array_filter(array_unique(array_map('sanitize_text_field', (array) $entity_ids))));
+        if ($contact_id === '' || empty($entity_ids)) {
+            return;
+        }
+
+        $entities = $this->normalize_contact_entities(get_option($option_name, array()));
+        $changed = false;
+        foreach ($entities as $index => $entity) {
+            if (empty($entity['id']) || !in_array((string) $entity['id'], $entity_ids, true)) {
+                continue;
+            }
+
+            $contact_ids = $this->get_assigned_contact_ids_for_entity($entity);
+            if (!in_array($contact_id, array_map('strval', $contact_ids), true)) {
+                $contact_ids[] = $contact_id;
+                $entities[$index]['contact_ids'] = array_values(array_unique($contact_ids));
+                $entities[$index]['updated_at'] = current_time('mysql');
+                $changed = true;
+            }
+        }
+
+        if ($changed) {
+            update_option($option_name, $entities, false);
+        }
+    }
+
+    private function get_contact_entity_names_for_contact($contact_id, $entities) {
+        $contact_id = (string) $contact_id;
+        if ($contact_id === '') {
+            return array();
+        }
+
+        $names = array();
+        foreach ($entities as $entity) {
+            $contact_ids = $this->get_assigned_contact_ids_for_entity($entity);
+            if (in_array($contact_id, array_map('strval', $contact_ids), true) && !empty($entity['name'])) {
+                $names[] = (string) $entity['name'];
+            }
+        }
+
+        return $names;
+    }
+
     private function get_campaign_messages() {
         $messages = get_option(self::OPTION_CAMPAIGN_MESSAGES, array());
         return is_array($messages) ? $messages : array();
@@ -1771,6 +2394,48 @@ class SMarkEmailMarketing {
     private function get_campaign_events() {
         $events = get_option(self::OPTION_CAMPAIGN_EVENTS, array());
         return is_array($events) ? $events : array();
+    }
+
+    private function get_daily_sent_contact_hashes() {
+        $today = current_time('Y-m-d');
+        $hashes = array();
+
+        foreach ($this->get_campaign_events() as $event) {
+            if (($event['type'] ?? '') !== 'sent') {
+                continue;
+            }
+
+            $created_at = isset($event['created_at']) ? (string) $event['created_at'] : '';
+            if (substr($created_at, 0, 10) !== $today) {
+                continue;
+            }
+
+            $recipient_hash = isset($event['recipient_hash']) ? (string) $event['recipient_hash'] : '';
+            if ($recipient_hash !== '') {
+                $hashes[$recipient_hash] = true;
+            }
+        }
+
+        return $hashes;
+    }
+
+    private function get_today_sent_contact_ids($contacts) {
+        $daily_sent_hashes = $this->get_daily_sent_contact_hashes();
+        $contact_ids = array();
+
+        foreach ($contacts as $contact) {
+            $contact_id = isset($contact['id']) ? (string) $contact['id'] : '';
+            $email = isset($contact['email_address']) ? sanitize_email($contact['email_address']) : '';
+            if ($contact_id === '' || $email === '') {
+                continue;
+            }
+
+            if (isset($daily_sent_hashes[$this->get_campaign_recipient_hash($email)])) {
+                $contact_ids[] = $contact_id;
+            }
+        }
+
+        return array_values(array_unique($contact_ids));
     }
 
     private function get_email_account_daily_sent_counts() {
@@ -2280,15 +2945,13 @@ class SMarkEmailMarketing {
         $message_status = isset($_POST['message_status']) ? sanitize_key(wp_unslash($_POST['message_status'])) : 'draft';
         $message_status = in_array($message_status, array('draft', 'ready'), true) ? $message_status : 'draft';
 
-        $target_segments = isset($_POST['target_segments']) && is_array($_POST['target_segments'])
-            ? array_map('sanitize_text_field', wp_unslash($_POST['target_segments']))
+        $target_includes = isset($_POST['target_includes']) && is_array($_POST['target_includes'])
+            ? $this->normalize_campaign_audience_tokens(wp_unslash($_POST['target_includes']))
             : array();
-        $target_segments = array_values(array_filter(array_unique($target_segments)));
 
-        $target_contacts = isset($_POST['target_contacts']) && is_array($_POST['target_contacts'])
-            ? array_map('sanitize_text_field', wp_unslash($_POST['target_contacts']))
+        $target_excludes = isset($_POST['target_excludes']) && is_array($_POST['target_excludes'])
+            ? $this->normalize_campaign_audience_tokens(wp_unslash($_POST['target_excludes']))
             : array();
-        $target_contacts = array_values(array_filter(array_unique($target_contacts)));
 
         $sender_account_ids = isset($_POST['sender_account_ids']) && is_array($_POST['sender_account_ids'])
             ? array_map('sanitize_text_field', wp_unslash($_POST['sender_account_ids']))
@@ -2312,8 +2975,10 @@ class SMarkEmailMarketing {
             'preview_text'      => isset($_POST['preview_text']) ? sanitize_text_field(wp_unslash($_POST['preview_text'])) : '',
             'reply_to'          => isset($_POST['reply_to']) ? sanitize_email(wp_unslash($_POST['reply_to'])) : '',
             'message_status'    => $message_status,
-            'target_segments'   => $target_segments,
-            'target_contacts'   => $target_contacts,
+            'target_segments'   => array(),
+            'target_contacts'   => array(),
+            'target_includes'   => $target_includes,
+            'target_excludes'   => $target_excludes,
             'email_body'        => $email_body,
             'internal_notes'    => isset($_POST['internal_notes']) ? sanitize_textarea_field(wp_unslash($_POST['internal_notes'])) : '',
             'created_at'        => isset($existing_message['created_at']) ? $existing_message['created_at'] : current_time('mysql'),
@@ -2335,14 +3000,92 @@ class SMarkEmailMarketing {
     }
 
     private function format_campaign_audience_summary($campaign_message, $strings) {
-        $segment_count = isset($campaign_message['target_segments']) && is_array($campaign_message['target_segments']) ? count($campaign_message['target_segments']) : 0;
+        $include_count = count($this->get_campaign_audience_tokens($campaign_message, 'include'));
+        $exclude_count = count($this->get_campaign_audience_tokens($campaign_message, 'exclude'));
         $contact_count = count($this->resolve_campaign_contact_ids($campaign_message));
 
-        if ($segment_count === 0 && $contact_count === 0) {
+        if ($include_count === 0 && $contact_count === 0) {
             return $strings['audience_not_selected'];
         }
 
-        return sprintf($strings['audience_summary'], number_format_i18n($segment_count), number_format_i18n($contact_count));
+        return sprintf($strings['audience_summary'], number_format_i18n($include_count), number_format_i18n($exclude_count), number_format_i18n($contact_count));
+    }
+
+    private function normalize_campaign_audience_tokens($tokens) {
+        $normalized = array();
+        foreach ((array) $tokens as $token) {
+            $token = sanitize_text_field((string) $token);
+            if ($token === 'all:all' || $token === 'system:today_sent' || preg_match('/^(list|tag|contact):[A-Za-z0-9_\-]+$/', $token)) {
+                $normalized[] = $token;
+            }
+        }
+
+        return array_values(array_unique($normalized));
+    }
+
+    private function get_campaign_audience_tokens($campaign_message, $mode) {
+        $key = ($mode === 'exclude') ? 'target_excludes' : 'target_includes';
+        $tokens = isset($campaign_message[$key]) && is_array($campaign_message[$key]) ? $campaign_message[$key] : array();
+        $tokens = $this->normalize_campaign_audience_tokens($tokens);
+
+        if ($mode === 'include' && empty($tokens) && (!empty($campaign_message['target_segments']) || !empty($campaign_message['target_contacts']))) {
+            $tokens = $this->get_legacy_campaign_audience_tokens($campaign_message);
+        }
+
+        return $tokens;
+    }
+
+    private function get_legacy_campaign_audience_tokens($campaign_message) {
+        $tokens = array();
+        $segments = isset($campaign_message['target_segments']) && is_array($campaign_message['target_segments']) ? array_map('strval', $campaign_message['target_segments']) : array();
+        $contacts = isset($campaign_message['target_contacts']) && is_array($campaign_message['target_contacts']) ? array_map('strval', $campaign_message['target_contacts']) : array();
+
+        if (in_array(self::AUDIENCE_ALL_SEGMENTS, $segments, true)) {
+            $tokens[] = 'all:all';
+        }
+
+        foreach ($this->get_contact_lists() as $list) {
+            if (!empty($list['name']) && in_array((string) $list['name'], $segments, true)) {
+                $tokens[] = 'list:' . (string) $list['id'];
+            }
+        }
+
+        foreach ($contacts as $contact_id) {
+            $tokens[] = 'contact:' . $contact_id;
+        }
+
+        return $this->normalize_campaign_audience_tokens($tokens);
+    }
+
+    private function resolve_campaign_audience_tokens_to_contact_ids($tokens) {
+        $tokens = $this->normalize_campaign_audience_tokens($tokens);
+        $contact_ids = array();
+
+        foreach ($tokens as $token) {
+            if ($token === 'all:all') {
+                $contact_ids = array_merge($contact_ids, $this->get_contact_ids_from_contacts($this->get_contacts()));
+                continue;
+            }
+
+            list($type, $id) = explode(':', $token, 2);
+            if ($type === 'system' && $id === 'today_sent') {
+                $contact_ids = array_merge($contact_ids, $this->get_today_sent_contact_ids($this->get_contacts()));
+                continue;
+            }
+
+            if ($type === 'contact') {
+                $contact_ids[] = $id;
+                continue;
+            }
+
+            $entities = ($type === 'tag') ? $this->get_contact_tags() : $this->get_contact_lists();
+            $entity = $this->get_contact_entity_by_id($id, $entities);
+            if (!empty($entity)) {
+                $contact_ids = array_merge($contact_ids, $this->get_assigned_contact_ids_for_entity($entity));
+            }
+        }
+
+        return array_values(array_unique(array_filter(array_map('strval', $contact_ids))));
     }
 
     private function get_campaign_status_label($status, $strings) {
@@ -2381,8 +3124,8 @@ class SMarkEmailMarketing {
             'campaign_id' => $campaign_id,
             'campaign_name' => isset($campaign_message['campaign_name']) ? (string) $campaign_message['campaign_name'] : '',
             'recipient_count' => count($recipients),
-            'target_segments_count' => isset($campaign_message['target_segments']) && is_array($campaign_message['target_segments']) ? count($campaign_message['target_segments']) : 0,
-            'target_contacts_count' => isset($campaign_message['target_contacts']) && is_array($campaign_message['target_contacts']) ? count($campaign_message['target_contacts']) : 0,
+            'target_includes_count' => count($this->get_campaign_audience_tokens($campaign_message, 'include')),
+            'target_excludes_count' => count($this->get_campaign_audience_tokens($campaign_message, 'exclude')),
         ));
 
         if (empty($recipients)) {
@@ -2867,47 +3610,42 @@ class SMarkEmailMarketing {
 
     private function resolve_campaign_recipients($campaign_message) {
         $contacts = $this->get_contacts();
-        $target_segments = isset($campaign_message['target_segments']) && is_array($campaign_message['target_segments']) ? $campaign_message['target_segments'] : array();
-        $target_contacts = isset($campaign_message['target_contacts']) && is_array($campaign_message['target_contacts']) ? $campaign_message['target_contacts'] : array();
-        $target_segments = array_map('strval', $target_segments);
-        $target_contacts = array_map('strval', $target_contacts);
-        $send_to_all_contacts = in_array(self::AUDIENCE_ALL_SEGMENTS, $target_segments, true);
+        $contact_ids = array_flip($this->resolve_campaign_contact_ids($campaign_message));
 
         $emails = array();
         foreach ($contacts as $contact) {
             $contact_id = isset($contact['id']) ? (string) $contact['id'] : '';
-            $segment = isset($contact['segment']) ? (string) $contact['segment'] : '';
             $email = isset($contact['email_address']) ? sanitize_email($contact['email_address']) : '';
+            $status = isset($contact['status']) ? strtolower((string) $contact['status']) : 'subscribed';
 
-            if (!$email || !is_email($email)) {
+            if ($contact_id === '' || !isset($contact_ids[$contact_id]) || $status === 'unsubscribed' || !$email || !is_email($email)) {
                 continue;
             }
 
-            if ($send_to_all_contacts || in_array($contact_id, $target_contacts, true) || ($segment !== '' && in_array($segment, $target_segments, true))) {
-                $emails[strtolower($email)] = $email;
-            }
+            $emails[strtolower($email)] = $email;
         }
 
         return array_values($emails);
     }
 
     private function resolve_campaign_contact_ids($campaign_message) {
-        $contacts = $this->get_contacts();
-        $target_contacts = isset($campaign_message['target_contacts']) && is_array($campaign_message['target_contacts']) ? array_map('strval', $campaign_message['target_contacts']) : array();
-        $contact_ids = array();
+        $include_tokens = $this->get_campaign_audience_tokens($campaign_message, 'include');
+        $exclude_tokens = $this->get_campaign_audience_tokens($campaign_message, 'exclude');
+        $included = $this->resolve_campaign_audience_tokens_to_contact_ids($include_tokens);
+        $excluded = array_flip($this->resolve_campaign_audience_tokens_to_contact_ids($exclude_tokens));
 
-        if (empty($target_contacts)) {
-            return $contact_ids;
+        if (empty($included)) {
+            return array();
         }
 
-        foreach ($contacts as $contact) {
-            $contact_id = isset($contact['id']) ? (string) $contact['id'] : '';
-            if ($contact_id !== '' && in_array($contact_id, $target_contacts, true)) {
-                $contact_ids[] = $contact_id;
+        $final = array();
+        foreach ($included as $contact_id) {
+            if (!isset($excluded[$contact_id])) {
+                $final[] = $contact_id;
             }
         }
 
-        return array_values(array_unique($contact_ids));
+        return array_values(array_unique($final));
     }
 
     private function get_campaign_send_error_message($error, $strings) {
@@ -3419,7 +4157,31 @@ class SMarkEmailMarketing {
 
     function closeImportModal() {
         $('#smarkEmailImportModal').removeClass('is-open').attr('aria-hidden', 'true');
-        if (!$('#smarkEmailAccountEditModal').hasClass('is-open')) {
+        if (!$('#smarkEmailAccountEditModal').hasClass('is-open') && !$('#smarkEmailContactListModal').hasClass('is-open') && !$('#smarkEmailContactTagModal').hasClass('is-open') && !$('#smarkEmailAudiencePickerModal').hasClass('is-open')) {
+            $('body').removeClass('smark-email-modal-open');
+        }
+    }
+
+    function openContactListModal() {
+        $('#smarkEmailContactListModal').addClass('is-open').attr('aria-hidden', 'false');
+        $('body').addClass('smark-email-modal-open');
+    }
+
+    function closeContactListModal() {
+        $('#smarkEmailContactListModal').removeClass('is-open').attr('aria-hidden', 'true');
+        if (!$('#smarkEmailImportModal').hasClass('is-open') && !$('#smarkEmailAccountEditModal').hasClass('is-open') && !$('#smarkEmailContactTagModal').hasClass('is-open') && !$('#smarkEmailAudiencePickerModal').hasClass('is-open')) {
+            $('body').removeClass('smark-email-modal-open');
+        }
+    }
+
+    function openContactTagModal() {
+        $('#smarkEmailContactTagModal').addClass('is-open').attr('aria-hidden', 'false');
+        $('body').addClass('smark-email-modal-open');
+    }
+
+    function closeContactTagModal() {
+        $('#smarkEmailContactTagModal').removeClass('is-open').attr('aria-hidden', 'true');
+        if (!$('#smarkEmailImportModal').hasClass('is-open') && !$('#smarkEmailAccountEditModal').hasClass('is-open') && !$('#smarkEmailContactListModal').hasClass('is-open') && !$('#smarkEmailAudiencePickerModal').hasClass('is-open')) {
             $('body').removeClass('smark-email-modal-open');
         }
     }
@@ -3449,7 +4211,7 @@ class SMarkEmailMarketing {
 
     function closeAccountEditModal() {
         $('#smarkEmailAccountEditModal').removeClass('is-open').attr('aria-hidden', 'true');
-        if (!$('#smarkEmailImportModal').hasClass('is-open')) {
+        if (!$('#smarkEmailImportModal').hasClass('is-open') && !$('#smarkEmailContactListModal').hasClass('is-open') && !$('#smarkEmailContactTagModal').hasClass('is-open') && !$('#smarkEmailAudiencePickerModal').hasClass('is-open')) {
             $('body').removeClass('smark-email-modal-open');
         }
     }
@@ -3500,46 +4262,169 @@ class SMarkEmailMarketing {
         }
     }
 
+    function getAudienceTokens(mode) {
+        var tokens = [];
+        $('[data-smark-audience-builder="' + mode + '"] [data-smark-audience-inputs] input').each(function () {
+            tokens.push($(this).val());
+        });
+        return tokens;
+    }
+
+    function getAudienceOptionContacts(token) {
+        var $option = $('[data-smark-audience-option]').filter(function () {
+            return $(this).val() === token;
+        }).first();
+        var ids = String($option.attr('data-contact-ids') || '').split(',');
+        var contacts = {};
+        ids.forEach(function (id) {
+            id = $.trim(id);
+            if (id) {
+                contacts[id] = true;
+            }
+        });
+        return contacts;
+    }
+
+    function resolveAudienceContactIds(tokens) {
+        var contacts = {};
+        tokens.forEach(function (token) {
+            var tokenContacts = getAudienceOptionContacts(token);
+            Object.keys(tokenContacts).forEach(function (id) {
+                contacts[id] = true;
+            });
+        });
+        return contacts;
+    }
+
+    function getFinalAudienceContactIds() {
+        var included = resolveAudienceContactIds(getAudienceTokens('include'));
+        var excluded = resolveAudienceContactIds(getAudienceTokens('exclude'));
+        Object.keys(excluded).forEach(function (id) {
+            delete included[id];
+        });
+        return included;
+    }
+
+    function getAudienceOptionLabel(token) {
+        var $option = $('[data-smark-audience-option]').filter(function () {
+            return $(this).val() === token;
+        }).first();
+        return $option.attr('data-label') || token;
+    }
+
+    function renderAudienceBuilder($builder) {
+        var mode = $builder.attr('data-smark-audience-builder') || 'include';
+        var tokens = getAudienceTokens(mode);
+        var $chips = $builder.find('[data-smark-audience-chips]');
+        var emptyText = $chips.attr('data-empty-text') || 'Nothing selected';
+        var moreText = $chips.attr('data-more-text') || 'More';
+
+        $chips.empty();
+        if (!tokens.length) {
+            $('<span class="smark-email-audience-empty" />').text(emptyText).appendTo($chips);
+            return;
+        }
+
+        tokens.slice(0, 3).forEach(function (token) {
+            $('<button type="button" class="smark-email-audience-chip" data-open-smark-audience-picker />')
+                .attr('data-mode', mode)
+                .text(getAudienceOptionLabel(token))
+                .appendTo($chips);
+        });
+
+        if (tokens.length > 3) {
+            $('<button type="button" class="smark-email-audience-chip smark-email-audience-chip--more" data-open-smark-audience-picker />')
+                .attr('data-mode', mode)
+                .text(moreText.replace('%s', tokens.length - 3))
+                .appendTo($chips);
+        }
+    }
+
+    function syncAudienceBuilders() {
+        $('[data-smark-audience-builder]').each(function () {
+            renderAudienceBuilder($(this));
+        });
+        updateCampaignCapacityWarning();
+    }
+
+    function openAudiencePicker(mode) {
+        var normalizedMode = mode === 'exclude' ? 'exclude' : 'include';
+        var $modal = $('#smarkEmailAudiencePickerModal');
+        var $title = $('#smarkEmailAudiencePickerTitle');
+        var selected = {};
+        getAudienceTokens(normalizedMode).forEach(function (token) {
+            selected[token] = true;
+        });
+
+        $modal.attr('data-mode', normalizedMode);
+        $title.text(normalizedMode === 'exclude' ? ($title.attr('data-exclude-title') || $title.text()) : ($title.attr('data-include-title') || $title.text()));
+        $modal.find('[data-smark-audience-option]').each(function () {
+            $(this).prop('checked', !!selected[$(this).val()]);
+        });
+        $modal.find('[data-smark-audience-contact-search]').val('');
+        updateAudienceContactSearch();
+        updateAudienceSelectedCount();
+        $modal.addClass('is-open').attr('aria-hidden', 'false');
+        $('body').addClass('smark-email-modal-open');
+    }
+
+    function closeAudiencePicker() {
+        $('#smarkEmailAudiencePickerModal').removeClass('is-open').attr('aria-hidden', 'true');
+        if (!$('#smarkEmailImportModal').hasClass('is-open') && !$('#smarkEmailAccountEditModal').hasClass('is-open') && !$('#smarkEmailContactListModal').hasClass('is-open') && !$('#smarkEmailContactTagModal').hasClass('is-open')) {
+            $('body').removeClass('smark-email-modal-open');
+        }
+    }
+
+    function updateAudienceContactSearch() {
+        var $modal = $('#smarkEmailAudiencePickerModal');
+        var query = $.trim(String($modal.find('[data-smark-audience-contact-search]').val() || '').toLowerCase());
+        var shown = 0;
+        var limit = 10;
+
+        $modal.find('[data-smark-audience-contact-row]').each(function () {
+            var $row = $(this);
+            var haystack = String($row.attr('data-search') || '').toLowerCase();
+            var matches = query === '' || haystack.indexOf(query) !== -1;
+            var shouldShow = matches && shown < limit;
+            $row.toggle(shouldShow);
+            if (shouldShow) {
+                shown++;
+            }
+        });
+
+        $modal.find('[data-smark-audience-contact-limit-note]').toggle($modal.find('[data-smark-audience-contact-row]').length > limit);
+    }
+
+    function updateAudienceSelectedCount() {
+        var $modal = $('#smarkEmailAudiencePickerModal');
+        var count = $modal.find('[data-smark-audience-contact-row] [data-smark-audience-option]:checked').length;
+        var $counter = $modal.find('[data-smark-audience-selected-count]');
+        var template = $counter.attr('data-template') || '%s selected';
+        $counter.text(template.replace('%s', formatSmarkNumber(count)));
+    }
+
+    function applyAudiencePicker() {
+        var $modal = $('#smarkEmailAudiencePickerModal');
+        var mode = $modal.attr('data-mode') === 'exclude' ? 'exclude' : 'include';
+        var $builder = $('[data-smark-audience-builder="' + mode + '"]');
+        var $inputs = $builder.find('[data-smark-audience-inputs]');
+        var fieldName = $inputs.attr('data-field-name') || (mode === 'include' ? 'target_includes[]' : 'target_excludes[]');
+
+        $inputs.empty();
+        $modal.find('[data-smark-audience-option]:checked').each(function () {
+            $('<input type="hidden" />').attr('name', fieldName).val($(this).val()).appendTo($inputs);
+        });
+        syncAudienceBuilders();
+        closeAudiencePicker();
+    }
+
     function updateCampaignCapacityWarning() {
         var $form = $('#smarkEmailCampaignMessageForm');
         if (!$form.length) {
             return;
         }
 
-        var selectedSegments = {};
-        var isAllSelected = false;
-        $form.find('[name="target_segments[]"] option:selected').each(function () {
-            var $option = $(this);
-            if ($option.attr('data-all') === '1') {
-                isAllSelected = true;
-                return;
-            }
-
-            selectedSegments[$option.val()] = true;
-        });
-
-        var selectedContacts = {};
-        $form.find('[name="target_contacts[]"] option:selected').each(function () {
-            selectedContacts[$(this).val()] = true;
-        });
-
-        var recipientIds = {};
-        $form.find('[name="target_contacts[]"] option').each(function () {
-            var $option = $(this);
-            var contactId = $option.val();
-            var status = String($option.attr('data-status') || 'subscribed').toLowerCase();
-            var segment = $option.attr('data-segment') || '';
-
-            if (!contactId || status === 'unsubscribed') {
-                return;
-            }
-
-            if (isAllSelected || selectedContacts[contactId] || (segment && selectedSegments[segment])) {
-                recipientIds[contactId] = true;
-            }
-        });
-
-        var audienceCount = Object.keys(recipientIds).length;
+        var audienceCount = Object.keys(getFinalAudienceContactIds()).length;
         var remainingCapacity = 0;
         $form.find('[data-smark-sender-account-option]:checked').each(function () {
             var remaining = parseInt($(this).attr('data-remaining'), 10);
@@ -3619,7 +4504,7 @@ class SMarkEmailMarketing {
         $('[data-smark-sender-picker]').each(function () {
             updateSenderPicker($(this));
         });
-        updateCampaignCapacityWarning();
+        syncAudienceBuilders();
 
         $(document).on('change', '#smark_email_provider', function () {
             updateEmailProviderForm($(this).val());
@@ -3646,13 +4531,52 @@ class SMarkEmailMarketing {
             updateCampaignCapacityWarning();
         });
 
-        $(document).on('change', '#smarkEmailCampaignMessageForm [name="target_segments[]"], #smarkEmailCampaignMessageForm [name="target_contacts[]"]', function () {
-            updateCampaignCapacityWarning();
-        });
-
         $(document).on('click', '[data-open-smark-import]', function (event) {
             event.preventDefault();
             openImportModal();
+        });
+
+        $(document).on('click', '[data-open-smark-audience-picker]', function (event) {
+            event.preventDefault();
+            openAudiencePicker($(this).attr('data-mode') || $(this).closest('[data-smark-audience-builder]').attr('data-smark-audience-builder') || 'include');
+        });
+
+        $(document).on('click', '[data-close-smark-audience-picker]', function (event) {
+            event.preventDefault();
+            closeAudiencePicker();
+        });
+
+        $(document).on('click', '[data-apply-smark-audience-picker]', function (event) {
+            event.preventDefault();
+            applyAudiencePicker();
+        });
+
+        $(document).on('input', '[data-smark-audience-contact-search]', function () {
+            updateAudienceContactSearch();
+        });
+
+        $(document).on('change', '#smarkEmailAudiencePickerModal [data-smark-audience-option]', function () {
+            updateAudienceSelectedCount();
+        });
+
+        $(document).on('click', '[data-open-smark-contact-list]', function (event) {
+            event.preventDefault();
+            openContactListModal();
+        });
+
+        $(document).on('click', '[data-close-smark-contact-list]', function (event) {
+            event.preventDefault();
+            closeContactListModal();
+        });
+
+        $(document).on('click', '[data-open-smark-contact-tag]', function (event) {
+            event.preventDefault();
+            openContactTagModal();
+        });
+
+        $(document).on('click', '[data-close-smark-contact-tag]', function (event) {
+            event.preventDefault();
+            closeContactTagModal();
         });
 
         $(document).on('click', '[data-open-smark-account-edit]', function (event) {
@@ -3791,6 +4715,10 @@ class SMarkEmailMarketing {
         });
 
         $(document).on('submit', '#smarkEmailCampaignMessageForm', function (event) {
+            if (window.tinyMCE && typeof window.tinyMCE.triggerSave === 'function') {
+                window.tinyMCE.triggerSave();
+            }
+
             var submitter = event.originalEvent && event.originalEvent.submitter ? event.originalEvent.submitter : null;
             var action = submitter ? $(submitter).val() : '';
 
@@ -3840,6 +4768,9 @@ class SMarkEmailMarketing {
             if (event.key === 'Escape') {
                 closeImportModal();
                 closeAccountEditModal();
+                closeContactListModal();
+                closeContactTagModal();
+                closeAudiencePicker();
                 closeSenderPickers();
             }
         });
@@ -4112,13 +5043,13 @@ JS;
     private function get_contact_strings($lang) {
         if ($lang === 'fa') {
             return array(
-                'page_title'                    => 'بخش‌بندی مخاطبان',
-                'page_subtitle'                 => 'مخاطبان ایمیلی را تعریف کنید و برای کمپین‌های بعدی در سگمنت‌های مشخص نگه دارید.',
+                'page_title'                    => 'مخاطبین',
+                'page_subtitle'                 => 'مخاطبان ایمیلی را تعریف کنید و برای کمپین‌های بعدی در لیست‌ها و برچسب‌های مشخص نگه دارید.',
                 'breadcrumb_dashboard'          => 'داشبورد',
                 'breadcrumb_parent'             => 'ایمیل مارکتینگ',
-                'breadcrumb_current'            => 'بخش‌بندی مخاطبان',
+                'breadcrumb_current'            => 'مخاطبین',
                 'form_title'                    => 'افزودن مخاطب',
-                'form_description'              => 'مشخصات مخاطب، ایمیل و سگمنت هدف را ثبت کنید تا بعدا در ارسال کمپین استفاده شود.',
+                'form_description'              => 'مشخصات مخاطب، ایمیل و لیست هدف را ثبت کنید تا بعدا در ارسال کمپین استفاده شود.',
                 'field_first_name'              => 'نام',
                 'field_first_name_placeholder'  => 'مثلا سعید',
                 'field_last_name'               => 'نام خانوادگی',
@@ -4126,21 +5057,58 @@ JS;
                 'field_email'                   => 'ایمیل مخاطب',
                 'field_phone'                   => 'شماره تماس',
                 'field_phone_placeholder'       => 'اختیاری',
-                'field_segment'                 => 'سگمنت / لیست',
+                'field_segment'                 => 'لیست',
                 'field_segment_placeholder'     => 'مثلا لیدهای دوره سئو',
+                'field_list_empty'              => 'بدون لیست',
+                'field_tags'                    => 'برچسب‌ها',
+                'field_tags_help'               => 'برای انتخاب چند برچسب از Ctrl/Cmd استفاده کنید. برچسب‌های سیستمی خودکار اعمال می‌شوند.',
                 'field_source'                  => 'منبع جذب',
                 'field_source_placeholder'      => 'مثلا فرم سایت، وبینار یا خرید',
                 'field_status'                  => 'وضعیت',
                 'field_notes'                   => 'یادداشت',
                 'field_notes_placeholder'       => 'نیاز، علاقه‌مندی یا نکته مهم برای کمپین...',
-                'contact_help'                  => 'فقط ایمیل برای هر مخاطب ضروری است. سگمنت، منبع و یادداشت اختیاری هستند و هر ایمیل فقط یک‌بار ثبت می‌شود.',
+                'contact_help'                  => 'فقط ایمیل برای هر مخاطب ضروری است. لیست، برچسب، منبع و یادداشت اختیاری هستند و هر ایمیل فقط یک‌بار ثبت می‌شود.',
                 'save_button'                   => 'افزودن مخاطب',
+                'lists_title'                   => 'لیست‌ها',
+                'lists_description'             => 'لیست‌های مخاطبان را بسازید و هر تعداد مخاطب را داخل لیست مورد نظر قرار دهید.',
+                'add_list_button'               => 'افزودن لیست جدید',
+                'create_list_button'            => 'ایجاد لیست',
+                'list_modal_title'              => 'ایجاد لیست جدید',
+                'list_modal_description'        => 'نام لیست را وارد کنید؛ بعد از ایجاد می‌توانید مخاطبان را به آن اختصاص دهید.',
+                'list_name_label'               => 'نام لیست',
+                'list_name_placeholder'         => 'مثلا مشتریان دوره سئو',
+                'lists_empty_state'             => 'هنوز لیستی ساخته نشده است.',
+                'delete_list_confirm'           => 'این لیست حذف شود؟',
+                'system_list_label'             => 'سیستمی',
+                'system_list_all'               => 'همه',
+                'system_list_all_help'          => 'این لیست همیشه شامل همه مخاطبین است: %s مخاطب.',
+                'tags_title'                    => 'برچسب‌ها',
+                'tags_description'              => 'برچسب‌های دلخواه بسازید و آن‌ها را به مخاطبین اختصاص دهید. برچسب‌های سیستمی فقط قابل استفاده هستند و حذف نمی‌شوند.',
+                'add_tag_button'                => 'افزودن برچسب جدید',
+                'create_tag_button'             => 'ایجاد برچسب',
+                'tag_modal_title'               => 'ایجاد برچسب جدید',
+                'tag_modal_description'         => 'نام برچسب را وارد کنید؛ سپس مخاطبان مرتبط را انتخاب کنید.',
+                'tag_name_label'                => 'نام برچسب',
+                'tag_name_placeholder'          => 'مثلا علاقه‌مند به مشاوره',
+                'tags_empty_state'              => 'هنوز برچسب سفارشی ساخته نشده است.',
+                'delete_tag_confirm'            => 'این برچسب حذف شود؟',
+                'system_tags_help'              => 'برچسب‌های سیستمی توسط اسمارک ساخته می‌شوند و قابل حذف نیستند.',
+                'system_tag_label'              => 'سیستمی',
+                'system_tag_today_sent'         => 'امروز ایمیل دریافت کرده',
+                'system_tag_today_sent_short'   => 'امروز',
+                'system_tag_today_sent_help'    => 'این برچسب روزانه است و امروز برای %s مخاطب فعال شده است.',
+                'assignment_contacts_label'     => 'مخاطبین این مورد',
+                'assignment_contacts_help'      => 'برای انتخاب چند مخاطب از Ctrl/Cmd استفاده کنید.',
+                'save_assignments_button'       => 'ذخیره انتخاب‌ها',
+                'assigned_contacts_count'       => '%s مخاطب',
                 'list_title'                    => 'مخاطبان ثبت‌شده',
-                'list_description'              => 'این لیست بعدا برای انتخاب مخاطبان هدف کمپین و فیلتر بر اساس سگمنت استفاده می‌شود.',
+                'list_description'              => 'این لیست بعدا برای انتخاب مخاطبان هدف کمپین استفاده می‌شود.',
                 'empty_state'                   => 'هنوز مخاطبی ثبت نشده است.',
                 'column_contact'                => 'مخاطب',
                 'column_email'                  => 'ایمیل',
                 'column_segment'                => 'سگمنت',
+                'column_lists'                  => 'لیست‌ها',
+                'column_tags'                   => 'برچسب‌ها',
                 'column_source'                 => 'منبع',
                 'column_status'                 => 'وضعیت',
                 'column_actions'                => 'عملیات',
@@ -4152,6 +5120,10 @@ JS;
                 'delete_confirm'                => 'این مخاطب حذف شود؟',
                 'notice_saved'                  => 'مخاطب ذخیره شد.',
                 'notice_deleted'                => 'مخاطب حذف شد.',
+                'notice_list_saved'             => 'لیست ذخیره شد.',
+                'notice_list_deleted'           => 'لیست حذف شد.',
+                'notice_tag_saved'              => 'برچسب ذخیره شد.',
+                'notice_tag_deleted'            => 'برچسب حذف شد.',
                 'notice_error'                  => 'اطلاعات مخاطب کامل یا معتبر نیست، یا این ایمیل قبلا ثبت شده است.',
                 'notice_imported'               => '%s مخاطب با موفقیت وارد شد.',
                 'notice_no_import'              => 'هیچ مخاطبی وارد نشد. مپینگ ایمیل را بررسی کنید یا مطمئن شوید ایمیل‌ها تکراری نیستند.',
@@ -4168,19 +5140,19 @@ JS;
                 'bulk_file_column'              => 'ستون فایل',
                 'bulk_required'                 => 'ضروری',
                 'bulk_ignore_column'            => 'متصل نکن',
-                'bulk_default_segment'          => 'سگمنت پیش‌فرض اختیاری',
+                'bulk_default_segment'          => 'لیست پیش‌فرض اختیاری',
                 'bulk_import_button'            => 'وارد کردن مخاطبان',
             );
         }
 
         return array(
-            'page_title'                    => 'Audience Segments',
-            'page_subtitle'                 => 'Create email contacts and organize them into campaign-ready segments.',
+            'page_title'                    => 'Contacts',
+            'page_subtitle'                 => 'Create email contacts and organize them into campaign-ready lists.',
             'breadcrumb_dashboard'          => 'Dashboard',
             'breadcrumb_parent'             => 'Email Marketing',
-            'breadcrumb_current'            => 'Audience Segments',
+            'breadcrumb_current'            => 'Contacts',
             'form_title'                    => 'Add Contact',
-            'form_description'              => 'Save the contact details, email address, and target segment for future campaigns.',
+            'form_description'              => 'Save the contact details, email address, and target list for future campaigns.',
             'field_first_name'              => 'First Name',
             'field_first_name_placeholder'  => 'Example: Alex',
             'field_last_name'               => 'Last Name',
@@ -4188,21 +5160,58 @@ JS;
             'field_email'                   => 'Contact Email',
             'field_phone'                   => 'Phone',
             'field_phone_placeholder'       => 'Optional',
-            'field_segment'                 => 'Segment / List',
+            'field_segment'                 => 'List',
             'field_segment_placeholder'     => 'Example: SEO course leads',
+            'field_list_empty'              => 'No list',
+            'field_tags'                    => 'Tags',
+            'field_tags_help'               => 'Use Ctrl/Cmd to select multiple tags. System tags are applied automatically.',
             'field_source'                  => 'Acquisition Source',
             'field_source_placeholder'      => 'Example: Website form, webinar, purchase',
             'field_status'                  => 'Status',
             'field_notes'                   => 'Notes',
             'field_notes_placeholder'       => 'Need, interest, or campaign context...',
-            'contact_help'                  => 'Only email is required. Segment, source, and notes are optional, and each email address can only appear once.',
+            'contact_help'                  => 'Only email is required. List, tags, source, and notes are optional, and each email address can only appear once.',
             'save_button'                   => 'Add Contact',
+            'lists_title'                   => 'Lists',
+            'lists_description'             => 'Create contact lists and place as many contacts as needed inside each list.',
+            'add_list_button'               => 'Add New List',
+            'create_list_button'            => 'Create List',
+            'list_modal_title'              => 'Create New List',
+            'list_modal_description'        => 'Enter a list name. After creating it, assign the relevant contacts.',
+            'list_name_label'               => 'List Name',
+            'list_name_placeholder'         => 'Example: SEO course customers',
+            'lists_empty_state'             => 'No lists have been created yet.',
+            'delete_list_confirm'           => 'Delete this list?',
+            'system_list_label'             => 'System',
+            'system_list_all'               => 'All',
+            'system_list_all_help'          => 'This list always includes every contact: %s contacts.',
+            'tags_title'                    => 'Tags',
+            'tags_description'              => 'Create custom tags and assign them to contacts. System tags are available for use and cannot be deleted.',
+            'add_tag_button'                => 'Add New Tag',
+            'create_tag_button'             => 'Create Tag',
+            'tag_modal_title'               => 'Create New Tag',
+            'tag_modal_description'         => 'Enter a tag name, then select the contacts that should use it.',
+            'tag_name_label'                => 'Tag Name',
+            'tag_name_placeholder'          => 'Example: Interested in consulting',
+            'tags_empty_state'              => 'No custom tags have been created yet.',
+            'delete_tag_confirm'            => 'Delete this tag?',
+            'system_tags_help'              => 'System tags are created by SMark and cannot be deleted.',
+            'system_tag_label'              => 'System',
+            'system_tag_today_sent'         => 'Received Email Today',
+            'system_tag_today_sent_short'   => 'Today',
+            'system_tag_today_sent_help'    => 'This is a daily tag and is active for %s contacts today.',
+            'assignment_contacts_label'     => 'Contacts in this item',
+            'assignment_contacts_help'      => 'Use Ctrl/Cmd to select multiple contacts.',
+            'save_assignments_button'       => 'Save Selection',
+            'assigned_contacts_count'       => '%s contacts',
             'list_title'                    => 'Saved Contacts',
-            'list_description'              => 'Use this list later to select campaign audiences and filter by segment.',
+            'list_description'              => 'Use this list later to select campaign audiences.',
             'empty_state'                   => 'No contacts have been added yet.',
             'column_contact'                => 'Contact',
             'column_email'                  => 'Email',
             'column_segment'                => 'Segment',
+            'column_lists'                  => 'Lists',
+            'column_tags'                   => 'Tags',
             'column_source'                 => 'Source',
             'column_status'                 => 'Status',
             'column_actions'                => 'Actions',
@@ -4214,6 +5223,10 @@ JS;
             'delete_confirm'                => 'Delete this contact?',
             'notice_saved'                  => 'Contact saved.',
             'notice_deleted'                => 'Contact deleted.',
+            'notice_list_saved'             => 'List saved.',
+            'notice_list_deleted'           => 'List deleted.',
+            'notice_tag_saved'              => 'Tag saved.',
+            'notice_tag_deleted'            => 'Tag deleted.',
             'notice_error'                  => 'The contact information is incomplete or invalid, or this email already exists.',
             'notice_imported'               => '%s contacts imported successfully.',
             'notice_no_import'              => 'No contacts were imported. Check the email mapping, or make sure the emails are not duplicates.',
@@ -4230,7 +5243,7 @@ JS;
             'bulk_file_column'              => 'File Column',
             'bulk_required'                 => 'Required',
             'bulk_ignore_column'            => 'Do not connect',
-            'bulk_default_segment'          => 'Optional Default Segment',
+            'bulk_default_segment'          => 'Optional Default List',
             'bulk_import_button'            => 'Import Contacts',
         );
     }
@@ -4247,6 +5260,22 @@ JS;
 
         if ($message === 'deleted') {
             return array('message' => $strings['notice_deleted'], 'type' => 'success');
+        }
+
+        if ($message === 'list_saved') {
+            return array('message' => $strings['notice_list_saved'], 'type' => 'success');
+        }
+
+        if ($message === 'list_deleted') {
+            return array('message' => $strings['notice_list_deleted'], 'type' => 'success');
+        }
+
+        if ($message === 'tag_saved') {
+            return array('message' => $strings['notice_tag_saved'], 'type' => 'success');
+        }
+
+        if ($message === 'tag_deleted') {
+            return array('message' => $strings['notice_tag_deleted'], 'type' => 'success');
         }
 
         if ($message === 'imported') {
@@ -4323,11 +5352,31 @@ JS;
                 'status_draft'                 => 'پیش‌نویس',
                 'status_ready'                 => 'آماده ارسال',
                 'status_sent'                  => 'ارسال‌شده',
-                'field_segments'               => 'انتخاب سگمنت‌ها',
-                'field_segments_all'           => 'همه',
-                'field_segments_help'          => 'اگر سگمنتی انتخاب نشود، می‌توانید مخاطبان را به صورت تکی انتخاب کنید.',
-                'field_contacts'               => 'انتخاب مخاطب‌ها',
-                'field_contacts_help'          => 'برای انتخاب چند مخاطب از Ctrl/Cmd استفاده کنید.',
+                'field_include_audience'       => 'اینکلود',
+                'field_exclude_audience'       => 'اکسکلود',
+                'field_include_help'           => 'لیست‌ها، برچسب‌ها یا مخاطبین تکی که باید داخل ارسال باشند را انتخاب کنید.',
+                'field_exclude_help'           => 'هر چیزی که اینجا انتخاب شود از اینکلودها کم می‌شود.',
+                'select_include_button'        => 'انتخاب اینکلود',
+                'select_exclude_button'        => 'انتخاب اکسکلود',
+                'audience_picker_empty'        => 'هنوز چیزی انتخاب نشده است.',
+                'audience_picker_more'         => '+%s مورد بیشتر',
+                'audience_picker_include_title'=> 'انتخاب اینکلودها',
+                'audience_picker_exclude_title'=> 'انتخاب اکسکلودها',
+                'audience_picker_description'  => 'از بین لیست‌ها، برچسب‌ها و مخاطبین تکی انتخاب کنید.',
+                'audience_picker_lists'        => 'لیست‌ها',
+                'audience_picker_tags'         => 'برچسب‌ها',
+                'audience_picker_contacts'     => 'مخاطبین',
+                'audience_picker_search_placeholder' => 'جست‌وجوی مخاطب...',
+                'audience_picker_contact_limit_note' => 'برای انتخاب موارد بیشتر جست‌وجو کنید.',
+                'audience_picker_selected_count'=> '%s مخاطب انتخاب‌شده',
+                'audience_picker_all_help'     => 'همه مخاطبین ذخیره‌شده',
+                'audience_picker_apply'        => 'اعمال انتخاب‌ها',
+                'audience_picker_close'        => 'بستن پنجره انتخاب',
+                'system_list_all'              => 'همه',
+                'system_tag_today_sent'        => 'امروز ایمیل دریافت کرده',
+                'system_tag_today_sent_help'   => 'تگ سیستمی روزانه، فعال برای %s مخاطب امروز',
+                'tags_empty_state'             => 'هنوز برچسب سفارشی ساخته نشده است.',
+                'assigned_contacts_count'      => '%s مخاطب',
                 'field_body'                   => 'بدنه ایمیل',
                 'field_body_placeholder'       => 'متن اصلی ایمیل، پیشنهاد، لینک‌ها و فراخوان اقدام را اینجا بنویسید...',
                 'field_notes'                  => 'یادداشت داخلی',
@@ -4345,7 +5394,7 @@ JS;
                 'column_status'                => 'وضعیت',
                 'column_actions'               => 'عملیات',
                 'audience_not_selected'        => 'هنوز انتخاب نشده',
-                'audience_summary'             => '%s سگمنت، %s مخاطب',
+                'audience_summary'             => '%s اینکلود، %s اکسکلود، %s مخاطب نهایی',
                 'delete_button'                => 'حذف',
                 'edit_button'                  => 'ویرایش',
                 'send_button'                  => 'ارسال',
@@ -4368,7 +5417,7 @@ JS;
             'breadcrumb_parent'            => 'Email Marketing',
             'breadcrumb_current'           => 'Campaign Message',
             'form_title'                   => 'Build Email Message',
-            'form_description'             => 'Save the message as a draft and choose the target audience from segments or contacts.',
+            'form_description'             => 'Save the message as a draft and choose the target audience with include and exclude rules.',
             'field_campaign_name'          => 'Email / Campaign Name',
             'field_campaign_name_placeholder' => 'Example: New SEO course announcement',
             'field_sender_account'         => 'Sender Account',
@@ -4385,11 +5434,31 @@ JS;
             'status_draft'                 => 'Draft',
             'status_ready'                 => 'Ready to Send',
             'status_sent'                  => 'Sent',
-            'field_segments'               => 'Select Segments',
-            'field_segments_all'           => 'All',
-            'field_segments_help'          => 'If no segment is selected, you can still select individual contacts.',
-            'field_contacts'               => 'Select Contacts',
-            'field_contacts_help'          => 'Use Ctrl/Cmd to select multiple contacts.',
+            'field_include_audience'       => 'Include',
+            'field_exclude_audience'       => 'Exclude',
+            'field_include_help'           => 'Choose lists, tags, or individual contacts that should receive this email.',
+            'field_exclude_help'           => 'Anything selected here is removed from the included audience.',
+            'select_include_button'        => 'Select Include',
+            'select_exclude_button'        => 'Select Exclude',
+            'audience_picker_empty'        => 'Nothing selected yet.',
+            'audience_picker_more'         => '+%s more',
+            'audience_picker_include_title'=> 'Select Includes',
+            'audience_picker_exclude_title'=> 'Select Excludes',
+            'audience_picker_description'  => 'Choose from lists, tags, and individual contacts.',
+            'audience_picker_lists'        => 'Lists',
+            'audience_picker_tags'         => 'Tags',
+            'audience_picker_contacts'     => 'Contacts',
+            'audience_picker_search_placeholder' => 'Search contacts...',
+            'audience_picker_contact_limit_note' => 'Search to select more contacts.',
+            'audience_picker_selected_count'=> '%s contacts selected',
+            'audience_picker_all_help'     => 'Every saved contact',
+            'audience_picker_apply'        => 'Apply Selection',
+            'audience_picker_close'        => 'Close picker',
+            'system_list_all'              => 'All',
+            'system_tag_today_sent'        => 'Received Email Today',
+            'system_tag_today_sent_help'   => 'Daily system tag, active for %s contacts today',
+            'tags_empty_state'             => 'No custom tags have been created yet.',
+            'assigned_contacts_count'      => '%s contacts',
             'field_body'                   => 'Email Body',
             'field_body_placeholder'       => 'Write the main email copy, offer, links, and call to action here...',
             'field_notes'                  => 'Internal Notes',
@@ -4407,7 +5476,7 @@ JS;
             'column_status'                => 'Status',
             'column_actions'               => 'Actions',
             'audience_not_selected'        => 'Not selected yet',
-            'audience_summary'             => '%s segments, %s contacts',
+            'audience_summary'             => '%s includes, %s excludes, %s final contacts',
             'delete_button'                => 'Delete',
             'edit_button'                  => 'Edit',
             'send_button'                  => 'Send',
@@ -4522,8 +5591,8 @@ JS;
             return array(
                 array(
                     'icon' => 'dashicons-groups',
-                    'title' => 'بخش‌بندی مخاطبان',
-                    'description' => 'لیست‌ها و سگمنت‌های مخاطبان را بر اساس هدف کمپین آماده کنید.',
+                    'title' => 'مخاطبین',
+                    'description' => 'لیست‌ها و برچسب‌های مخاطبان را بر اساس هدف کمپین آماده کنید.',
                     'url' => admin_url('admin.php?page=smark-email-contacts'),
                 ),
                 array(
@@ -4560,8 +5629,8 @@ JS;
         return array(
             array(
                 'icon' => 'dashicons-groups',
-                'title' => 'Audience Segments',
-                'description' => 'Prepare lists and segments based on each campaign goal.',
+                'title' => 'Contacts',
+                'description' => 'Prepare contact lists and tags based on each campaign goal.',
                 'url' => admin_url('admin.php?page=smark-email-contacts'),
             ),
             array(
@@ -4860,15 +5929,322 @@ JS;
 
             .smark-seo-optimization-page[data-lang="en"] .smark-email-contacts-header-actions > div {
                 order: 1;
+                direction: ltr;
+                text-align: left;
+                margin-right: auto;
+            }
+
+            .smark-seo-optimization-page[data-lang="en"] .smark-email-saved-contacts-header {
+                justify-content: flex-start;
+            }
+
+            .smark-seo-optimization-page[data-lang="en"] .smark-email-saved-contacts-header > div {
+                direction: ltr;
+                text-align: left;
+                margin-right: auto;
             }
 
             .smark-seo-optimization-page[data-lang="en"] .smark-email-contacts-header-actions {
                 flex-direction: row;
+                justify-content: flex-start;
             }
 
             .smark-seo-optimization-page[data-lang="en"] .smark-email-contacts-header-actions .smark-email-open-import {
                 order: 2;
                 margin-left: auto;
+            }
+
+            .smark-seo-optimization-page[data-lang="en"] .smark-email-contact-lists-header,
+            .smark-seo-optimization-page[data-lang="en"] .smark-email-contact-tags-header {
+                direction: ltr;
+                flex-direction: row;
+                justify-content: flex-start;
+            }
+
+            .smark-seo-optimization-page[data-lang="en"] .smark-email-contact-lists-header > div,
+            .smark-seo-optimization-page[data-lang="en"] .smark-email-contact-tags-header > div {
+                order: 1;
+                direction: ltr;
+                text-align: left;
+                margin-right: auto;
+            }
+
+            .smark-seo-optimization-page[data-lang="en"] .smark-email-contact-lists-header > .button,
+            .smark-seo-optimization-page[data-lang="en"] .smark-email-contact-tags-header > .button {
+                order: 2;
+                margin-left: auto;
+            }
+
+            .smark-email-management-grid {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 16px;
+            }
+
+            .smark-email-management-card {
+                border: 1px solid rgba(148, 163, 184, 0.22);
+                border-radius: 14px;
+                padding: 16px;
+                background: rgba(248, 250, 252, 0.72);
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+            }
+
+            .smark-email-management-card > header {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 12px;
+            }
+
+            .smark-email-management-card h3 {
+                margin: 0 0 4px;
+                color: #111827;
+                font-size: 1.05rem;
+                font-weight: 800;
+            }
+
+            .smark-email-management-card p {
+                margin: 0;
+                color: #64748b;
+                font-size: 0.88rem;
+                font-weight: 700;
+            }
+
+            .smark-email-system-tags {
+                margin-bottom: 16px;
+                border: 1px solid rgba(99, 102, 241, 0.2);
+                border-radius: 14px;
+                padding: 14px 16px;
+                background: rgba(99, 102, 241, 0.06);
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+
+            .smark-email-system-tags strong {
+                color: #111827;
+                font-weight: 800;
+            }
+
+            .smark-email-system-tags small {
+                color: #64748b;
+                font-weight: 600;
+            }
+
+            .smark-email-status--system {
+                background: #eef2ff;
+                color: #4338ca;
+            }
+
+            .smark-email-audience-builder__box {
+                min-height: 68px;
+                border: 1px solid rgba(148, 163, 184, 0.35);
+                border-radius: 14px;
+                padding: 10px;
+                background: #ffffff;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+
+            .smark-email-audience-builder__chips {
+                min-width: 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+
+            .smark-email-audience-builder__inputs {
+                display: none;
+            }
+
+            .smark-email-audience-empty {
+                color: #64748b;
+                font-size: 0.9em;
+                font-weight: 600;
+            }
+
+            .smark-email-audience-chip {
+                min-height: 34px;
+                max-width: 220px;
+                border: 1px solid rgba(99, 102, 241, 0.18);
+                border-radius: 999px;
+                padding: 0 12px;
+                background: #eef2ff;
+                color: #3730a3;
+                font-size: 0.86em;
+                font-weight: 800;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                cursor: pointer;
+            }
+
+            .smark-email-audience-chip--more {
+                background: #ffffff;
+                color: #4f46e5;
+            }
+
+            .smark-email-audience-modal__section {
+                border: 1px solid rgba(148, 163, 184, 0.22);
+                border-radius: 14px;
+                padding: 14px;
+                margin-bottom: 14px;
+                background: rgba(248, 250, 252, 0.72);
+            }
+
+            .smark-email-audience-modal__section h3 {
+                margin: 0 0 10px;
+                color: #111827;
+                font-size: 1rem;
+                font-weight: 800;
+            }
+
+            .smark-email-audience-contacts-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                margin-bottom: 10px;
+            }
+
+            .smark-email-audience-contacts-header h3 {
+                margin: 0;
+            }
+
+            .smark-email-audience-contacts-tools {
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+
+            .smark-email-audience-selected-count {
+                color: #4f46e5;
+                font-size: 0.84em;
+                font-weight: 800;
+                white-space: nowrap;
+            }
+
+            .smark-email-audience-contacts-tools input[type="search"] {
+                width: min(260px, 46vw);
+                min-height: 36px;
+                border: 1px solid rgba(148, 163, 184, 0.35);
+                border-radius: 10px;
+                padding: 7px 10px;
+                box-shadow: none;
+            }
+
+            .smark-email-audience-contact-limit-note {
+                margin: 10px 0 0;
+                color: #64748b;
+                font-size: 0.86em;
+                font-weight: 700;
+            }
+
+            .smark-email-audience-option {
+                display: grid;
+                grid-template-columns: 22px minmax(0, 1fr) auto;
+                align-items: center;
+                gap: 10px;
+                padding: 9px 10px;
+                border-radius: 10px;
+                color: #1f2937;
+                cursor: pointer;
+            }
+
+            .smark-email-audience-option:hover {
+                background: #ffffff;
+            }
+
+            .smark-email-audience-option span {
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                font-weight: 800;
+            }
+
+            .smark-email-audience-option small {
+                color: #64748b;
+                font-size: 0.82em;
+                font-weight: 700;
+                white-space: nowrap;
+            }
+
+            .smark-email-editor-field {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .smark-email-editor-field .wp-editor-wrap {
+                width: 100%;
+            }
+
+            .smark-email-editor-field .wp-editor-container {
+                border: 1px solid rgba(148, 163, 184, 0.35);
+                border-radius: 14px;
+                overflow: hidden;
+                box-shadow: none;
+            }
+
+            .smark-email-editor-field .quicktags-toolbar {
+                display: none;
+                align-items: center;
+                gap: 4px;
+                flex-wrap: wrap;
+                padding: 8px;
+                background: #f8fafc;
+                border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+            }
+
+            .smark-email-editor-field .html-active .quicktags-toolbar {
+                display: flex;
+            }
+
+            .smark-email-editor-field .quicktags-toolbar input.ed_button,
+            .smark-email-editor-field .wp-editor-tabs button {
+                width: auto;
+                min-height: 28px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 2px 2px 0;
+                padding: 2px 8px;
+                border-radius: 4px;
+                font-size: 12px;
+                line-height: 1.6;
+            }
+
+            .smark-email-editor-field .wp-editor-tools {
+                display: block;
+            }
+
+            .smark-email-editor-field .wp-editor-tabs {
+                display: flex;
+                justify-content: flex-end;
+                gap: 4px;
+            }
+
+            .smark-email-editor-field textarea.wp-editor-area {
+                width: 100%;
+                min-height: 320px;
+                border: 0;
+                border-radius: 0;
+            }
+
+            .smark-email-editor-field .mce-tinymce,
+            .smark-email-editor-field .mce-container,
+            .smark-email-editor-field .mce-panel {
+                max-width: 100%;
+                box-sizing: border-box;
             }
 
             .smark-email-account-form {
@@ -5055,7 +6431,8 @@ JS;
 
             .smark-email-form-grid input,
             .smark-email-form-grid select,
-            .smark-email-form-grid textarea {
+            .smark-email-form-grid textarea,
+            .smark-email-form-field select {
                 width: 100%;
                 min-height: 44px;
                 border: 1px solid rgba(148, 163, 184, 0.35);
@@ -5068,7 +6445,8 @@ JS;
 
             .smark-email-form-grid input:focus,
             .smark-email-form-grid select:focus,
-            .smark-email-form-grid textarea:focus {
+            .smark-email-form-grid textarea:focus,
+            .smark-email-form-field select:focus {
                 border-color: #6366f1;
                 box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
                 outline: none;
@@ -5236,14 +6614,16 @@ JS;
 
             @media (max-width: 960px) {
                 .smark-email-metrics-grid,
-                .smark-email-performance-summary {
+                .smark-email-performance-summary,
+                .smark-email-management-grid {
                     grid-template-columns: repeat(2, minmax(0, 1fr));
                 }
             }
 
             @media (max-width: 640px) {
                 .smark-email-metrics-grid,
-                .smark-email-performance-summary {
+                .smark-email-performance-summary,
+                .smark-email-management-grid {
                     grid-template-columns: 1fr;
                 }
             }
