@@ -239,14 +239,15 @@ class SMarkEmailMarketing {
                 <section class="seo-step-card seo-step-card--full" data-step="strategy">
                     <header class="seo-step-header smark-email-account-form-header">
                         <div>
-                            <h2 data-smark-provider-text data-email-text="<?php echo esc_attr($strings['form_title_email']); ?>" data-gmail-text="<?php echo esc_attr($strings['form_title_gmail']); ?>"><?php echo esc_html($strings['form_title_email']); ?></h2>
-                            <p data-smark-provider-text data-email-text="<?php echo esc_attr($strings['form_description_email']); ?>" data-gmail-text="<?php echo esc_attr($strings['form_description_gmail']); ?>"><?php echo esc_html($strings['form_description_email']); ?></p>
+                            <h2 data-smark-provider-text data-email-text="<?php echo esc_attr($strings['form_title_email']); ?>" data-gmail-text="<?php echo esc_attr($strings['form_title_gmail']); ?>" data-outlook-text="<?php echo esc_attr($strings['form_title_outlook']); ?>"><?php echo esc_html($strings['form_title_email']); ?></h2>
+                            <p data-smark-provider-text data-email-text="<?php echo esc_attr($strings['form_description_email']); ?>" data-gmail-text="<?php echo esc_attr($strings['form_description_gmail']); ?>" data-outlook-text="<?php echo esc_attr($strings['form_description_outlook']); ?>"><?php echo esc_html($strings['form_description_email']); ?></p>
                         </div>
                         <div class="smark-email-provider-switch">
                             <label for="smark_email_provider"><?php echo esc_html($strings['provider_label']); ?></label>
                             <select id="smark_email_provider" name="provider" form="smarkEmailAccountForm">
                                 <option value="email"><?php echo esc_html($strings['provider_email']); ?></option>
                                 <option value="gmail"><?php echo esc_html($strings['provider_gmail']); ?></option>
+                                <option value="outlook"><?php echo esc_html($strings['provider_outlook']); ?></option>
                             </select>
                         </div>
                     </header>
@@ -259,7 +260,7 @@ class SMarkEmailMarketing {
                         <div class="smark-email-form-grid">
                             <label>
                                 <span><?php echo esc_html($strings['field_label']); ?></span>
-                                <input type="text" name="account_label" required placeholder="<?php echo esc_attr($strings['field_label_placeholder_email']); ?>" data-email-placeholder="<?php echo esc_attr($strings['field_label_placeholder_email']); ?>" data-gmail-placeholder="<?php echo esc_attr($strings['field_label_placeholder_gmail']); ?>">
+                                <input type="text" name="account_label" required placeholder="<?php echo esc_attr($strings['field_label_placeholder_email']); ?>" data-email-placeholder="<?php echo esc_attr($strings['field_label_placeholder_email']); ?>" data-gmail-placeholder="<?php echo esc_attr($strings['field_label_placeholder_gmail']); ?>" data-outlook-placeholder="<?php echo esc_attr($strings['field_label_placeholder_outlook']); ?>">
                             </label>
 
                             <label>
@@ -268,13 +269,13 @@ class SMarkEmailMarketing {
                             </label>
 
                             <label>
-                                <span data-smark-provider-text data-email-text="<?php echo esc_attr($strings['field_email_email']); ?>" data-gmail-text="<?php echo esc_attr($strings['field_email_gmail']); ?>"><?php echo esc_html($strings['field_email_email']); ?></span>
-                                <input type="email" name="email_address" required placeholder="name@example.com" data-email-placeholder="name@example.com" data-gmail-placeholder="name@gmail.com">
+                                <span data-smark-provider-text data-email-text="<?php echo esc_attr($strings['field_email_email']); ?>" data-gmail-text="<?php echo esc_attr($strings['field_email_gmail']); ?>" data-outlook-text="<?php echo esc_attr($strings['field_email_outlook']); ?>"><?php echo esc_html($strings['field_email_email']); ?></span>
+                                <input type="email" name="email_address" required placeholder="name@example.com" data-email-placeholder="name@example.com" data-gmail-placeholder="name@gmail.com" data-outlook-placeholder="name@outlook.com">
                             </label>
 
                             <label>
                                 <span>
-                                    <span data-smark-provider-text data-email-text="<?php echo esc_attr($strings['field_password_email']); ?>" data-gmail-text="<?php echo esc_attr($strings['field_password_gmail']); ?>"><?php echo esc_html($strings['field_password_email']); ?></span>
+                                    <span data-smark-provider-text data-email-text="<?php echo esc_attr($strings['field_password_email']); ?>" data-gmail-text="<?php echo esc_attr($strings['field_password_gmail']); ?>" data-outlook-text="<?php echo esc_attr($strings['field_password_outlook']); ?>"><?php echo esc_html($strings['field_password_email']); ?></span>
                                     <span class="smark-email-gmail-app-link" data-smark-gmail-only>
                                         (<?php echo wp_kses_post(sprintf(
                                             '<a href="%1$s" target="_blank" rel="noopener noreferrer">%2$s <span class="dashicons dashicons-external" aria-hidden="true"></span></a>',
@@ -293,8 +294,26 @@ class SMarkEmailMarketing {
                                             <span><?php echo esc_html($strings['gmail_app_password_tooltip_step_3']); ?></span>
                                         </span>
                                     </span>
+                                    <span class="smark-email-gmail-app-link" data-smark-outlook-only>
+                                        (<?php echo wp_kses_post(sprintf(
+                                            '<a href="%1$s" target="_blank" rel="noopener noreferrer">%2$s <span class="dashicons dashicons-external" aria-hidden="true"></span></a>',
+                                            esc_url('https://account.microsoft.com/security'),
+                                            esc_html($strings['outlook_app_password_link'])
+                                        )); ?>)
+                                    </span>
+                                    <span class="smark-email-gmail-app-info" data-smark-outlook-only>
+                                        <button type="button" class="smark-email-info-button" aria-label="<?php echo esc_attr($strings['outlook_app_password_tooltip_label']); ?>">
+                                            <span class="dashicons dashicons-info-outline" aria-hidden="true"></span>
+                                        </button>
+                                        <span class="smark-email-info-tooltip" role="tooltip">
+                                            <strong><?php echo esc_html($strings['outlook_app_password_tooltip_title']); ?></strong>
+                                            <span><?php echo esc_html($strings['outlook_app_password_tooltip_step_1']); ?></span>
+                                            <span><?php echo esc_html($strings['outlook_app_password_tooltip_step_2']); ?></span>
+                                            <span><?php echo esc_html($strings['outlook_app_password_tooltip_step_3']); ?></span>
+                                        </span>
+                                    </span>
                                 </span>
-                                <input type="password" name="app_password" required autocomplete="new-password" placeholder="<?php echo esc_attr($strings['field_password_placeholder_email']); ?>" data-email-placeholder="<?php echo esc_attr($strings['field_password_placeholder_email']); ?>" data-gmail-placeholder="<?php echo esc_attr($strings['field_password_placeholder_gmail']); ?>">
+                                <input type="password" name="app_password" required autocomplete="new-password" placeholder="<?php echo esc_attr($strings['field_password_placeholder_email']); ?>" data-email-placeholder="<?php echo esc_attr($strings['field_password_placeholder_email']); ?>" data-gmail-placeholder="<?php echo esc_attr($strings['field_password_placeholder_gmail']); ?>" data-outlook-placeholder="<?php echo esc_attr($strings['field_password_placeholder_outlook']); ?>">
                             </label>
 
                             <label>
@@ -304,7 +323,7 @@ class SMarkEmailMarketing {
 
                             <label>
                                 <span><?php echo esc_html($strings['field_smtp_host']); ?></span>
-                                <input type="text" name="smtp_host" required placeholder="mail.example.com" data-email-value="" data-gmail-value="smtp.gmail.com">
+                                <input type="text" name="smtp_host" required placeholder="mail.example.com" data-email-value="" data-gmail-value="smtp.gmail.com" data-outlook-value="smtp.office365.com">
                             </label>
 
                             <label>
@@ -327,7 +346,7 @@ class SMarkEmailMarketing {
                             </label>
                         </div>
 
-                        <p class="smark-email-help" data-smark-provider-text data-email-text="<?php echo esc_attr($strings['email_help']); ?>" data-gmail-text="<?php echo esc_attr($strings['gmail_help']); ?>"><?php echo esc_html($strings['email_help']); ?></p>
+                        <p class="smark-email-help" data-smark-provider-text data-email-text="<?php echo esc_attr($strings['email_help']); ?>" data-gmail-text="<?php echo esc_attr($strings['gmail_help']); ?>" data-outlook-text="<?php echo esc_attr($strings['outlook_help']); ?>"><?php echo esc_html($strings['email_help']); ?></p>
 
                         <div class="smark-email-form-actions">
                             <button type="submit" class="button button-primary"><?php echo esc_html($strings['save_button']); ?></button>
@@ -1189,6 +1208,7 @@ class SMarkEmailMarketing {
                                 <select name="provider" required data-smark-edit-provider>
                                     <option value="email"><?php echo esc_html($strings['provider_email']); ?></option>
                                     <option value="gmail"><?php echo esc_html($strings['provider_gmail']); ?></option>
+                                    <option value="outlook"><?php echo esc_html($strings['provider_outlook']); ?></option>
                                 </select>
                             </label>
 
@@ -1220,7 +1240,7 @@ class SMarkEmailMarketing {
 
                             <label>
                                 <span><?php echo esc_html($strings['field_smtp_host']); ?></span>
-                                <input type="text" name="smtp_host" required placeholder="mail.example.com" data-gmail-value="smtp.gmail.com">
+                                <input type="text" name="smtp_host" required placeholder="mail.example.com" data-gmail-value="smtp.gmail.com" data-outlook-value="smtp.office365.com">
                             </label>
 
                             <label>
@@ -1717,7 +1737,7 @@ class SMarkEmailMarketing {
         }
 
         $provider = isset($_POST['provider']) ? sanitize_key(wp_unslash($_POST['provider'])) : 'email';
-        $provider = in_array($provider, array('email', 'gmail'), true) ? $provider : 'email';
+        $provider = in_array($provider, array('email', 'gmail', 'outlook'), true) ? $provider : 'email';
 
         $smtp_port = isset($_POST['smtp_port']) ? absint($_POST['smtp_port']) : 587;
         $smtp_port = in_array($smtp_port, array(25, 465, 587, 2525), true) ? $smtp_port : 587;
@@ -1755,6 +1775,8 @@ class SMarkEmailMarketing {
         if ($account['smtp_host'] === '') {
             if ($provider === 'gmail') {
                 $account['smtp_host'] = 'smtp.gmail.com';
+            } elseif ($provider === 'outlook') {
+                $account['smtp_host'] = 'smtp.office365.com';
             } else {
                 $this->redirect_to_accounts('error');
             }
@@ -2346,7 +2368,7 @@ class SMarkEmailMarketing {
             wp_send_json_error(array('message' => $strings['notice_send_error']), 404);
         }
 
-        $session = $this->process_campaign_send_session_batch($session);
+        $session = $this->process_campaign_send_session_batch($session, $strings);
         if (is_wp_error($session)) {
             $this->delete_campaign_send_session($session_id);
             wp_send_json_error(array('message' => $this->get_campaign_send_error_message($session, $strings)), 400);
@@ -3691,7 +3713,8 @@ class SMarkEmailMarketing {
             'total' => count($recipients),
             'sent_count' => 0,
             'failed_count' => 0,
-            'recent_sent' => array(),
+            'recent_reports' => array(),
+            'sender_start_index' => 0,
             'complete' => false,
             'started_at' => current_time('mysql'),
         );
@@ -3735,7 +3758,39 @@ class SMarkEmailMarketing {
         return $sender_pool;
     }
 
-    private function process_campaign_send_session_batch($session) {
+    private function get_next_campaign_sender_index($sender_pool, $start_index = 0) {
+        $start_index = max(0, (int) $start_index);
+        foreach ($sender_pool as $pool_index => $sender_item) {
+            if ($pool_index < $start_index) {
+                continue;
+            }
+
+            if ((int) ($sender_item['remaining'] ?? 0) > 0) {
+                return $pool_index;
+            }
+        }
+
+        return null;
+    }
+
+    private function get_campaign_sender_start_after_error($sender_pool, $sender_index) {
+        $sender_index = (int) $sender_index;
+        $last_index = count($sender_pool) - 1;
+
+        if ($last_index <= 0 || $sender_index >= $last_index) {
+            return $sender_index;
+        }
+
+        for ($next_index = $sender_index + 1; $next_index <= $last_index; $next_index++) {
+            if ((int) ($sender_pool[$next_index]['remaining'] ?? 0) > 0) {
+                return $next_index;
+            }
+        }
+
+        return $last_index;
+    }
+
+    private function process_campaign_send_session_batch($session, $strings = array()) {
         $campaign_message = isset($session['campaign_message']) && is_array($session['campaign_message']) ? $session['campaign_message'] : array();
         $recipients = isset($session['recipients']) && is_array($session['recipients']) ? array_values($session['recipients']) : array();
         $total = count($recipients);
@@ -3759,17 +3814,11 @@ class SMarkEmailMarketing {
 
         $batch_size = 5;
         $processed = 0;
+        $sender_start_index = isset($session['sender_start_index']) ? max(0, (int) $session['sender_start_index']) : 0;
 
         try {
             while ($index < $total && $processed < $batch_size) {
-                $sender_index = null;
-                foreach ($sender_pool as $pool_index => $sender_item) {
-                    if ((int) ($sender_item['remaining'] ?? 0) > 0) {
-                        $sender_index = $pool_index;
-                        break;
-                    }
-                }
-
+                $sender_index = $this->get_next_campaign_sender_index($sender_pool, $sender_start_index);
                 if ($sender_index === null) {
                     return new WP_Error('sender_capacity_insufficient', 'Selected sender accounts do not have enough daily capacity.');
                 }
@@ -3794,11 +3843,13 @@ class SMarkEmailMarketing {
                     $session['sent_count'] = (int) ($session['sent_count'] ?? 0) + 1;
                     $sender_pool[$sender_index]['remaining'] = max(0, (int) $sender_pool[$sender_index]['remaining'] - 1);
                     $this->record_campaign_event($campaign_id, 'sent', $email, '', '', $sender_account_id);
-                    array_unshift($session['recent_sent'], array(
-                        'email' => $this->mask_email_for_log($email),
+                    array_unshift($session['recent_reports'], array(
+                        'email' => $email,
                         'time' => current_time('H:i:s'),
+                        'status' => 'sent',
+                        'statusLabel' => isset($strings['send_progress_report_sent']) ? $strings['send_progress_report_sent'] : 'Sent',
                     ));
-                    $session['recent_sent'] = array_slice($session['recent_sent'], 0, 5);
+                    $session['recent_reports'] = array_slice($session['recent_reports'], 0, 5);
                     $this->log_campaign_mail_debug('progress_recipient_sent', array(
                         'campaign_id' => $campaign_id,
                         'sender_account_id' => $sender_account_id,
@@ -3807,11 +3858,20 @@ class SMarkEmailMarketing {
                 } else {
                     $session['failed_count'] = (int) ($session['failed_count'] ?? 0) + 1;
                     $this->record_campaign_event($campaign_id, 'failed', $email, '', '', $sender_account_id, $this->get_campaign_failure_details($send_result, $email, $sender));
+                    array_unshift($session['recent_reports'], array(
+                        'email' => $email,
+                        'time' => current_time('H:i:s'),
+                        'status' => 'failed',
+                        'statusLabel' => isset($strings['send_progress_report_failed']) ? $strings['send_progress_report_failed'] : 'Failed',
+                    ));
+                    $session['recent_reports'] = array_slice($session['recent_reports'], 0, 5);
                     $this->log_campaign_mail_debug('progress_recipient_send_failed', array(
                         'campaign_id' => $campaign_id,
                         'sender_account_id' => $sender_account_id,
                         'recipient' => $this->mask_email_for_log($email),
+                        'next_sender_index' => $this->get_campaign_sender_start_after_error($sender_pool, $sender_index),
                     ));
+                    $sender_start_index = $this->get_campaign_sender_start_after_error($sender_pool, $sender_index);
                 }
             }
         } finally {
@@ -3820,6 +3880,7 @@ class SMarkEmailMarketing {
 
         $session['index'] = $index;
         $session['total'] = $total;
+        $session['sender_start_index'] = $sender_start_index;
         $session['complete'] = $index >= $total;
 
         if (!empty($session['complete']) && (int) ($session['sent_count'] ?? 0) <= 0) {
@@ -3855,7 +3916,7 @@ class SMarkEmailMarketing {
             'complete' => $complete,
             'statusText' => $complete ? $strings['send_progress_complete'] : $strings['send_progress_sending'],
             'countText' => sprintf($strings['send_progress_count'], number_format_i18n($sent), number_format_i18n($total)),
-            'recentSent' => isset($session['recent_sent']) && is_array($session['recent_sent']) ? array_values($session['recent_sent']) : array(),
+            'recentReports' => isset($session['recent_reports']) && is_array($session['recent_reports']) ? array_values($session['recent_reports']) : array(),
         );
     }
 
@@ -3958,17 +4019,11 @@ class SMarkEmailMarketing {
 
         $sent_count = 0;
         $html_body = $this->prepare_campaign_email_html($body);
+        $sender_start_index = 0;
 
         try {
             foreach ($recipients as $email) {
-                $sender_index = null;
-                foreach ($sender_pool as $index => $sender_item) {
-                    if ((int) $sender_item['remaining'] > 0) {
-                        $sender_index = $index;
-                        break;
-                    }
-                }
-
+                $sender_index = $this->get_next_campaign_sender_index($sender_pool, $sender_start_index);
                 if ($sender_index === null) {
                     break;
                 }
@@ -4004,7 +4059,9 @@ class SMarkEmailMarketing {
                         'sender_account_id' => $sender_account_id,
                         'recipient' => $this->mask_email_for_log($email),
                         'mail_errors' => $this->campaign_mail_errors,
+                        'next_sender_index' => $this->get_campaign_sender_start_after_error($sender_pool, $sender_index),
                     ));
+                    $sender_start_index = $this->get_campaign_sender_start_after_error($sender_pool, $sender_index);
                 }
             }
         } finally {
@@ -5057,7 +5114,8 @@ class SMarkEmailMarketing {
     function openAccountEditModal($trigger) {
         var $modal = $('#smarkEmailAccountEditModal');
         var $form = $('#smarkEmailAccountEditForm');
-        var provider = ($trigger.attr('data-provider') || 'email') === 'gmail' ? 'gmail' : 'email';
+        var rawProvider = $trigger.attr('data-provider') || 'email';
+        var provider = rawProvider === 'gmail' || rawProvider === 'outlook' ? rawProvider : 'email';
 
         $form.find('[name="account_id"]').val($trigger.attr('data-account-id') || '');
         $form.find('[name="provider"]').val(provider);
@@ -5085,7 +5143,7 @@ class SMarkEmailMarketing {
     }
 
     function updateEmailProviderForm(provider) {
-        var normalizedProvider = provider === 'gmail' ? 'gmail' : 'email';
+        var normalizedProvider = provider === 'gmail' || provider === 'outlook' ? provider : 'email';
         var $form = $('#smarkEmailAccountForm');
 
         $('[data-smark-provider-text]').each(function () {
@@ -5102,17 +5160,18 @@ class SMarkEmailMarketing {
         });
 
         $('[data-smark-gmail-only]').toggle(normalizedProvider === 'gmail');
+        $('[data-smark-outlook-only]').toggle(normalizedProvider === 'outlook');
 
         var $smtpHost = $form.find('[name="smtp_host"]');
         if ($smtpHost.length && !$smtpHost.val()) {
             $smtpHost.val($smtpHost.attr('data-' + normalizedProvider + '-value') || '');
         }
 
-        if (normalizedProvider === 'gmail') {
+        if (normalizedProvider === 'gmail' || normalizedProvider === 'outlook') {
             $form.find('[name="smtp_port"]').val('587');
             $form.find('[name="encryption"]').val('tls');
-            $smtpHost.val($smtpHost.attr('data-gmail-value') || 'smtp.gmail.com');
-        } else if ($smtpHost.val() === ($smtpHost.attr('data-gmail-value') || 'smtp.gmail.com')) {
+            $smtpHost.val($smtpHost.attr('data-' + normalizedProvider + '-value') || (normalizedProvider === 'gmail' ? 'smtp.gmail.com' : 'smtp.office365.com'));
+        } else if ($smtpHost.val() === ($smtpHost.attr('data-gmail-value') || 'smtp.gmail.com') || $smtpHost.val() === ($smtpHost.attr('data-outlook-value') || 'smtp.office365.com')) {
             $smtpHost.val('');
         }
     }
@@ -5493,16 +5552,17 @@ class SMarkEmailMarketing {
 
         $(document).on('change', '#smarkEmailAccountEditForm [data-smark-edit-provider]', function () {
             var $form = $('#smarkEmailAccountEditForm');
-            var provider = $(this).val() === 'gmail' ? 'gmail' : 'email';
+            var provider = ($(this).val() === 'gmail' || $(this).val() === 'outlook') ? $(this).val() : 'email';
             var $smtpHost = $form.find('[name="smtp_host"]');
 
-            if (provider === 'gmail') {
-                if (!$smtpHost.val() || $smtpHost.val() === 'smtp.gmail.com') {
-                    $smtpHost.val('smtp.gmail.com');
+            if (provider === 'gmail' || provider === 'outlook') {
+                var defaultHost = provider === 'gmail' ? 'smtp.gmail.com' : 'smtp.office365.com';
+                if (!$smtpHost.val() || $smtpHost.val() === 'smtp.gmail.com' || $smtpHost.val() === 'smtp.office365.com') {
+                    $smtpHost.val(defaultHost);
                 }
                 $form.find('[name="smtp_port"]').val('587');
                 $form.find('[name="encryption"]').val('tls');
-            } else if ($smtpHost.val() === 'smtp.gmail.com') {
+            } else if ($smtpHost.val() === 'smtp.gmail.com' || $smtpHost.val() === 'smtp.office365.com') {
                 $smtpHost.val('');
             }
         });
@@ -5699,7 +5759,7 @@ class SMarkEmailMarketing {
         function renderSendProgress(data) {
             var $modal = $('#smarkEmailSendProgressModal');
             var percent = parseInt(data.percent, 10);
-            var recent = $.isArray(data.recentSent) ? data.recentSent : [];
+            var recent = $.isArray(data.recentReports) ? data.recentReports : [];
 
             if (isNaN(percent)) {
                 percent = 0;
@@ -5716,7 +5776,15 @@ class SMarkEmailMarketing {
                 $('<li />').text($recent.attr('data-empty-text') || 'Waiting for the first sent email...').appendTo($recent);
             } else {
                 recent.slice(0, 5).forEach(function (item) {
-                    $('<li />').append($('<strong />').text(item.email || '')).append($('<span />').text(item.time || '')).appendTo($recent);
+                    var status = item.status === 'failed' ? 'failed' : 'sent';
+                    var $meta = $('<span class="smark-email-send-progress__recent-meta" />')
+                        .append($('<span />').text(item.time || ''))
+                        .append($('<span class="smark-email-status" />').addClass('smark-email-status--' + status).text(item.statusLabel || status));
+
+                    $('<li />')
+                        .append($('<strong />').text(item.email || ''))
+                        .append($meta)
+                        .appendTo($recent);
                 });
             }
 
@@ -6004,6 +6072,7 @@ JS;
                 'form_title'                    => 'افزودن حساب ایمیل',
                 'form_title_email'              => 'افزودن حساب ایمیل',
                 'form_title_gmail'              => 'افزودن حساب جیمیل',
+                'form_title_outlook'            => 'افزودن حساب اوتلوک',
                 'edit_form_title_email'         => 'ویرایش حساب ایمیل',
                 'edit_form_title_gmail'         => 'ویرایش حساب جیمیل',
                 'edit_modal_title'              => 'ویرایش حساب ایمیل',
@@ -6011,32 +6080,44 @@ JS;
                 'form_description'              => 'حساب ارسال ایمیل را با مشخصات SMTP ثبت کنید.',
                 'form_description_email'        => 'برای ارسال از ایمیل معمولی، مشخصات SMTP، رمز عبور و سقف ارسال روزانه را وارد کنید.',
                 'form_description_gmail'        => 'برای ارسال از جیمیل، آدرس ایمیل، نام فرستنده، App Password و سقف ارسال روزانه لازم است.',
+                'form_description_outlook'      => 'برای ارسال از اوتلوک، آدرس ایمیل، نام فرستنده، رمز یا App Password و سقف ارسال روزانه لازم است.',
                 'edit_form_description_email'   => 'مشخصات SMTP، فرستنده و سقف ارسال این حساب را به‌روزرسانی کنید.',
                 'edit_form_description_gmail'   => 'مشخصات جیمیل، فرستنده، App Password و سقف ارسال این حساب را به‌روزرسانی کنید.',
                 'provider_label'                => 'نوع حساب',
                 'provider_email'                => 'ایمیل',
                 'provider_gmail'                => 'جیمیل',
+                'provider_outlook'              => 'اوتلوک',
                 'field_label'                   => 'عنوان حساب',
                 'field_label_placeholder'       => 'مثلا ایمیل فروش',
                 'field_label_placeholder_email' => 'مثلا ایمیل فروش',
                 'field_label_placeholder_gmail' => 'مثلا جیمیل فروش',
+                'field_label_placeholder_outlook'=> 'مثلا اوتلوک فروش',
                 'field_sender_name'             => 'نام فرستنده',
                 'field_sender_name_placeholder' => 'مثلا تیم اسمارک',
                 'field_email'                   => 'آدرس ایمیل',
                 'field_email_email'             => 'آدرس ایمیل',
                 'field_email_gmail'             => 'آدرس جیمیل',
+                'field_email_outlook'           => 'آدرس اوتلوک',
                 'field_app_password'            => 'رمز SMTP',
                 'field_password_email'          => 'رمز SMTP / ایمیل',
                 'field_password_gmail'          => 'App Password جیمیل',
+                'field_password_outlook'        => 'رمز اوتلوک',
                 'gmail_app_password_link'       => 'دریافت App Password',
                 'gmail_app_password_tooltip_label'=> 'راهنمای دریافت App Password جیمیل',
                 'gmail_app_password_tooltip_title'=> 'راهنمای سریع',
                 'gmail_app_password_tooltip_step_1'=> 'ابتدا مطمئن شوید ورود دو مرحله‌ای حساب گوگل فعال است.',
                 'gmail_app_password_tooltip_step_2'=> 'در صفحه App passwords، نام برنامه را SMark وارد کنید.',
                 'gmail_app_password_tooltip_step_3'=> 'کدی را که گوگل می‌دهد در همین فیلد SMark قرار دهید.',
+                'outlook_app_password_link'     => 'دریافت App Password',
+                'outlook_app_password_tooltip_label'=> 'راهنمای دریافت App Password اوتلوک',
+                'outlook_app_password_tooltip_title'=> 'راهنمای سریع',
+                'outlook_app_password_tooltip_step_1'=> 'ابتدا وارد بخش Security حساب مایکروسافت شوید و Advanced security options را باز کنید.',
+                'outlook_app_password_tooltip_step_2'=> 'اگر ورود دو مرحله‌ای فعال است، در بخش App passwords گزینه ایجاد رمز جدید را انتخاب کنید.',
+                'outlook_app_password_tooltip_step_3'=> 'رمزی را که مایکروسافت می‌دهد در همین فیلد SMark قرار دهید.',
                 'field_app_password_placeholder'=> 'رمز SMTP یا رمز برنامه',
                 'field_password_placeholder_email'=> 'رمز SMTP یا رمز ایمیل',
                 'field_password_placeholder_gmail'=> 'رمز برنامه ۱۶ کاراکتری گوگل',
+                'field_password_placeholder_outlook'=> 'رمز یا App Password حساب مایکروسافت',
                 'field_password_placeholder_keep'=> 'برای حفظ رمز فعلی خالی بگذارید',
                 'field_password_keep_help'      => 'اگر رمز جدید وارد نکنید، رمز ذخیره‌شده قبلی حفظ می‌شود.',
                 'field_daily_limit'             => 'تعداد ارسال روزانه',
@@ -6046,6 +6127,7 @@ JS;
                 'encryption_none'               => 'بدون رمزنگاری',
                 'email_help'                    => 'برای ایمیل معمولی، اطلاعات SMTP را از هاست یا سرویس‌دهنده ایمیل خود وارد کنید.',
                 'gmail_help'                    => 'برای جیمیل باید تایید دو مرحله‌ای فعال باشد و از Google Account > Security > App passwords رمز برنامه بسازید. پسورد اصلی جیمیل را وارد نکنید.',
+                'outlook_help'                  => 'برای اوتلوک تنظیمات SMTP به‌صورت خودکار روی smtp.office365.com، پورت 587 و TLS قرار می‌گیرد. اگر ورود دو مرحله‌ای فعال است از App Password مایکروسافت استفاده کنید.',
                 'save_button'                   => 'افزودن حساب',
                 'update_button'                 => 'ذخیره تغییرات',
                 'cancel_edit_button'            => 'لغو ویرایش',
@@ -6082,6 +6164,7 @@ JS;
             'form_title'                    => 'Add Email Account',
             'form_title_email'              => 'Add Email Account',
             'form_title_gmail'              => 'Add Gmail Account',
+            'form_title_outlook'            => 'Add Outlook Account',
             'edit_form_title_email'         => 'Edit Email Account',
             'edit_form_title_gmail'         => 'Edit Gmail Account',
             'edit_modal_title'              => 'Edit Email Account',
@@ -6089,32 +6172,44 @@ JS;
             'form_description'              => 'Add a sending account with SMTP details.',
             'form_description_email'        => 'For regular email, enter the SMTP details, password, and daily send limit.',
             'form_description_gmail'        => 'Gmail sending requires the email address, sender name, app password, and daily send limit.',
+            'form_description_outlook'      => 'Outlook sending requires the email address, sender name, password or app password, and daily send limit.',
             'edit_form_description_email'   => 'Update this account SMTP details, sender identity, and daily send limit.',
             'edit_form_description_gmail'   => 'Update this Gmail account, sender identity, app password, and daily send limit.',
             'provider_label'                => 'Account Type',
             'provider_email'                => 'Email',
             'provider_gmail'                => 'Gmail',
+            'provider_outlook'              => 'Outlook',
             'field_label'                   => 'Account Label',
             'field_label_placeholder'       => 'Example: Sales Email',
             'field_label_placeholder_email' => 'Example: Sales Email',
             'field_label_placeholder_gmail' => 'Example: Sales Gmail',
+            'field_label_placeholder_outlook'=> 'Example: Sales Outlook',
             'field_sender_name'             => 'Sender Name',
             'field_sender_name_placeholder' => 'Example: SMark Team',
             'field_email'                   => 'Email Address',
             'field_email_email'             => 'Email Address',
             'field_email_gmail'             => 'Gmail Address',
+            'field_email_outlook'           => 'Outlook Address',
             'field_app_password'            => 'SMTP Password',
             'field_password_email'          => 'SMTP / Email Password',
             'field_password_gmail'          => 'Gmail App Password',
+            'field_password_outlook'        => 'Outlook Password',
             'gmail_app_password_link'       => 'Get app password',
             'gmail_app_password_tooltip_label'=> 'Gmail app password help',
             'gmail_app_password_tooltip_title'=> 'Quick guide',
             'gmail_app_password_tooltip_step_1'=> 'Make sure 2-Step Verification is enabled on your Google account.',
             'gmail_app_password_tooltip_step_2'=> 'On the App passwords page, use SMark as the app name.',
             'gmail_app_password_tooltip_step_3'=> 'Paste the password Google gives you into this SMark field.',
+            'outlook_app_password_link'     => 'Get App Password',
+            'outlook_app_password_tooltip_label'=> 'Outlook app password help',
+            'outlook_app_password_tooltip_title'=> 'Quick guide',
+            'outlook_app_password_tooltip_step_1'=> 'Open your Microsoft account Security page and go to Advanced security options.',
+            'outlook_app_password_tooltip_step_2'=> 'If two-step verification is enabled, use the App passwords section to create a new password.',
+            'outlook_app_password_tooltip_step_3'=> 'Paste the password Microsoft gives you into this SMark field.',
             'field_app_password_placeholder'=> 'SMTP password or app password',
             'field_password_placeholder_email'=> 'SMTP or email password',
             'field_password_placeholder_gmail'=> '16-character Google app password',
+            'field_password_placeholder_outlook'=> 'Microsoft account password or app password',
             'field_password_placeholder_keep'=> 'Leave blank to keep the current password',
             'field_password_keep_help'      => 'If you do not enter a new password, the saved password stays unchanged.',
             'field_daily_limit'             => 'Daily Send Limit',
@@ -6124,6 +6219,7 @@ JS;
             'encryption_none'               => 'None',
             'email_help'                    => 'For regular email, use the SMTP details provided by your host or email service.',
             'gmail_help'                    => 'For Gmail, enable 2-Step Verification and create an app password from Google Account > Security > App passwords. Do not enter the regular Gmail password.',
+            'outlook_help'                  => 'For Outlook, SMark automatically uses smtp.office365.com, port 587, and TLS. If two-step verification is enabled, use a Microsoft app password.',
             'save_button'                   => 'Add Account',
             'update_button'                 => 'Save Changes',
             'cancel_edit_button'            => 'Cancel Edit',
@@ -6520,8 +6616,10 @@ JS;
                 'send_progress_sending'        => 'در حال ارسال ایمیل‌ها...',
                 'send_progress_complete'       => 'ارسال کامل شد.',
                 'send_progress_count'          => '%1$s از %2$s ایمیل ارسال شده',
-                'send_progress_recent_title'   => 'آخرین ایمیل‌های ارسال‌شده',
+                'send_progress_recent_title'   => 'گزارش ایمیل‌ها',
                 'send_progress_recent_empty'   => 'هنوز ایمیلی ارسال نشده است.',
+                'send_progress_report_sent'    => 'ارسال',
+                'send_progress_report_failed'  => 'خطا',
                 'send_progress_final_note'     => 'آمار نهایی این کمپین را بعدا می‌توانید در بخش پرفورمنس مشاهده کنید.',
                 'send_progress_close'          => 'بستن پنجره ارسال',
                 'list_title'                   => 'پیام‌های ذخیره‌شده',
@@ -6622,8 +6720,10 @@ JS;
             'send_progress_sending'        => 'Sending emails...',
             'send_progress_complete'       => 'Sending complete.',
             'send_progress_count'          => '%1$s of %2$s emails sent',
-            'send_progress_recent_title'   => 'Recently sent emails',
+            'send_progress_recent_title'   => 'Email report',
             'send_progress_recent_empty'   => 'No email has been sent yet.',
+            'send_progress_report_sent'    => 'Sent',
+            'send_progress_report_failed'  => 'Failed',
             'send_progress_final_note'     => 'You can review the final campaign stats later in Performance.',
             'send_progress_close'          => 'Close send window',
             'list_title'                   => 'Saved Messages',
@@ -8208,11 +8308,20 @@ JS;
                 color: #111827;
                 direction: ltr;
                 unicode-bidi: plaintext;
+                overflow-wrap: anywhere;
             }
 
-            .smark-email-send-progress__recent li span {
+            .smark-email-send-progress__recent li > span {
                 color: #64748b;
                 font-weight: 700;
+            }
+
+            .smark-email-send-progress__recent-meta {
+                display: inline-flex;
+                align-items: center;
+                justify-content: flex-end;
+                gap: 8px;
+                flex: 0 0 auto;
             }
 
             .smark-email-send-progress__recent p {
