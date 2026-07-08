@@ -2541,6 +2541,257 @@ class SMarkPlugin {
             'smark-dashboard-page',
             array($this, 'admin_page')
         );
+
+        add_submenu_page(
+            'smark-dashboard',
+            __('SMark Test Sidebar', 'smark'),
+            __('Test Sidebar', 'smark'),
+            self::CAP_ACCESS,
+            'smark-test-sidebar',
+            array($this, 'render_test_sidebar_page')
+        );
+    }
+
+    /**
+     * Render a blank test workspace with an internal glass sidebar.
+     */
+    public function render_test_sidebar_page() {
+        $items = array(
+            array(
+                'label' => __('Social Media', 'smark'),
+                'icon'  => 'dashicons-share',
+            ),
+            array(
+                'label' => __('SEO', 'smark'),
+                'icon'  => 'dashicons-search',
+            ),
+            array(
+                'label' => __('Email Marketing', 'smark'),
+                'icon'  => 'dashicons-email-alt',
+            ),
+        );
+
+        $bottom_items = array(
+            array(
+                'label' => __('Settings', 'smark'),
+                'icon'  => 'dashicons-admin-generic',
+            ),
+            array(
+                'label' => __('AI Assistant', 'smark'),
+                'icon'  => 'dashicons-lightbulb',
+            ),
+        );
+        ?>
+        <div class="wrap smark-test-sidebar-page">
+            <main class="smark-test-sidebar-canvas" aria-label="<?php echo esc_attr__('SMark test workspace', 'smark'); ?>">
+                <nav class="smark-test-glass-menu" aria-label="<?php echo esc_attr__('SMark test navigation', 'smark'); ?>">
+                    <div class="smark-test-glass-menu__brand" aria-hidden="true">
+                        <span class="dashicons dashicons-controls-forward"></span>
+                    </div>
+
+                    <div class="smark-test-glass-menu__group">
+                        <?php foreach ($items as $item) : ?>
+                            <button type="button" class="smark-test-glass-menu__item" aria-label="<?php echo esc_attr($item['label']); ?>">
+                                <span class="dashicons <?php echo esc_attr($item['icon']); ?>" aria-hidden="true"></span>
+                                <span class="smark-test-glass-menu__tooltip"><?php echo esc_html($item['label']); ?></span>
+                            </button>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <div class="smark-test-glass-menu__group smark-test-glass-menu__group--bottom">
+                        <?php foreach ($bottom_items as $item) : ?>
+                            <button type="button" class="smark-test-glass-menu__item" aria-label="<?php echo esc_attr($item['label']); ?>">
+                                <span class="dashicons <?php echo esc_attr($item['icon']); ?>" aria-hidden="true"></span>
+                                <span class="smark-test-glass-menu__tooltip"><?php echo esc_html($item['label']); ?></span>
+                            </button>
+                        <?php endforeach; ?>
+                    </div>
+                </nav>
+            </main>
+        </div>
+
+        <style>
+            .smark-test-sidebar-page {
+                min-height: calc(100vh - 32px);
+                margin: 0;
+                padding: 24px;
+                box-sizing: border-box;
+            }
+
+            .smark-test-sidebar-canvas {
+                position: relative;
+                min-height: calc(100vh - 80px);
+                border-radius: 28px;
+                overflow: hidden;
+                background:
+                    radial-gradient(circle at 78% 16%, rgba(79, 231, 255, 0.22), transparent 28%),
+                    radial-gradient(circle at 22% 88%, rgba(116, 82, 255, 0.18), transparent 32%),
+                    linear-gradient(135deg, #eef8f7 0%, #d9e9f3 45%, #f7fbff 100%);
+                box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+            }
+
+            .smark-test-sidebar-canvas::before,
+            .smark-test-sidebar-canvas::after {
+                content: "";
+                position: absolute;
+                border-radius: 999px;
+                pointer-events: none;
+            }
+
+            .smark-test-sidebar-canvas::before {
+                width: 420px;
+                height: 420px;
+                right: 96px;
+                top: 70px;
+                background: rgba(255, 255, 255, 0.28);
+                filter: blur(2px);
+            }
+
+            .smark-test-sidebar-canvas::after {
+                width: 540px;
+                height: 540px;
+                left: -160px;
+                bottom: -190px;
+                background: rgba(23, 44, 74, 0.08);
+            }
+
+            .smark-test-glass-menu {
+                position: absolute;
+                top: 32px;
+                right: 32px;
+                bottom: 32px;
+                z-index: 2;
+                width: 68px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 26px;
+                padding: 16px 10px;
+                border: 1px solid rgba(255, 255, 255, 0.22);
+                border-radius: 28px;
+                background: linear-gradient(180deg, rgba(9, 18, 34, 0.82), rgba(15, 24, 39, 0.66));
+                box-shadow: 0 22px 50px rgba(8, 18, 34, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+                backdrop-filter: blur(18px) saturate(140%);
+                -webkit-backdrop-filter: blur(18px) saturate(140%);
+            }
+
+            .smark-test-glass-menu__brand {
+                width: 42px;
+                height: 42px;
+                display: grid;
+                place-items: center;
+                border-radius: 16px;
+                color: #67f6ff;
+                background: rgba(6, 14, 29, 0.72);
+                box-shadow: inset 0 0 0 1px rgba(103, 246, 255, 0.24), 0 10px 24px rgba(0, 0, 0, 0.22);
+            }
+
+            .smark-test-glass-menu__brand .dashicons {
+                width: 24px;
+                height: 24px;
+                font-size: 24px;
+                transform: rotate(-45deg);
+            }
+
+            .smark-test-glass-menu__group {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 14px;
+            }
+
+            .smark-test-glass-menu__group--bottom {
+                margin-top: auto;
+            }
+
+            .smark-test-glass-menu__item {
+                position: relative;
+                width: 44px;
+                height: 44px;
+                display: grid;
+                place-items: center;
+                margin: 0;
+                padding: 0;
+                border: 0;
+                border-radius: 16px;
+                color: rgba(211, 246, 255, 0.84);
+                background: transparent;
+                cursor: pointer;
+                transition: color 160ms ease, background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+            }
+
+            .smark-test-glass-menu__item:hover,
+            .smark-test-glass-menu__item:focus-visible {
+                color: #ffffff;
+                background: rgba(57, 218, 255, 0.16);
+                box-shadow: inset 0 0 0 1px rgba(103, 246, 255, 0.24), 0 12px 22px rgba(39, 214, 255, 0.16);
+                transform: translateY(-1px);
+                outline: none;
+            }
+
+            .smark-test-glass-menu__item .dashicons {
+                width: 22px;
+                height: 22px;
+                font-size: 22px;
+            }
+
+            .smark-test-glass-menu__tooltip {
+                position: absolute;
+                top: 50%;
+                right: calc(100% + 16px);
+                min-width: 128px;
+                padding: 10px 14px;
+                border-radius: 10px;
+                color: #ffffff;
+                font-size: 13px;
+                font-weight: 700;
+                line-height: 1.2;
+                text-align: center;
+                white-space: nowrap;
+                background: rgba(22, 36, 59, 0.96);
+                box-shadow: 0 14px 30px rgba(7, 18, 34, 0.28);
+                opacity: 0;
+                pointer-events: none;
+                transform: translate(8px, -50%);
+                transition: opacity 160ms ease, transform 160ms ease;
+            }
+
+            .smark-test-glass-menu__tooltip::after {
+                content: "";
+                position: absolute;
+                top: 50%;
+                right: -6px;
+                width: 12px;
+                height: 12px;
+                background: inherit;
+                transform: translateY(-50%) rotate(45deg);
+                border-radius: 2px;
+            }
+
+            .smark-test-glass-menu__item:hover .smark-test-glass-menu__tooltip,
+            .smark-test-glass-menu__item:focus-visible .smark-test-glass-menu__tooltip {
+                opacity: 1;
+                transform: translate(0, -50%);
+            }
+
+            @media (max-width: 782px) {
+                .smark-test-sidebar-page {
+                    padding: 16px;
+                }
+
+                .smark-test-sidebar-canvas {
+                    min-height: calc(100vh - 78px);
+                    border-radius: 22px;
+                }
+
+                .smark-test-glass-menu {
+                    right: 18px;
+                    top: 18px;
+                    bottom: 18px;
+                }
+            }
+        </style>
+        <?php
     }
 
     private function get_menu_icon_url() {

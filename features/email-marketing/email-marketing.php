@@ -41,6 +41,7 @@ class SMarkEmailMarketing {
         add_action('wp_ajax_smark_email_contacts_import', array($this, 'ajax_contacts_import'));
         add_action('wp_ajax_smark_email_contacts_page', array($this, 'ajax_contacts_page'));
         add_action('wp_ajax_smark_email_contact_save_modal', array($this, 'ajax_email_contact_save_modal'));
+        add_action('wp_ajax_smark_email_contact_delete_modal', array($this, 'ajax_email_contact_delete_modal'));
         add_action('wp_ajax_smark_email_campaign_message_send_start', array($this, 'ajax_campaign_message_send_start'));
         add_action('wp_ajax_smark_email_campaign_message_quick_send_start', array($this, 'ajax_campaign_message_quick_send_start'));
         add_action('wp_ajax_smark_email_campaign_message_send_batch', array($this, 'ajax_campaign_message_send_batch'));
@@ -49,6 +50,8 @@ class SMarkEmailMarketing {
         add_action('wp_ajax_smark_email_campaign_message_save_modal', array($this, 'ajax_campaign_message_save_modal'));
         add_action('wp_ajax_smark_email_campaign_message_test_send', array($this, 'ajax_campaign_message_test_send'));
         add_action('wp_ajax_smark_email_campaign_activity_page', array($this, 'ajax_campaign_activity_page'));
+        add_action('wp_ajax_smark_email_campaign_failure_retry_start', array($this, 'ajax_campaign_failure_retry_start'));
+        add_action('wp_ajax_smark_email_campaign_failure_retry_batch', array($this, 'ajax_campaign_failure_retry_batch'));
         add_action('wp_ajax_smark_email_track_open', array($this, 'track_campaign_open'));
         add_action('wp_ajax_nopriv_smark_email_track_open', array($this, 'track_campaign_open'));
         add_action('wp_ajax_smark_email_track_click', array($this, 'track_campaign_click'));
@@ -857,6 +860,8 @@ class SMarkEmailMarketing {
         $current_lang = ($current_lang === 'fa') ? 'fa' : 'en';
         $rtl_class = ($current_lang === 'fa') ? 'rtl' : '';
         $strings = $this->get_performance_strings($current_lang);
+        $message_strings = $this->get_campaign_message_strings($current_lang);
+        $modal_strings = array_merge($message_strings, $strings);
         $messages = $this->get_campaign_messages();
         $selected_campaign_id = isset($_GET['campaign_id']) ? sanitize_text_field(wp_unslash($_GET['campaign_id'])) : '';
 
@@ -867,6 +872,8 @@ class SMarkEmailMarketing {
         $overall = $this->get_campaign_performance_metrics('');
         $selected_metrics = $selected_campaign_id !== '' ? $this->get_campaign_performance_metrics($selected_campaign_id) : array();
         $selected_campaign = $selected_campaign_id !== '' ? $this->get_campaign_message_by_id($selected_campaign_id) : array();
+        $accounts = $this->get_email_accounts();
+        $retry_failures = $this->get_unresolved_campaign_failures('');
         ?>
         <div class="wrap smark-seo-optimization-page <?php echo esc_attr($rtl_class); ?>" data-lang="<?php echo esc_attr($current_lang); ?>">
             <?php $this->render_standard_header($strings, $current_lang, $rtl_class, true); ?>
@@ -880,14 +887,8 @@ class SMarkEmailMarketing {
                         </div>
                     </header>
 
-                    <div class="smark-email-metrics-grid">
-                        <?php foreach ($this->get_performance_metric_cards($overall, $strings) as $metric) : ?>
-                            <div class="smark-email-metric-card">
-                                <span><?php echo esc_html($metric['label']); ?></span>
-                                <strong><?php echo esc_html($metric['value']); ?></strong>
-                                <small><?php echo esc_html($metric['help']); ?></small>
-                            </div>
-                        <?php endforeach; ?>
+                    <div id="smarkEmailOverallStats">
+                        <?php $this->render_overall_campaign_stats_grid($overall, $strings); ?>
                     </div>
                 </section>
 
@@ -917,13 +918,16 @@ class SMarkEmailMarketing {
                         </form>
 
                         <?php if (!empty($selected_campaign)) : ?>
-                            <?php $this->render_campaign_performance_detail($selected_campaign, $strings, $this->get_campaign_message_strings($current_lang)); ?>
+                            <?php $this->render_campaign_performance_detail($selected_campaign, $strings, $message_strings); ?>
                         <?php endif; ?>
                     <?php endif; ?>
                 </section>
             </div>
 
             <?php $this->render_version_footer($current_lang); ?>
+            <?php $this->render_campaign_failure_retry_modal($modal_strings, $accounts, count($retry_failures)); ?>
+            <?php $this->render_campaign_send_progress_modal($modal_strings); ?>
+            <?php $this->render_campaign_failure_detail_modal($strings); ?>
         </div>
         <?php
     }
@@ -1325,6 +1329,79 @@ class SMarkEmailMarketing {
                     <div class="smark-email-send-progress__recent">
                         <h3><?php echo esc_html($strings['send_progress_recent_title']); ?></h3>
                         <ul data-smark-send-progress-recent data-empty-text="<?php echo esc_attr($strings['send_progress_recent_empty']); ?>">
+                            <li><?php echo esc_html($strings['send_progress_recent_empty']); ?></li>
+                        </ul>
+                        <p><?php echo esc_html($strings['send_progress_final_note']); ?></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+
+    private function render_campaign_failure_retry_modal($strings, $accounts, $failure_count) {
+        $accounts = is_array($accounts) ? $accounts : array();
+        ?>
+        <div class="smark-email-import-modal smark-email-failure-retry-modal" id="smarkEmailFailureRetryModal" aria-hidden="true">
+            <div class="smark-email-import-modal__overlay" data-close-smark-failure-retry></div>
+            <div class="smark-email-import-modal__dialog smark-email-failure-retry-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="smarkEmailFailureRetryTitle">
+                <header class="smark-email-import-modal__header">
+                    <div>
+                        <h2 id="smarkEmailFailureRetryTitle"><?php echo esc_html($strings['failure_retry_title']); ?></h2>
+                        <p><?php echo esc_html(sprintf($strings['failure_retry_description'], number_format_i18n((int) $failure_count))); ?></p>
+                    </div>
+                    <button type="button" class="smark-email-import-modal__close" data-close-smark-failure-retry aria-label="<?php echo esc_attr($strings['failure_retry_close']); ?>">
+                        <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+                    </button>
+                </header>
+                <div class="smark-email-import-modal__body">
+                    <form class="smark-email-account-form smark-email-failure-retry-form" id="smarkEmailFailureRetryForm">
+                        <div class="smark-email-form-grid">
+                            <label>
+                                <span><?php echo esc_html($strings['failure_retry_count_label']); ?></span>
+                                <input type="number" min="1" max="<?php echo esc_attr(max(1, (int) $failure_count)); ?>" value="<?php echo esc_attr(min(100, max(1, (int) $failure_count))); ?>" name="retry_count" data-smark-failure-retry-count>
+                            </label>
+                            <label>
+                                <span><?php echo esc_html($strings['failure_retry_account_label']); ?></span>
+                                <select name="sender_account_id" data-smark-failure-retry-account>
+                                    <option value=""><?php echo esc_html($strings['failure_retry_account_placeholder']); ?></option>
+                                    <?php foreach ($accounts as $account) : ?>
+                                        <?php
+                                        $account_id = isset($account['id']) ? (string) $account['id'] : '';
+                                        $account_email = isset($account['email_address']) ? sanitize_email((string) $account['email_address']) : '';
+                                        $account_label = isset($account['account_label']) && (string) $account['account_label'] !== '' ? (string) $account['account_label'] : $account_email;
+                                        if ($account_id === '' || $account_email === '') {
+                                            continue;
+                                        }
+                                        ?>
+                                        <option value="<?php echo esc_attr($account_id); ?>"><?php echo esc_html($account_label . ' - ' . $account_email); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </label>
+                        </div>
+                        <input type="hidden" name="campaign_id" value="">
+                        <div class="smark-email-form-actions">
+                            <button type="submit" class="button button-primary" <?php disabled($failure_count <= 0 || empty($accounts)); ?>><?php echo esc_html($strings['failure_retry_start_button']); ?></button>
+                            <button type="button" class="button" data-close-smark-failure-retry><?php echo esc_html($strings['failure_retry_cancel_button']); ?></button>
+                        </div>
+                    </form>
+
+                    <div class="smark-email-send-progress smark-email-failure-retry-progress" data-smark-failure-retry-progress hidden>
+                        <div class="smark-email-send-progress__meta">
+                            <strong data-smark-failure-retry-status><?php echo esc_html($strings['failure_retry_starting']); ?></strong>
+                            <span data-smark-failure-retry-percent>0%</span>
+                        </div>
+                        <div class="smark-email-send-progress__bar" aria-hidden="true">
+                            <span data-smark-failure-retry-bar style="width: 0%;"></span>
+                        </div>
+                        <p class="smark-email-send-progress__count" data-smark-failure-retry-count-text>
+                            <?php echo esc_html(sprintf($strings['send_progress_count'], number_format_i18n(0), number_format_i18n(0))); ?>
+                        </p>
+                    </div>
+
+                    <div class="smark-email-send-progress__recent smark-email-failure-retry-reports" data-smark-failure-retry-reports-wrap hidden>
+                        <h3><?php echo esc_html($strings['send_progress_recent_title']); ?></h3>
+                        <ul data-smark-failure-retry-reports data-empty-text="<?php echo esc_attr($strings['send_progress_recent_empty']); ?>">
                             <li><?php echo esc_html($strings['send_progress_recent_empty']); ?></li>
                         </ul>
                         <p><?php echo esc_html($strings['send_progress_final_note']); ?></p>
@@ -1955,7 +2032,7 @@ class SMarkEmailMarketing {
                                         <button type="button" class="button smark-email-edit-button" data-open-smark-contact-edit="<?php echo esc_attr($contact['id']); ?>">
                                             <?php echo esc_html($strings['edit_button']); ?>
                                         </button>
-                                        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" onsubmit="return confirm('<?php echo esc_js($strings['delete_confirm']); ?>');">
+                                        <form class="smark-email-contact-delete-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" data-delete-confirm="<?php echo esc_attr($strings['delete_confirm']); ?>">
                                             <?php wp_nonce_field('smark_email_contact_delete', 'smark_email_contact_nonce'); ?>
                                             <input type="hidden" name="action" value="smark_email_contact_delete">
                                             <input type="hidden" name="contact_id" value="<?php echo esc_attr($contact['id']); ?>">
@@ -2248,13 +2325,45 @@ class SMarkEmailMarketing {
         check_admin_referer('smark_email_contact_delete', 'smark_email_contact_nonce');
 
         $contact_id = isset($_POST['contact_id']) ? sanitize_text_field(wp_unslash($_POST['contact_id'])) : '';
+        $this->delete_contact_by_id($contact_id);
+        $this->redirect_to_contacts('deleted');
+    }
+
+    public function ajax_email_contact_delete_modal() {
+        if (!current_user_can('smark_access')) {
+            wp_send_json_error(array('message' => __('Permission denied', 'smark')), 403);
+        }
+
+        check_ajax_referer('smark_email_contacts_page_ajax', 'nonce');
+
+        $contact_id = isset($_POST['contact_id']) ? sanitize_text_field(wp_unslash($_POST['contact_id'])) : '';
+        $this->delete_contact_by_id($contact_id);
+
+        $strings = $this->get_contact_strings($this->get_current_panel_lang());
+        $search_query = isset($_POST['search_query']) ? sanitize_text_field(wp_unslash($_POST['search_query'])) : '';
+
+        ob_start();
+        $this->render_contacts_list_content($strings, $this->get_contacts(), $this->get_contact_lists(), $this->get_contact_tags(), $this->get_daily_sent_contact_hashes(), 1, 100, $search_query);
+        $list_html = ob_get_clean();
+
+        wp_send_json_success(array(
+            'message' => $strings['notice_deleted'],
+            'listHtml' => $list_html,
+        ));
+    }
+
+    private function delete_contact_by_id($contact_id) {
+        $contact_id = sanitize_text_field((string) $contact_id);
+        if ($contact_id === '') {
+            return;
+        }
+
         $contacts = array_values(array_filter($this->get_contacts(), function($contact) use ($contact_id) {
             return isset($contact['id']) && $contact['id'] !== $contact_id;
         }));
 
         update_option(self::OPTION_CONTACTS, $contacts, false);
         $this->remove_contact_from_contact_entities($contact_id);
-        $this->redirect_to_contacts('deleted');
     }
 
     public function handle_email_contact_list_save() {
@@ -2583,6 +2692,64 @@ class SMarkEmailMarketing {
         wp_send_json_success(array(
             'activityHtml' => $activity_html,
         ));
+    }
+
+    public function ajax_campaign_failure_retry_start() {
+        if (!current_user_can('smark_access')) {
+            wp_send_json_error(array('message' => __('You do not have sufficient permissions to perform this action.', 'smark')), 403);
+        }
+
+        check_ajax_referer('smark_email_campaign_message_ajax', 'nonce');
+
+        $current_lang = $this->get_current_panel_lang();
+        $strings = array_merge($this->get_campaign_message_strings($current_lang), $this->get_performance_strings($current_lang));
+        $retry_count = isset($_POST['retry_count']) ? absint(wp_unslash($_POST['retry_count'])) : 0;
+        $sender_account_id = isset($_POST['sender_account_id']) ? sanitize_text_field(wp_unslash($_POST['sender_account_id'])) : '';
+        $campaign_id = isset($_POST['campaign_id']) ? sanitize_text_field(wp_unslash($_POST['campaign_id'])) : '';
+
+        $session = $this->create_campaign_failure_retry_session($retry_count, $sender_account_id, $campaign_id);
+        if (is_wp_error($session)) {
+            wp_send_json_error(array('message' => $this->get_campaign_send_error_message($session, $strings)), 400);
+        }
+
+        wp_send_json_success($this->format_campaign_failure_retry_response($session, $strings));
+    }
+
+    public function ajax_campaign_failure_retry_batch() {
+        if (!current_user_can('smark_access')) {
+            wp_send_json_error(array('message' => __('You do not have sufficient permissions to perform this action.', 'smark')), 403);
+        }
+
+        check_ajax_referer('smark_email_campaign_message_ajax', 'nonce');
+
+        $current_lang = $this->get_current_panel_lang();
+        $strings = array_merge($this->get_campaign_message_strings($current_lang), $this->get_performance_strings($current_lang));
+        $session_id = isset($_POST['session_id']) ? sanitize_text_field(wp_unslash($_POST['session_id'])) : '';
+        $session = $this->get_campaign_send_session($session_id);
+
+        if (empty($session) || (($session['type'] ?? '') !== 'failure_retry')) {
+            wp_send_json_error(array('message' => $strings['notice_send_error']), 404);
+        }
+
+        $session = $this->process_campaign_failure_retry_batch($session, $strings);
+        if (is_wp_error($session)) {
+            $this->delete_campaign_send_session($session_id);
+            wp_send_json_error(array('message' => $this->get_campaign_send_error_message($session, $strings)), 400);
+        }
+
+        $response = $this->format_campaign_failure_retry_response($session, $strings);
+        if (!empty($session['complete'])) {
+            $this->delete_campaign_send_session($session_id);
+            $response['message'] = sprintf($strings['failure_retry_complete_notice'], number_format_i18n((int) ($session['sent_count'] ?? 0)), number_format_i18n((int) ($session['failed_count'] ?? 0)));
+        } else {
+            $this->save_campaign_send_session($session);
+        }
+
+        ob_start();
+        $this->render_overall_campaign_stats_grid($this->get_campaign_performance_metrics(''), $this->get_performance_strings($current_lang));
+        $response['overallHtml'] = ob_get_clean();
+
+        wp_send_json_success($response);
     }
 
     public function handle_contacts_import_preview() {
@@ -3571,6 +3738,33 @@ class SMarkEmailMarketing {
         );
     }
 
+    private function render_overall_campaign_stats_grid($overall, $strings) {
+        ?>
+        <div class="smark-email-metrics-grid">
+            <?php foreach ($this->get_performance_metric_cards($overall, $strings) as $metric) : ?>
+                <?php if (($metric['filter'] ?? '') === 'failed') : ?>
+                    <button
+                        type="button"
+                        class="smark-email-metric-card smark-email-metric-card--button"
+                        data-open-smark-failure-retry
+                        data-failure-count="<?php echo esc_attr((int) ($overall['failed'] ?? 0)); ?>"
+                    >
+                        <span><?php echo esc_html($metric['label']); ?></span>
+                        <strong><?php echo esc_html($metric['value']); ?></strong>
+                        <small><?php echo esc_html($metric['help']); ?></small>
+                    </button>
+                <?php else : ?>
+                    <div class="smark-email-metric-card">
+                        <span><?php echo esc_html($metric['label']); ?></span>
+                        <strong><?php echo esc_html($metric['value']); ?></strong>
+                        <small><?php echo esc_html($metric['help']); ?></small>
+                    </div>
+                <?php endif; ?>
+            <?php endforeach; ?>
+        </div>
+        <?php
+    }
+
     private function render_campaign_performance_detail($campaign_message, $performance_strings, $message_strings) {
         $campaign_id = isset($campaign_message['id']) ? (string) $campaign_message['id'] : '';
         if ($campaign_id === '') {
@@ -4217,6 +4411,120 @@ class SMarkEmailMarketing {
         return $session;
     }
 
+    private function create_campaign_failure_retry_session($retry_count, $sender_account_id, $campaign_id = '') {
+        $retry_count = absint($retry_count);
+        $sender_account_id = sanitize_text_field($sender_account_id);
+        $campaign_id = sanitize_text_field($campaign_id);
+
+        if ($retry_count <= 0) {
+            return new WP_Error('no_recipients', 'No recipients selected.');
+        }
+
+        $sender = $this->get_email_account_by_id($sender_account_id);
+        if (empty($sender) || empty($sender['smtp_host']) || empty($sender['email_address']) || empty($sender['app_password']) || !is_email($sender['email_address'])) {
+            return new WP_Error('sender_not_configured', 'SMark sender account is not configured.');
+        }
+
+        $sender_pool = $this->get_campaign_sender_pool(array('sender_account_ids' => array($sender_account_id)));
+        $remaining = isset($sender_pool[0]['remaining']) ? (int) $sender_pool[0]['remaining'] : 0;
+        if ($remaining < $retry_count) {
+            return new WP_Error('sender_capacity_insufficient', 'Selected sender accounts do not have enough daily capacity.', array(
+                'recipient_count' => $retry_count,
+                'remaining_capacity' => $remaining,
+            ));
+        }
+
+        $failures = array_slice($this->get_unresolved_campaign_failures($campaign_id), 0, $retry_count);
+        if (empty($failures)) {
+            return new WP_Error('no_recipients', 'No recipients selected.');
+        }
+
+        $session = array(
+            'id' => wp_generate_uuid4(),
+            'type' => 'failure_retry',
+            'sender_account_id' => $sender_account_id,
+            'sender' => $sender,
+            'failures' => array_values($failures),
+            'index' => 0,
+            'total' => count($failures),
+            'sent_count' => 0,
+            'failed_count' => 0,
+            'recent_reports' => array(),
+            'complete' => false,
+            'started_at' => current_time('mysql'),
+        );
+
+        $this->save_campaign_send_session($session);
+        $this->log_campaign_mail_debug('failure_retry_started', array(
+            'sender_account_id' => $sender_account_id,
+            'recipient_count' => count($failures),
+            'session_id' => $session['id'],
+        ));
+
+        return $session;
+    }
+
+    private function get_unresolved_campaign_failures($campaign_id = '') {
+        $campaign_id = sanitize_text_field($campaign_id);
+        $events = $this->get_campaign_events();
+        $messages = array();
+        foreach ($this->get_campaign_messages() as $message) {
+            if (!empty($message['id'])) {
+                $messages[(string) $message['id']] = $message;
+            }
+        }
+
+        $states = array();
+        foreach ($events as $index => $event) {
+            $event_campaign_id = isset($event['campaign_id']) ? (string) $event['campaign_id'] : '';
+            if ($event_campaign_id === '' || !isset($messages[$event_campaign_id])) {
+                continue;
+            }
+
+            if ($campaign_id !== '' && $event_campaign_id !== $campaign_id) {
+                continue;
+            }
+
+            $type = isset($event['type']) ? sanitize_key($event['type']) : '';
+            if ($type !== 'sent' && $type !== 'failed') {
+                continue;
+            }
+
+            $email = $this->get_campaign_recipient_email_from_event($event);
+            if ($email === '' || !is_email($email)) {
+                continue;
+            }
+
+            $hash = isset($event['recipient_hash']) && (string) $event['recipient_hash'] !== ''
+                ? (string) $event['recipient_hash']
+                : $this->get_campaign_recipient_hash($email);
+            $key = $event_campaign_id . ':' . $hash;
+            $created_at = isset($event['created_at']) ? (string) $event['created_at'] : '';
+
+            if (!isset($states[$key]) || strcmp($created_at, (string) ($states[$key]['created_at'] ?? '')) >= 0) {
+                $states[$key] = array(
+                    'campaign_id' => $event_campaign_id,
+                    'message' => $messages[$event_campaign_id],
+                    'email' => $email,
+                    'recipient_hash' => $hash,
+                    'event_index' => (int) $index,
+                    'type' => $type,
+                    'created_at' => $created_at,
+                );
+            }
+        }
+
+        $failures = array_values(array_filter($states, function($state) {
+            return isset($state['type']) && $state['type'] === 'failed';
+        }));
+
+        usort($failures, function($a, $b) {
+            return strcmp((string) ($b['created_at'] ?? ''), (string) ($a['created_at'] ?? ''));
+        });
+
+        return $failures;
+    }
+
     private function get_campaign_sender_pool($campaign_message) {
         $all_accounts = $this->get_email_accounts();
         $sender_account_ids = $this->get_campaign_sender_account_ids($campaign_message);
@@ -4378,6 +4686,126 @@ class SMarkEmailMarketing {
         return $session;
     }
 
+    private function process_campaign_failure_retry_batch($session, $strings = array()) {
+        $failures = isset($session['failures']) && is_array($session['failures']) ? array_values($session['failures']) : array();
+        $total = count($failures);
+        $index = isset($session['index']) ? max(0, (int) $session['index']) : 0;
+        $sender_account_id = isset($session['sender_account_id']) ? sanitize_text_field((string) $session['sender_account_id']) : '';
+        $sender = !empty($session['sender']) && is_array($session['sender']) ? $session['sender'] : $this->get_email_account_by_id($sender_account_id);
+
+        if (empty($failures) || $index >= $total) {
+            $session['complete'] = true;
+            return $session;
+        }
+
+        if (empty($sender) || empty($sender['smtp_host']) || empty($sender['email_address']) || empty($sender['app_password']) || !is_email($sender['email_address'])) {
+            return new WP_Error('sender_not_configured', 'SMark sender account is not configured.');
+        }
+
+        $batch_size = 5;
+        $processed = 0;
+
+        try {
+            while ($index < $total && $processed < $batch_size) {
+                $failure = isset($failures[$index]) && is_array($failures[$index]) ? $failures[$index] : array();
+                $index++;
+                $processed++;
+
+                $campaign_message = isset($failure['message']) && is_array($failure['message']) ? $failure['message'] : array();
+                $campaign_id = isset($failure['campaign_id']) ? (string) $failure['campaign_id'] : '';
+                $email = isset($failure['email']) ? sanitize_email((string) $failure['email']) : '';
+                $event_index = isset($failure['event_index']) ? (int) $failure['event_index'] : -1;
+
+                if (empty($campaign_message) || $campaign_id === '' || $email === '' || !is_email($email)) {
+                    $session['failed_count'] = (int) ($session['failed_count'] ?? 0) + 1;
+                    continue;
+                }
+
+                $subject = isset($campaign_message['subject_line']) ? (string) $campaign_message['subject_line'] : '';
+                $body = isset($campaign_message['email_body']) ? (string) $campaign_message['email_body'] : '';
+                $reply_to = isset($campaign_message['reply_to']) ? sanitize_email($campaign_message['reply_to']) : '';
+                $recipient_hash = isset($failure['recipient_hash']) && (string) $failure['recipient_hash'] !== ''
+                    ? (string) $failure['recipient_hash']
+                    : $this->get_campaign_recipient_hash($email);
+
+                $this->campaign_mailer_account = $sender;
+                $recipient_body = $this->add_campaign_tracking_to_html($this->prepare_campaign_email_html($body), $campaign_id, $recipient_hash);
+                $send_result = $this->send_campaign_email_via_direct_smtp($email, $subject, $recipient_body, $sender, $reply_to);
+
+                if ($send_result === true) {
+                    $session['sent_count'] = (int) ($session['sent_count'] ?? 0) + 1;
+                    $this->mark_campaign_failure_event_sent($event_index, $campaign_id, $email, $recipient_hash, $sender_account_id);
+                    array_unshift($session['recent_reports'], array(
+                        'email' => $email,
+                        'time' => current_time('H:i:s'),
+                        'status' => 'sent',
+                        'statusLabel' => isset($strings['send_progress_report_sent']) ? $strings['send_progress_report_sent'] : 'Sent',
+                    ));
+                    $this->log_campaign_mail_debug('failure_retry_recipient_sent', array(
+                        'campaign_id' => $campaign_id,
+                        'sender_account_id' => $sender_account_id,
+                        'recipient' => $this->mask_email_for_log($email),
+                    ));
+                } else {
+                    $session['failed_count'] = (int) ($session['failed_count'] ?? 0) + 1;
+                    $this->refresh_campaign_failure_event($event_index, $campaign_id, $email, $recipient_hash, $sender_account_id, $this->get_campaign_failure_details($send_result, $email, $sender));
+                    array_unshift($session['recent_reports'], array(
+                        'email' => $email,
+                        'time' => current_time('H:i:s'),
+                        'status' => 'failed',
+                        'statusLabel' => isset($strings['send_progress_report_failed']) ? $strings['send_progress_report_failed'] : 'Failed',
+                    ));
+                    $this->log_campaign_mail_debug('failure_retry_recipient_failed', array(
+                        'campaign_id' => $campaign_id,
+                        'sender_account_id' => $sender_account_id,
+                        'recipient' => $this->mask_email_for_log($email),
+                    ));
+                }
+
+                $session['recent_reports'] = array_slice($session['recent_reports'], 0, 5);
+            }
+        } finally {
+            $this->campaign_mailer_account = array();
+        }
+
+        $session['index'] = $index;
+        $session['total'] = $total;
+        $session['complete'] = $index >= $total;
+
+        return $session;
+    }
+
+    private function mark_campaign_failure_event_sent($event_index, $campaign_id, $email, $recipient_hash, $sender_account_id) {
+        $this->update_campaign_failure_event($event_index, $campaign_id, $email, $recipient_hash, $sender_account_id, 'sent', array());
+    }
+
+    private function refresh_campaign_failure_event($event_index, $campaign_id, $email, $recipient_hash, $sender_account_id, $details) {
+        $this->update_campaign_failure_event($event_index, $campaign_id, $email, $recipient_hash, $sender_account_id, 'failed', $details);
+    }
+
+    private function update_campaign_failure_event($event_index, $campaign_id, $email, $recipient_hash, $sender_account_id, $type, $details = array()) {
+        $events = $this->get_campaign_events();
+        $event_index = (int) $event_index;
+        if (!isset($events[$event_index]) || !is_array($events[$event_index])) {
+            return;
+        }
+
+        if (($events[$event_index]['type'] ?? '') !== 'failed') {
+            return;
+        }
+
+        $events[$event_index]['type'] = sanitize_key($type);
+        $events[$event_index]['campaign_id'] = sanitize_text_field($campaign_id);
+        $events[$event_index]['account_id'] = sanitize_text_field($sender_account_id);
+        $events[$event_index]['recipient_email'] = sanitize_email($email);
+        $events[$event_index]['recipient_hash'] = sanitize_text_field($recipient_hash !== '' ? $recipient_hash : $this->get_campaign_recipient_hash($email));
+        $events[$event_index]['recipient_label'] = $email !== '' ? $this->mask_email_for_log($email) : '';
+        $events[$event_index]['details'] = is_array($details) ? $this->sanitize_campaign_event_details($details) : array();
+        $events[$event_index]['created_at'] = current_time('mysql');
+
+        update_option(self::OPTION_CAMPAIGN_EVENTS, $events, false);
+    }
+
     private function finalize_campaign_send_session($session) {
         $campaign_message = isset($session['campaign_message']) && is_array($session['campaign_message']) ? $session['campaign_message'] : array();
         $campaign_message['message_status'] = 'sent';
@@ -4385,6 +4813,18 @@ class SMarkEmailMarketing {
         $campaign_message['sent_count'] = (int) ($session['sent_count'] ?? 0);
 
         return $this->upsert_campaign_message($campaign_message);
+    }
+
+    private function format_campaign_failure_retry_response($session, $strings) {
+        $response = $this->format_campaign_send_progress_response($session, $strings);
+        $response['statusText'] = !empty($session['complete']) ? $strings['failure_retry_complete'] : $strings['failure_retry_sending'];
+        $response['countText'] = sprintf(
+            $strings['failure_retry_count_progress'],
+            number_format_i18n((int) ($session['sent_count'] ?? 0)),
+            number_format_i18n((int) ($session['failed_count'] ?? 0)),
+            number_format_i18n((int) ($session['total'] ?? 0))
+        );
+        return $response;
     }
 
     private function format_campaign_send_progress_response($session, $strings) {
@@ -6262,6 +6702,46 @@ class SMarkEmailMarketing {
             });
         });
 
+        $(document).on('submit', '.smark-email-contact-delete-form', function (event) {
+            event.preventDefault();
+            var form = this;
+            var $form = $(form);
+            var confirmText = $form.attr('data-delete-confirm') || '';
+
+            if (confirmText && !window.confirm(confirmText)) {
+                return;
+            }
+
+            var $button = $form.find('button[type="submit"]');
+            var originalText = $button.text();
+            var formData = new FormData(form);
+
+            formData.set('action', 'smark_email_contact_delete_modal');
+            formData.set('nonce', smarkSeoOptimization.contactsPageNonce || '');
+            formData.set('search_query', getContactsSearchQuery());
+            $button.prop('disabled', true).text((smarkSeoOptimization.strings || {}).saving || 'Saving...');
+
+            $.ajax({
+                url: smarkSeoOptimization.ajaxUrl,
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false
+            }).done(function (response) {
+                if (response && response.success && response.data) {
+                    $('#smarkEmailContactsList').html(response.data.listHtml || '');
+                    showNotification(response.data.message || '', 'success');
+                } else {
+                    showNotification((response && response.data && response.data.message) || (smarkSeoOptimization.strings || {}).error || 'Error', 'error');
+                }
+            }).fail(function (xhr) {
+                var message = xhr && xhr.responseJSON && xhr.responseJSON.data ? xhr.responseJSON.data.message : '';
+                showNotification(message || (smarkSeoOptimization.strings || {}).error || 'Error', 'error');
+            }).always(function () {
+                $button.prop('disabled', false).text(originalText);
+            });
+        });
+
         $(document).on('click', '[data-open-smark-account-edit]', function (event) {
             event.preventDefault();
             openAccountEditModal($(this));
@@ -6426,6 +6906,150 @@ class SMarkEmailMarketing {
             $scope.find('[data-smark-activity-filter]').removeClass('is-active');
             $(this).addClass('is-active');
             loadCampaignActivityPage($container, 1, $(this).attr('data-smark-activity-filter') || 'all');
+        });
+
+        function openFailureRetryModal() {
+            var count = parseInt($('[data-open-smark-failure-retry]').attr('data-failure-count') || '0', 10);
+            var $modal = $('#smarkEmailFailureRetryModal');
+
+            if (isNaN(count)) {
+                count = 0;
+            }
+
+            $modal.find('[data-smark-failure-retry-count]').attr('max', Math.max(1, count)).val(Math.min(100, Math.max(1, count)));
+            $modal.find('[data-smark-failure-retry-progress], [data-smark-failure-retry-reports-wrap]').prop('hidden', true);
+            $modal.find('[data-smark-failure-retry-bar]').css('width', '0%');
+            $modal.find('[data-smark-failure-retry-percent]').text('0%');
+            $modal.find('[data-smark-failure-retry-reports]').empty().append($('<li />').text($modal.find('[data-smark-failure-retry-reports]').attr('data-empty-text') || 'No email has been sent yet.'));
+            $modal.addClass('is-open').attr('aria-hidden', 'false');
+            $('body').addClass('smark-email-modal-open');
+        }
+
+        function closeFailureRetryModal() {
+            $('#smarkEmailFailureRetryModal').removeClass('is-open is-complete').attr('aria-hidden', 'true');
+            $('body').removeClass('smark-email-modal-open');
+        }
+
+        function renderFailureRetryProgress(data) {
+            var $modal = $('#smarkEmailFailureRetryModal');
+            var percent = parseInt(data.percent, 10);
+            var reports = $.isArray(data.recentReports) ? data.recentReports : [];
+
+            if (isNaN(percent)) {
+                percent = 0;
+            }
+
+            percent = Math.max(0, Math.min(100, percent));
+            $modal.find('[data-smark-failure-retry-progress], [data-smark-failure-retry-reports-wrap]').prop('hidden', false);
+            $modal.find('[data-smark-failure-retry-status]').text(data.statusText || '');
+            $modal.find('[data-smark-failure-retry-percent]').text(percent + '%');
+            $modal.find('[data-smark-failure-retry-bar]').css('width', percent + '%');
+            $modal.find('[data-smark-failure-retry-count-text]').text(data.countText || '');
+
+            var $reports = $modal.find('[data-smark-failure-retry-reports]').empty();
+            if (!reports.length) {
+                $('<li />').text($reports.attr('data-empty-text') || 'No email has been sent yet.').appendTo($reports);
+            } else {
+                reports.slice(0, 5).forEach(function (item) {
+                    var status = item.status === 'failed' ? 'failed' : 'sent';
+                    var $meta = $('<span class="smark-email-send-progress__recent-meta" />')
+                        .append($('<span />').text(item.time || ''))
+                        .append($('<span class="smark-email-status" />').addClass('smark-email-status--' + status).text(item.statusLabel || status));
+
+                    $('<li />')
+                        .append($('<strong />').text(item.email || ''))
+                        .append($meta)
+                        .appendTo($reports);
+                });
+            }
+
+            $modal.toggleClass('is-complete', !!data.complete);
+        }
+
+        function refreshVisibleCampaignActivityTables() {
+            $('[data-smark-campaign-activity]').each(function () {
+                var $container = $(this);
+                loadCampaignActivityPage($container, 1, $container.attr('data-event-filter') || 'all');
+            });
+        }
+
+        function runFailureRetryBatch(sessionId, $button) {
+            $.ajax({
+                url: smarkSeoOptimization.ajaxUrl,
+                method: 'POST',
+                data: {
+                    action: 'smark_email_campaign_failure_retry_batch',
+                    nonce: smarkSeoOptimization.campaignMessageNonce || '',
+                    session_id: sessionId
+                }
+            }).done(function (response) {
+                if (response && response.success && response.data) {
+                    renderFailureRetryProgress(response.data);
+                    if (response.data.overallHtml) {
+                        $('#smarkEmailOverallStats').html(response.data.overallHtml);
+                    }
+                    refreshVisibleCampaignActivityTables();
+
+                    if (response.data.complete) {
+                        showNotification(response.data.message || '', 'success');
+                        $button.prop('disabled', false).text($button.data('originalText') || $button.text());
+                    } else {
+                        window.setTimeout(function () {
+                            runFailureRetryBatch(sessionId, $button);
+                        }, 350);
+                    }
+                } else {
+                    showNotification((response && response.data && response.data.message) || (smarkSeoOptimization.strings || {}).error || 'Error', 'error');
+                    $button.prop('disabled', false).text($button.data('originalText') || $button.text());
+                }
+            }).fail(function (xhr) {
+                var message = xhr && xhr.responseJSON && xhr.responseJSON.data ? xhr.responseJSON.data.message : '';
+                showNotification(message || (smarkSeoOptimization.strings || {}).error || 'Error', 'error');
+                $button.prop('disabled', false).text($button.data('originalText') || $button.text());
+            });
+        }
+
+        $(document).on('click', '[data-open-smark-failure-retry]', function (event) {
+            event.preventDefault();
+            openFailureRetryModal();
+        });
+
+        $(document).on('click', '[data-close-smark-failure-retry]', function (event) {
+            event.preventDefault();
+            closeFailureRetryModal();
+        });
+
+        $(document).on('submit', '#smarkEmailFailureRetryForm', function (event) {
+            event.preventDefault();
+
+            var $form = $(this);
+            var $button = $form.find('button[type="submit"]');
+            var formData = new FormData(this);
+
+            formData.set('action', 'smark_email_campaign_failure_retry_start');
+            formData.set('nonce', smarkSeoOptimization.campaignMessageNonce || '');
+            $button.data('originalText', $button.text());
+            $button.prop('disabled', true).text((smarkSeoOptimization.strings || {}).sending || 'Sending...');
+
+            $.ajax({
+                url: smarkSeoOptimization.ajaxUrl,
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false
+            }).done(function (response) {
+                if (response && response.success && response.data) {
+                    renderFailureRetryProgress(response.data);
+                    runFailureRetryBatch(response.data.sessionId, $button);
+                } else {
+                    showNotification((response && response.data && response.data.message) || (smarkSeoOptimization.strings || {}).error || 'Error', 'error');
+                    $button.prop('disabled', false).text($button.data('originalText') || $button.text());
+                }
+            }).fail(function (xhr) {
+                var message = xhr && xhr.responseJSON && xhr.responseJSON.data ? xhr.responseJSON.data.message : '';
+                showNotification(message || (smarkSeoOptimization.strings || {}).error || 'Error', 'error');
+                $button.prop('disabled', false).text($button.data('originalText') || $button.text());
+            });
         });
 
         $(document).on('submit', '#smarkEmailImportPreviewForm', function (event) {
@@ -6714,7 +7338,7 @@ class SMarkEmailMarketing {
                 closeContactEditModal();
                 closeAudiencePicker();
                 closeSenderPickers();
-                $('.smark-email-campaign-performance-modal, #smarkEmailFailureDetailModal').removeClass('is-open').attr('aria-hidden', 'true');
+                $('.smark-email-campaign-performance-modal, #smarkEmailFailureDetailModal, #smarkEmailFailureRetryModal').removeClass('is-open').attr('aria-hidden', 'true');
                 $('body').removeClass('smark-email-modal-open');
             }
         });
@@ -7617,6 +8241,21 @@ JS;
                 'failure_reason_dns'         => 'خطای DNS: هاست SMTP یا دامنه گیرنده resolve نشده است.',
                 'failure_reason_sender'      => 'تنظیمات فرستنده ناقص است: SMTP Host، Port، Encryption و App Password را بررسی کنید.',
                 'failure_reason_content'     => 'مشکل محتوای ایمیل: HTML، لینک‌ها، attachment یا کلمات حساس ممکن است باعث reject شده باشد.',
+                'failure_retry_title'        => 'ارسال مجدد خطاها',
+                'failure_retry_description'  => 'در حال حاضر %s ایمیل ناموفق برای ارسال مجدد آماده است.',
+                'failure_retry_close'        => 'بستن ارسال مجدد',
+                'failure_retry_count_label'  => 'تعداد ایمیل برای ارسال مجدد',
+                'failure_retry_count_help'   => 'حداکثر %s ایمیل ناموفق قابل انتخاب است.',
+                'failure_retry_account_label' => 'اکانت ارسال',
+                'failure_retry_account_placeholder' => 'یک اکانت ارسال انتخاب کنید',
+                'failure_retry_account_help' => 'ارسال مجدد فقط با همین اکانت انجام می‌شود.',
+                'failure_retry_start_button' => 'شروع ارسال مجدد',
+                'failure_retry_cancel_button' => 'انصراف',
+                'failure_retry_starting'     => 'در حال آماده‌سازی ارسال مجدد...',
+                'failure_retry_sending'      => 'در حال ارسال مجدد ایمیل‌های ناموفق...',
+                'failure_retry_complete'     => 'ارسال مجدد کامل شد.',
+                'failure_retry_count_progress' => '%1$s ارسال موفق، %2$s خطای مجدد از %3$s ایمیل',
+                'failure_retry_complete_notice' => 'ارسال مجدد کامل شد: %1$s موفق، %2$s ناموفق.',
             );
         }
 
@@ -7687,6 +8326,21 @@ JS;
             'failure_reason_dns'         => 'DNS failure: SMTP host or recipient domain could not be resolved.',
             'failure_reason_sender'      => 'Sender configuration is incomplete: check SMTP host, port, encryption, and app password.',
             'failure_reason_content'     => 'Email content issue: HTML, links, attachments, or sensitive terms may have triggered rejection.',
+            'failure_retry_title'        => 'Retry send failures',
+            'failure_retry_description'  => '%s failed emails are currently available for retry.',
+            'failure_retry_close'        => 'Close retry modal',
+            'failure_retry_count_label'  => 'Emails to retry',
+            'failure_retry_count_help'   => 'You can select up to %s failed emails.',
+            'failure_retry_account_label' => 'Sending account',
+            'failure_retry_account_placeholder' => 'Select a sending account',
+            'failure_retry_account_help' => 'Retry sends will use only this selected account.',
+            'failure_retry_start_button' => 'Start Retry',
+            'failure_retry_cancel_button' => 'Cancel',
+            'failure_retry_starting'     => 'Preparing retry send...',
+            'failure_retry_sending'      => 'Retrying failed emails...',
+            'failure_retry_complete'     => 'Retry sending complete.',
+            'failure_retry_count_progress' => '%1$s resent, %2$s failed again of %3$s emails',
+            'failure_retry_complete_notice' => 'Retry sending complete: %1$s succeeded, %2$s failed.',
         );
     }
 
@@ -9083,6 +9737,36 @@ JS;
 
             .smark-email-campaign-performance-modal__dialog {
                 width: min(1120px, calc(100vw - 40px));
+            }
+
+            .smark-email-failure-retry-modal__dialog {
+                width: min(760px, calc(100vw - 40px));
+            }
+
+            .smark-email-failure-retry-form {
+                margin-bottom: 18px;
+            }
+
+            .smark-email-failure-retry-form input[type="number"],
+            .smark-email-failure-retry-form select {
+                height: 44px;
+                line-height: 22px;
+                padding-top: 10px;
+                padding-bottom: 10px;
+            }
+
+            .smark-email-failure-retry-form select {
+                line-height: 1.4;
+                vertical-align: middle;
+            }
+
+            .smark-email-failure-retry-form .smark-email-form-actions {
+                margin-top: 18px;
+            }
+
+            .smark-email-failure-retry-progress[hidden],
+            .smark-email-failure-retry-reports[hidden] {
+                display: none;
             }
 
             .smark-email-send-progress {
