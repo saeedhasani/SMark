@@ -221,3 +221,158 @@
     color: #111827;
     outline: none;
 }
+
+/* Daily Guide Smart action modal */
+.smark-smart-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.55);
+    z-index: 1000000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    box-sizing: border-box;
+}
+
+.smark-smart-modal {
+    width: min(920px, 100%);
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 18px;
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.smark-smart-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.10), rgba(118, 75, 162, 0.08));
+}
+
+.smark-smart-modal__title {
+    font-weight: 700;
+    color: #1f2937;
+    font-size: 15px;
+}
+
+.smark-smart-modal__close {
+    border: none;
+    background: transparent;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    color: rgba(31, 41, 55, 0.75);
+    padding: 4px 8px;
+    border-radius: 10px;
+}
+
+.smark-smart-modal__close:hover {
+    background: rgba(15, 23, 42, 0.06);
+    color: rgba(31, 41, 55, 0.95);
+}
+
+.smark-smart-modal__body {
+    padding: 16px;
+}
+
+.smark-smart-modal__loading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 16px;
+    background: rgba(102, 126, 234, 0.08);
+    border: 1px solid rgba(102, 126, 234, 0.18);
+    border-radius: 14px;
+}
+
+.smark-smart-spinner.dashicons {
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+    color: #667eea;
+}
+
+@keyframes smarkSmartSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.smark-smart-spinner {
+    animation: smarkSmartSpin 1s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .smark-smart-spinner {
+        animation: none;
+    }
+}
+
+.smark-smart-modal__loading-text {
+    font-size: 14px;
+    color: #334155;
+    font-weight: 600;
+}
+
+.smark-smart-modal__meta {
+    font-size: 13px;
+    color: #475569;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.smark-smart-modal__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.smark-smart-modal__section-title {
+    font-weight: 800;
+    color: #1f2937;
+    margin: 12px 0 8px;
+    font-size: 13px;
+}
+
+.smark-smart-modal__sources ul {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.smark-smart-modal__pre {
+    margin: 0;
+    padding: 14px 14px;
+    background: #0b1220;
+    color: #e5e7eb;
+    border-radius: 14px;
+    overflow: auto;
+    max-height: 56vh;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 12.5px;
+    line-height: 1.6;
+}
+
+.smark-smart-modal__pre--prompt {
+    background: #111827;
+    color: #e5e7eb;
+    max-height: 32vh;
+}
+
+.smark-smart-modal__details summary {
+    cursor: pointer;
+    font-weight: 700;
+    color: #334155;
+    margin: 10px 0;
+}

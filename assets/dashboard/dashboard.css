@@ -1,0 +1,577 @@
+body.toplevel_page_smark-dashboard #wpcontent,
+body.smark-plugin-page.toplevel_page_smark-dashboard #wpcontent,
+body.smark_page_smark-dashboard-page #wpcontent,
+body:has(.smark-dashboard-app-page) #wpcontent {
+  padding-left: 0;
+}
+
+body.toplevel_page_smark-dashboard #wpbody-content,
+body.smark_page_smark-dashboard-page #wpbody-content,
+body:has(.smark-dashboard-app-page) #wpbody-content {
+  padding-bottom: 0;
+}
+
+body.toplevel_page_smark-dashboard #wpbody-content > .notice,
+body.toplevel_page_smark-dashboard #wpbody-content > .updated,
+body.toplevel_page_smark-dashboard #wpbody-content > .error {
+  margin-left: 20px;
+  margin-right: 20px;
+}
+
+.smark-dashboard-app-page {
+  --bg: #f8f5ff;
+  --surface: rgba(255, 255, 255, .62);
+  --purple-900: #24074f;
+  --ink: #171128;
+  --muted: #6f6681;
+  --shadow-sm: 0 10px 30px rgba(82, 37, 157, .08);
+  --blur: blur(22px) saturate(140%);
+  --font: "Inter", "Vazirmatn", "Segoe UI", Tahoma, Arial, sans-serif;
+  position: relative;
+  min-height: calc(100vh - 32px);
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: var(--font);
+  isolation: isolate;
+  color: var(--ink);
+  overflow: visible;
+}
+.smark-dashboard-app-page::before {
+  content: "";
+  position: fixed;
+  inset: 32px 0 0 160px;
+  z-index: -3;
+  background: radial-gradient(circle at 12% 8%, rgba(155, 92, 255, 0.22), transparent 28%), radial-gradient(circle at 88% 12%, rgba(216, 192, 255, 0.45), transparent 26%), radial-gradient(circle at 54% 92%, rgba(123, 44, 255, 0.12), transparent 32%), linear-gradient(180deg, #fff 0%, var(--bg) 44%, #fbf9ff 100%);
+  pointer-events: none;
+}
+.smark-dashboard-app-page::after {
+  content: "";
+  position: fixed;
+  inset: 32px 0 0 160px;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.76), transparent 18%, transparent 82%, rgba(255, 255, 255, 0.76));
+}
+
+.smark-dashboard-app-canvas {
+  position: relative;
+  min-height: 160vh;
+  overflow: visible;
+  background: transparent;
+}
+.smark-dashboard-app-canvas::before {
+  content: "";
+  position: fixed;
+  inset: 32px 0 0 160px;
+  z-index: -2;
+  background-image: linear-gradient(rgba(97, 62, 161, 0.075) 1px, transparent 1px), linear-gradient(90deg, rgba(97, 62, 161, 0.075) 1px, transparent 1px);
+  background-size: 34px 34px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%);
+  pointer-events: none;
+}
+
+.smark-dashboard-workspace-content {
+  position: absolute;
+  top: 25px;
+  right: 128px;
+  left: 44px;
+  z-index: 1;
+}
+
+.smark-dashboard-daily-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+.smark-dashboard-daily-grid--empty {
+  grid-template-columns: minmax(260px, 420px);
+}
+
+.smark-dashboard-daily-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 286px;
+  display: flex;
+  flex-direction: column;
+  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 24px;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+}
+.smark-dashboard-daily-card.is-complete {
+  border-color: rgba(45, 212, 119, 0.38);
+  background: linear-gradient(180deg, rgba(226, 255, 238, 0.58), rgba(240, 255, 247, 0.38)), var(--surface);
+  box-shadow: 0 18px 48px rgba(22, 163, 74, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.64);
+}
+.smark-dashboard-daily-card__complete-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  border-radius: inherit;
+  color: rgba(17, 126, 60, 0.78);
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.28), transparent 34%), linear-gradient(180deg, rgba(34, 197, 94, 0.24), rgba(16, 185, 129, 0.18));
+  box-shadow: inset 0 0 0 1px rgba(45, 212, 119, 0.24), inset 0 24px 60px rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(2px) saturate(132%);
+  -webkit-backdrop-filter: blur(2px) saturate(132%);
+  pointer-events: none;
+}
+.smark-dashboard-daily-card__complete-overlay .smark-dashboard-glass-menu__svg-icon {
+  width: 72px;
+  height: 72px;
+  filter: drop-shadow(0 16px 30px rgba(17, 126, 60, 0.18));
+}
+.smark-dashboard-daily-card--empty {
+  min-height: auto;
+}
+.smark-dashboard-daily-card__top {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 52px;
+}
+.smark-dashboard-daily-card__icon {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  display: grid;
+  place-items: center;
+  color: var(--purple-900);
+}
+.smark-dashboard-daily-card__icon .smark-dashboard-glass-menu__svg-icon, .smark-dashboard-daily-card__logo {
+  width: 28px;
+  height: 28px;
+}
+.smark-dashboard-daily-card__logo {
+  display: block;
+  background-color: currentColor;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+.smark-dashboard-daily-card__title {
+  flex: 1 1 auto;
+  margin: 0;
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+.smark-dashboard-daily-card__rule {
+  width: calc(100% + 44px);
+  height: 1px;
+  margin: 18px -22px;
+  background: rgba(97, 62, 161, 0.18);
+}
+.smark-dashboard-daily-card__description {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.8;
+}
+.smark-dashboard-daily-card__status {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  color: var(--purple-900);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.6;
+  background: rgba(123, 44, 255, 0.08);
+}
+.smark-dashboard-daily-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 22px;
+}
+.smark-dashboard-daily-card__button {
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 40px;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 10px;
+  border: 1px solid rgba(123, 44, 255, 0.18);
+  border-radius: 16px;
+  color: var(--purple-900);
+  font-size: 12px;
+  font-weight: 800;
+  font-family: inherit;
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.46);
+  box-shadow: none;
+  cursor: pointer;
+  transition: color 160ms ease, background 160ms ease, border-color 160ms ease;
+}
+.smark-dashboard-daily-card__button:visited {
+  color: var(--purple-900);
+}
+.smark-dashboard-daily-card__button:disabled, .smark-dashboard-daily-card__button[aria-disabled=true] {
+  cursor: default;
+  pointer-events: none;
+}
+.smark-dashboard-daily-card__button:focus, .smark-dashboard-daily-card__button:focus-visible, .smark-dashboard-daily-card__button:active {
+  color: var(--purple-900) !important;
+  border-color: rgba(123, 44, 255, 0.18) !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.46) !important;
+  box-shadow: none !important;
+  filter: none !important;
+  outline: none !important;
+  transform: none !important;
+  text-decoration: none !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 8px 10px !important;
+}
+.smark-dashboard-daily-card__button:hover, .smark-dashboard-daily-card__button:focus:hover, .smark-dashboard-daily-card__button:focus-visible:hover, .smark-dashboard-daily-card__button:active:hover {
+  color: #fff !important;
+  border-color: var(--purple-900) !important;
+  border-radius: 16px !important;
+  background: var(--purple-900) !important;
+  box-shadow: none !important;
+  filter: none !important;
+  outline: none !important;
+  transform: none !important;
+  text-decoration: none !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 8px 10px !important;
+}
+.smark-dashboard-daily-card__button--primary {
+  color: #fff;
+  border-color: var(--purple-900);
+  background: var(--purple-900);
+}
+.smark-dashboard-daily-card__button--primary:visited, .smark-dashboard-daily-card__button--primary:hover, .smark-dashboard-daily-card__button--primary:focus, .smark-dashboard-daily-card__button--primary:focus-visible, .smark-dashboard-daily-card__button--primary:active {
+  color: #fff !important;
+  border-color: var(--purple-900) !important;
+  border-radius: 16px !important;
+  background: var(--purple-900) !important;
+  box-shadow: none !important;
+  filter: none !important;
+  outline: none !important;
+  transform: none !important;
+  text-decoration: none !important;
+}
+
+.smark-dashboard-app-canvas--rtl {
+  font-family: "Vazirmatn", "Inter", "Segoe UI", Tahoma, Arial, sans-serif;
+  direction: rtl;
+}
+.smark-dashboard-app-canvas--rtl * {
+  font-family: inherit;
+}
+.smark-dashboard-app-canvas--rtl .smark-dashboard-daily-card__top {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+.smark-dashboard-glass-menu {
+  position: sticky !important;
+  top: 56px !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  z-index: 2;
+  width: 62px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-height: min(560px, 100vh - 108px);
+  height: fit-content;
+  margin-top: 0;
+  margin-right: 28px;
+  margin-left: auto;
+  padding: 12px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  overflow: visible;
+  transform: none !important;
+}
+.smark-dashboard-glass-menu::before, .smark-dashboard-glass-menu::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  border-radius: inherit;
+}
+.smark-dashboard-glass-menu::before {
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  height: 42%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0));
+}
+.smark-dashboard-glass-menu::after {
+  width: 150px;
+  height: 150px;
+  top: -40px;
+  left: -44px;
+  background: radial-gradient(circle, rgba(188, 145, 255, 0.28), transparent 70%);
+  filter: blur(42px);
+}
+.smark-dashboard-glass-menu__group {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.smark-dashboard-glass-menu__group--bottom {
+  margin-top: auto;
+}
+.smark-dashboard-glass-menu__item {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--muted);
+  text-decoration: none;
+  background: transparent;
+  cursor: pointer;
+  transition: color 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+.smark-dashboard-glass-menu__item:visited {
+  color: var(--muted);
+  text-decoration: none;
+}
+.smark-dashboard-glass-menu__item.is-active, .smark-dashboard-glass-menu__item:hover, .smark-dashboard-glass-menu__item:active, .smark-dashboard-glass-menu__item:focus-visible {
+  color: var(--purple-900);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  text-decoration: none;
+}
+.smark-dashboard-glass-menu__logo {
+  width: 24px;
+  height: 24px;
+  display: block;
+  background-color: currentColor;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+.smark-dashboard-glass-menu__svg-icon {
+  width: 22px;
+  height: 22px;
+  display: block;
+  color: currentColor;
+}
+.smark-dashboard-glass-menu__language-wrap, .smark-dashboard-glass-menu__settings-wrap {
+  position: relative;
+  z-index: 2;
+}
+.smark-dashboard-glass-menu__language-wrap.is-open .smark-dashboard-glass-menu__language-panel,
+.smark-dashboard-glass-menu__language-wrap.is-open .smark-dashboard-glass-menu__settings-panel, .smark-dashboard-glass-menu__settings-wrap.is-open .smark-dashboard-glass-menu__language-panel,
+.smark-dashboard-glass-menu__settings-wrap.is-open .smark-dashboard-glass-menu__settings-panel {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(0, -50%);
+}
+.smark-dashboard-glass-menu__language-wrap.is-open .smark-dashboard-glass-menu__tooltip, .smark-dashboard-glass-menu__settings-wrap.is-open .smark-dashboard-glass-menu__tooltip {
+  opacity: 0;
+  pointer-events: none;
+}
+.smark-dashboard-glass-menu__language-panel, .smark-dashboard-glass-menu__settings-panel, .smark-dashboard-glass-menu__tooltip {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 18px);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(8px, -50%);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+.smark-dashboard-glass-menu__language-panel::after, .smark-dashboard-glass-menu__settings-panel::after, .smark-dashboard-glass-menu__tooltip::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background: inherit;
+  transform: translateY(-50%) rotate(45deg);
+}
+.smark-dashboard-glass-menu__language-panel, .smark-dashboard-glass-menu__settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 118px;
+  padding: 8px;
+  border-radius: 18px;
+}
+.smark-dashboard-glass-menu__settings-panel {
+  min-width: 220px;
+  top: auto;
+  bottom: 0;
+  transform: translate(8px, 0);
+}
+.smark-dashboard-glass-menu__settings-panel::after {
+  top: auto;
+  bottom: 17px;
+  transform: rotate(45deg);
+}
+.smark-dashboard-glass-menu__settings-wrap.is-open .smark-dashboard-glass-menu__settings-panel {
+  transform: translate(0, 0);
+}
+.smark-dashboard-glass-menu__language-option {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  background: transparent;
+  cursor: pointer;
+  transition: color 160ms ease, background 160ms ease;
+}
+.smark-dashboard-glass-menu__language-option:visited {
+  color: var(--muted);
+  text-decoration: none;
+}
+.smark-dashboard-glass-menu__language-option:hover, .smark-dashboard-glass-menu__language-option:active, .smark-dashboard-glass-menu__language-option:focus-visible, .smark-dashboard-glass-menu__language-option.is-selected {
+  color: var(--purple-900);
+  background: rgba(123, 44, 255, 0.08);
+  outline: none;
+  text-decoration: none;
+}
+.smark-dashboard-glass-menu__tooltip {
+  min-width: 136px;
+  padding: 11px 15px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+}
+.smark-dashboard-glass-menu__tooltip-title, .smark-dashboard-glass-menu__tooltip-spacer, .smark-dashboard-glass-menu__tooltip-meta {
+  display: inline;
+}
+.smark-dashboard-glass-menu__tooltip-meta {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+.smark-dashboard-glass-menu__item:hover .smark-dashboard-glass-menu__tooltip, .smark-dashboard-glass-menu__item:focus-visible .smark-dashboard-glass-menu__tooltip {
+  opacity: 1;
+  transform: translate(0, -50%);
+}
+
+@media (max-width: 782px) {
+  body.toplevel_page_smark-dashboard #wpcontent,
+  body.smark-plugin-page.toplevel_page_smark-dashboard #wpcontent {
+    padding-left: 0;
+  }
+  .folded .smark-dashboard-app-page::before,
+  .folded .smark-dashboard-app-page::after,
+  .folded .smark-dashboard-app-canvas::before,
+  .smark-dashboard-app-page::before,
+  .smark-dashboard-app-page::after,
+  .smark-dashboard-app-canvas::before {
+    inset: 46px 0 0 0;
+  }
+  .smark-dashboard-app-canvas {
+    min-height: 160vh;
+  }
+  .smark-dashboard-workspace-content {
+    top: 25px;
+    right: 106px;
+    left: 18px;
+  }
+  .smark-dashboard-daily-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .smark-dashboard-glass-menu {
+    top: 52px;
+    min-height: min(520px, 100vh - 100px);
+    margin-top: 0;
+    margin-right: 18px;
+  }
+}
+@media (max-width: 1100px) {
+  .smark-dashboard-daily-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .smark-dashboard-workspace-content {
+    right: 98px;
+  }
+  .smark-dashboard-daily-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (min-width: 783px) {
+  body.folded .smark-dashboard-app-page::before,
+  body.folded .smark-dashboard-app-page::after,
+  body.folded .smark-dashboard-app-canvas::before {
+    left: 36px;
+  }
+}
+
+/*# sourceMappingURL=dashboard.css.map */

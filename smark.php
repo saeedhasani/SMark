@@ -2542,256 +2542,6 @@ class SMarkPlugin {
             array($this, 'admin_page')
         );
 
-        add_submenu_page(
-            'smark-dashboard',
-            __('SMark Test Sidebar', 'smark'),
-            __('Test Sidebar', 'smark'),
-            self::CAP_ACCESS,
-            'smark-test-sidebar',
-            array($this, 'render_test_sidebar_page')
-        );
-    }
-
-    /**
-     * Render a blank test workspace with an internal glass sidebar.
-     */
-    public function render_test_sidebar_page() {
-        $items = array(
-            array(
-                'label' => __('Social Media', 'smark'),
-                'icon'  => 'dashicons-share',
-            ),
-            array(
-                'label' => __('SEO', 'smark'),
-                'icon'  => 'dashicons-search',
-            ),
-            array(
-                'label' => __('Email Marketing', 'smark'),
-                'icon'  => 'dashicons-email-alt',
-            ),
-        );
-
-        $bottom_items = array(
-            array(
-                'label' => __('Settings', 'smark'),
-                'icon'  => 'dashicons-admin-generic',
-            ),
-            array(
-                'label' => __('AI Assistant', 'smark'),
-                'icon'  => 'dashicons-lightbulb',
-            ),
-        );
-        ?>
-        <div class="wrap smark-test-sidebar-page">
-            <main class="smark-test-sidebar-canvas" aria-label="<?php echo esc_attr__('SMark test workspace', 'smark'); ?>">
-                <nav class="smark-test-glass-menu" aria-label="<?php echo esc_attr__('SMark test navigation', 'smark'); ?>">
-                    <div class="smark-test-glass-menu__brand" aria-hidden="true">
-                        <span class="dashicons dashicons-controls-forward"></span>
-                    </div>
-
-                    <div class="smark-test-glass-menu__group">
-                        <?php foreach ($items as $item) : ?>
-                            <button type="button" class="smark-test-glass-menu__item" aria-label="<?php echo esc_attr($item['label']); ?>">
-                                <span class="dashicons <?php echo esc_attr($item['icon']); ?>" aria-hidden="true"></span>
-                                <span class="smark-test-glass-menu__tooltip"><?php echo esc_html($item['label']); ?></span>
-                            </button>
-                        <?php endforeach; ?>
-                    </div>
-
-                    <div class="smark-test-glass-menu__group smark-test-glass-menu__group--bottom">
-                        <?php foreach ($bottom_items as $item) : ?>
-                            <button type="button" class="smark-test-glass-menu__item" aria-label="<?php echo esc_attr($item['label']); ?>">
-                                <span class="dashicons <?php echo esc_attr($item['icon']); ?>" aria-hidden="true"></span>
-                                <span class="smark-test-glass-menu__tooltip"><?php echo esc_html($item['label']); ?></span>
-                            </button>
-                        <?php endforeach; ?>
-                    </div>
-                </nav>
-            </main>
-        </div>
-
-        <style>
-            .smark-test-sidebar-page {
-                min-height: calc(100vh - 32px);
-                margin: 0;
-                padding: 24px;
-                box-sizing: border-box;
-            }
-
-            .smark-test-sidebar-canvas {
-                position: relative;
-                min-height: calc(100vh - 80px);
-                border-radius: 28px;
-                overflow: hidden;
-                background:
-                    radial-gradient(circle at 78% 16%, rgba(79, 231, 255, 0.22), transparent 28%),
-                    radial-gradient(circle at 22% 88%, rgba(116, 82, 255, 0.18), transparent 32%),
-                    linear-gradient(135deg, #eef8f7 0%, #d9e9f3 45%, #f7fbff 100%);
-                box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
-            }
-
-            .smark-test-sidebar-canvas::before,
-            .smark-test-sidebar-canvas::after {
-                content: "";
-                position: absolute;
-                border-radius: 999px;
-                pointer-events: none;
-            }
-
-            .smark-test-sidebar-canvas::before {
-                width: 420px;
-                height: 420px;
-                right: 96px;
-                top: 70px;
-                background: rgba(255, 255, 255, 0.28);
-                filter: blur(2px);
-            }
-
-            .smark-test-sidebar-canvas::after {
-                width: 540px;
-                height: 540px;
-                left: -160px;
-                bottom: -190px;
-                background: rgba(23, 44, 74, 0.08);
-            }
-
-            .smark-test-glass-menu {
-                position: absolute;
-                top: 32px;
-                right: 32px;
-                bottom: 32px;
-                z-index: 2;
-                width: 68px;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 26px;
-                padding: 16px 10px;
-                border: 1px solid rgba(255, 255, 255, 0.22);
-                border-radius: 28px;
-                background: linear-gradient(180deg, rgba(9, 18, 34, 0.82), rgba(15, 24, 39, 0.66));
-                box-shadow: 0 22px 50px rgba(8, 18, 34, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.18);
-                backdrop-filter: blur(18px) saturate(140%);
-                -webkit-backdrop-filter: blur(18px) saturate(140%);
-            }
-
-            .smark-test-glass-menu__brand {
-                width: 42px;
-                height: 42px;
-                display: grid;
-                place-items: center;
-                border-radius: 16px;
-                color: #67f6ff;
-                background: rgba(6, 14, 29, 0.72);
-                box-shadow: inset 0 0 0 1px rgba(103, 246, 255, 0.24), 0 10px 24px rgba(0, 0, 0, 0.22);
-            }
-
-            .smark-test-glass-menu__brand .dashicons {
-                width: 24px;
-                height: 24px;
-                font-size: 24px;
-                transform: rotate(-45deg);
-            }
-
-            .smark-test-glass-menu__group {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 14px;
-            }
-
-            .smark-test-glass-menu__group--bottom {
-                margin-top: auto;
-            }
-
-            .smark-test-glass-menu__item {
-                position: relative;
-                width: 44px;
-                height: 44px;
-                display: grid;
-                place-items: center;
-                margin: 0;
-                padding: 0;
-                border: 0;
-                border-radius: 16px;
-                color: rgba(211, 246, 255, 0.84);
-                background: transparent;
-                cursor: pointer;
-                transition: color 160ms ease, background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
-            }
-
-            .smark-test-glass-menu__item:hover,
-            .smark-test-glass-menu__item:focus-visible {
-                color: #ffffff;
-                background: rgba(57, 218, 255, 0.16);
-                box-shadow: inset 0 0 0 1px rgba(103, 246, 255, 0.24), 0 12px 22px rgba(39, 214, 255, 0.16);
-                transform: translateY(-1px);
-                outline: none;
-            }
-
-            .smark-test-glass-menu__item .dashicons {
-                width: 22px;
-                height: 22px;
-                font-size: 22px;
-            }
-
-            .smark-test-glass-menu__tooltip {
-                position: absolute;
-                top: 50%;
-                right: calc(100% + 16px);
-                min-width: 128px;
-                padding: 10px 14px;
-                border-radius: 10px;
-                color: #ffffff;
-                font-size: 13px;
-                font-weight: 700;
-                line-height: 1.2;
-                text-align: center;
-                white-space: nowrap;
-                background: rgba(22, 36, 59, 0.96);
-                box-shadow: 0 14px 30px rgba(7, 18, 34, 0.28);
-                opacity: 0;
-                pointer-events: none;
-                transform: translate(8px, -50%);
-                transition: opacity 160ms ease, transform 160ms ease;
-            }
-
-            .smark-test-glass-menu__tooltip::after {
-                content: "";
-                position: absolute;
-                top: 50%;
-                right: -6px;
-                width: 12px;
-                height: 12px;
-                background: inherit;
-                transform: translateY(-50%) rotate(45deg);
-                border-radius: 2px;
-            }
-
-            .smark-test-glass-menu__item:hover .smark-test-glass-menu__tooltip,
-            .smark-test-glass-menu__item:focus-visible .smark-test-glass-menu__tooltip {
-                opacity: 1;
-                transform: translate(0, -50%);
-            }
-
-            @media (max-width: 782px) {
-                .smark-test-sidebar-page {
-                    padding: 16px;
-                }
-
-                .smark-test-sidebar-canvas {
-                    min-height: calc(100vh - 78px);
-                    border-radius: 22px;
-                }
-
-                .smark-test-glass-menu {
-                    right: 18px;
-                    top: 18px;
-                    bottom: 18px;
-                }
-            }
-        </style>
-        <?php
     }
 
     private function get_menu_icon_url() {
@@ -2804,6 +2554,95 @@ class SMarkPlugin {
         }
 
         return 'dashicons-admin-generic';
+    }
+
+    private function get_dashboard_daily_guide_cards($current_lang = 'en') {
+        $lang = ($current_lang === 'fa') ? 'fa' : 'en';
+        $suggestions = $this->get_daily_guide_suggestions($lang);
+        $active_items = array();
+        foreach ($suggestions as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $active_key = isset($item['key']) ? sanitize_key((string) $item['key']) : '';
+            if ($active_key !== '') {
+                $active_items[$active_key] = $item;
+            }
+        }
+
+        $meta = array(
+            'gap_transfer' => array(
+                'title_en' => 'Transfer Competitor Keyword',
+                'title_fa' => 'انتقال کلمه رقبا',
+                'category' => 'seo',
+                'translation_key' => 'daily_guide_task_gap_transfer',
+                'url' => admin_url('admin.php?page=smark-keyword-gap'),
+            ),
+            'keyword_red' => array(
+                'title_en' => 'Update Keyword Rankings',
+                'title_fa' => 'به‌روزرسانی رتبه کلمات',
+                'category' => 'seo',
+                'translation_key' => 'daily_guide_task_keyword_red',
+                'url' => admin_url('admin.php?page=smark-keyword-research'),
+            ),
+            'keyword_no_page' => array(
+                'title_en' => 'Connect Keyword Pages',
+                'title_fa' => 'اتصال صفحه به کلمه',
+                'category' => 'seo',
+                'translation_key' => 'daily_guide_task_keyword_no_page',
+                'url' => admin_url('admin.php?page=smark-keyword-research&pageLinkFilter=no_link'),
+            ),
+            'rankmath_missing' => array(
+                'title_en' => 'Add Site Keywords',
+                'title_fa' => 'افزودن کلمات سایت',
+                'category' => 'seo',
+                'translation_key' => 'daily_guide_task_rankmath_missing',
+                'url' => admin_url('admin.php?page=smark-keyword-research'),
+            ),
+            'content_red' => array(
+                'title_en' => 'Review Stale Content',
+                'title_fa' => 'بازبینی محتوای قدیمی',
+                'category' => 'seo',
+                'translation_key' => 'daily_guide_task_content_red',
+                'url' => admin_url('admin.php?page=smark-content-management'),
+            ),
+            'backlink_acquired' => array(
+                'title_en' => 'Acquire Today’s Backlink',
+                'title_fa' => 'ثبت بک‌لینک امروز',
+                'category' => 'seo',
+                'translation_key' => 'daily_guide_task_backlink_acquired',
+                'url' => admin_url('admin.php?page=smark-backlinks-management'),
+            ),
+            'publish' => array(
+                'title_en' => 'Publish Today’s Content',
+                'title_fa' => 'انتشار محتوای امروز',
+                'category' => 'seo',
+                'translation_key' => 'daily_guide_task_publish',
+                'url' => admin_url('admin.php?page=smark-keyword-research'),
+            ),
+        );
+
+        $cards = array();
+        foreach ($meta as $key => $card_meta) {
+            $item = isset($active_items[$key]) && is_array($active_items[$key]) ? $active_items[$key] : array();
+            $translation_key = isset($card_meta['translation_key']) ? (string) $card_meta['translation_key'] : '';
+            $description_en = $translation_key !== '' ? $this->get_dashboard_translation($translation_key, 'en') : (isset($item['text']) ? (string) $item['text'] : '');
+            $description_fa = $translation_key !== '' ? $this->get_dashboard_translation($translation_key, 'fa') : (isset($item['text']) ? (string) $item['text'] : '');
+            $cards[] = array(
+                'key' => $key,
+                'title' => ($lang === 'fa') ? $card_meta['title_fa'] : $card_meta['title_en'],
+                'titleEn' => $card_meta['title_en'],
+                'titleFa' => $card_meta['title_fa'],
+                'category' => $card_meta['category'],
+                'description' => ($lang === 'fa') ? $description_fa : $description_en,
+                'descriptionEn' => $description_en,
+                'descriptionFa' => $description_fa,
+                'url' => isset($item['url']) ? esc_url_raw((string) $item['url']) : esc_url_raw((string) $card_meta['url']),
+                'completed' => !isset($active_items[$key]),
+            );
+        }
+
+        return $cards;
     }
 
     public function output_admin_menu_icon_css() {
@@ -2838,1223 +2677,8 @@ class SMarkPlugin {
      * Admin page content
      */
     public function admin_page() {
-        $current_lang = get_option('smark_panel_language', 'en');
-        $rtl_class = ($current_lang === 'fa') ? 'rtl' : '';
-        $is_rtl = ($current_lang === 'fa');
-        $daily_guide_suggestions = $this->get_daily_guide_suggestions($current_lang);
         ?>
-        <div class="wrap smark-dashboard <?php echo esc_attr($rtl_class); ?>" data-lang="<?php echo esc_attr($current_lang); ?>">
-            <div class="smark-header">
-                <h1><?php echo esc_html($this->get_dashboard_translation('smark_plugin_dashboard', $current_lang)); ?></h1>
-                <p class="subtitle"><?php echo esc_html($this->get_dashboard_translation('comprehensive_wordpress_toolkit', $current_lang)); ?></p>
-            </div>
-
-            <div class="smark-breadcrumb">
-                <div class="breadcrumb-left">
-                    <span class="current"><?php echo esc_html($this->get_dashboard_translation('dashboard', $current_lang)); ?></span>
-                </div>
-                <div class="breadcrumb-right">
-                    <div class="language-selector">
-                        <span class="dashicons dashicons-translation"></span>
-                        <select id="smark_language_select" class="language-dropdown">
-                            <option value="en" <?php selected($current_lang, 'en'); ?>>English</option>
-                            <option value="fa" <?php selected($current_lang, 'fa'); ?>>فارسی</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div class="smark-dashboard-content">
-                <!-- Daily Guide Section -->
-                <div class="smark-daily-guide-section">
-                    <div class="daily-guide-header">
-                        <h2><?php echo esc_html($this->get_dashboard_translation('daily_guide_title', $current_lang)); ?></h2>
-                        <p><?php echo esc_html($this->get_dashboard_translation('daily_guide_subtitle', $current_lang)); ?></p>
-                    </div>
-
-                    <div class="daily-guide-body">
-                        <?php if (empty($daily_guide_suggestions)) : ?>
-                            <div class="daily-guide-all-good">
-                                <span class="dashicons dashicons-yes-alt"></span>
-                                <span class="daily-guide-all-good-text"><?php echo esc_html($this->get_dashboard_translation('daily_guide_all_good', $current_lang)); ?></span>
-                            </div>
-                        <?php else : ?>
-                            <ul class="daily-guide-list">
-                                <?php foreach ($daily_guide_suggestions as $item) : ?>
-                                    <li class="daily-guide-item">
-                                        <div class="daily-guide-item-left">
-                                            <span class="dashicons dashicons-flag"></span>
-                                        </div>
-                                        <div class="daily-guide-item-content">
-                                            <div class="daily-guide-item-text"><?php echo esc_html(isset($item['text']) ? (string) $item['text'] : ''); ?></div>
-                                        </div>
-                                        <?php if (!empty($item['url'])) : ?>
-                                            <div class="daily-guide-item-action">
-                                                <a class="daily-guide-btn" href="<?php echo esc_url((string) $item['url']); ?>">
-                                                    <?php echo esc_html($this->get_dashboard_translation('daily_guide_open', $current_lang)); ?>
-                                                </a>
-                                                <button type="button" class="daily-guide-btn daily-guide-btn--smart" data-smark-daily-guide-smart="1" data-smark-daily-guide-key="<?php echo esc_attr(isset($item['key']) ? (string) $item['key'] : ''); ?>">
-                                                    <?php echo esc_html($this->get_dashboard_translation('daily_guide_smart_action', $current_lang)); ?>
-                                                </button>
-                                            </div>
-                                        <?php endif; ?>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
-                        <?php endif; ?>
-                    </div>
-                </div>
-
-                <!-- Main Features Section - Now the primary focus -->
-                <div class="smark-main-features-section">
-                    <div class="main-features-header">
-                        <h2><?php echo esc_html($this->get_dashboard_translation('main_features', $current_lang)); ?></h2>
-                        <p><?php echo esc_html($this->get_dashboard_translation('explore_powerful_features', $current_lang)); ?></p>
-                    </div>
-
-                    <div class="main-features-grid">
-                        <div class="main-feature-box" onclick="location.href='<?php echo esc_url(admin_url('admin.php?page=smark-social-media')); ?>'">
-                            <div class="main-feature-icon">
-                                <span class="dashicons dashicons-share"></span>
-                            </div>
-                            <div class="main-feature-content">
-                                <h3><?php echo esc_html($this->get_dashboard_translation('social_media_designer', $current_lang)); ?></h3>
-                                <p><?php echo esc_html($this->get_dashboard_translation('create_stunning_social', $current_lang)); ?></p>
-                            </div>
-                        </div>
-
-                        <div class="main-feature-box" onclick="location.href='<?php echo esc_url(admin_url('admin.php?page=smark-seo-optimization')); ?>'">
-                            <div class="main-feature-icon">
-                                <span class="dashicons dashicons-chart-line"></span>
-                            </div>
-                            <div class="main-feature-content">
-                                <h3><?php echo esc_html($this->get_dashboard_translation('seo_optimization', $current_lang)); ?></h3>
-                                <p><?php echo esc_html($this->get_dashboard_translation('manage_seo_process', $current_lang)); ?></p>
-                            </div>
-                        </div>
-
-                        <div class="main-feature-box" onclick="location.href='<?php echo esc_url(admin_url('admin.php?page=smark-email-marketing')); ?>'">
-                            <div class="main-feature-icon">
-                                <span class="dashicons dashicons-email-alt"></span>
-                            </div>
-                            <div class="main-feature-content">
-                                <h3><?php echo esc_html($this->get_dashboard_translation('email_marketing', $current_lang)); ?></h3>
-                                <p><?php echo esc_html($this->get_dashboard_translation('manage_email_marketing', $current_lang)); ?></p>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
-                <!-- Basic Features Section -->
-                <div class="smark-basic-features-section">
-                    <div class="basic-features-header">
-                        <h2><?php echo esc_html($this->get_dashboard_translation('basic_features', $current_lang)); ?></h2>
-                        <p><?php echo esc_html($this->get_dashboard_translation('essential_tools', $current_lang)); ?></p>
-                    </div>
-
-                    <div class="basic-features-grid">
-                        <div class="basic-feature-box horizontal-card" onclick="location.href='<?php echo esc_url(admin_url('admin.php?page=smark-project-settings')); ?>'">
-                            <div class="horizontal-card-content">
-                                <div class="horizontal-icon">
-                                    <span class="dashicons dashicons-admin-generic"></span>
-                                </div>
-                                <div class="horizontal-text">
-                                    <h3><?php echo esc_html($this->get_dashboard_translation('project_settings', $current_lang)); ?></h3>
-                                    <p><?php echo esc_html($this->get_dashboard_translation('manage_project_settings', $current_lang)); ?></p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="basic-feature-box horizontal-card" onclick="location.href='<?php echo esc_url(admin_url('admin.php?page=smark-google-docs-converter')); ?>'">
-                            <div class="horizontal-card-content">
-                                <div class="horizontal-icon">
-                                    <span class="dashicons dashicons-media-document"></span>
-                                </div>
-                                <div class="horizontal-text">
-                                    <h3><?php echo esc_html($this->get_dashboard_translation('google_docs_converter', $current_lang)); ?></h3>
-                                    <p><?php echo esc_html($this->get_dashboard_translation('convert_google_docs', $current_lang)); ?></p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="basic-feature-box horizontal-card" onclick="location.href='<?php echo esc_url(admin_url('admin.php?page=smark-headline-analyzer')); ?>'">
-                            <div class="horizontal-card-content">
-                                <div class="horizontal-icon">
-                                    <span class="dashicons dashicons-search"></span>
-                                </div>
-                                <div class="horizontal-text">
-                                    <h3><?php echo esc_html($this->get_dashboard_translation('headline_analyzer', $current_lang)); ?></h3>
-                                    <p><?php echo esc_html($this->get_dashboard_translation('analyze_headlines', $current_lang)); ?></p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="basic-feature-box horizontal-card" onclick="location.href='<?php echo esc_url(admin_url('admin.php?page=smark-competitor-analysis')); ?>'">
-                            <div class="horizontal-card-content">
-                                <div class="horizontal-icon">
-                                    <span class="dashicons dashicons-businessman"></span>
-                                </div>
-                                <div class="horizontal-text">
-                                    <h3><?php echo esc_html($this->get_dashboard_translation('competitor_analysis', $current_lang)); ?></h3>
-                                    <p><?php echo esc_html($this->get_dashboard_translation('track_competitor_websites', $current_lang)); ?></p>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
-                <!-- Plugin Version Footer - Breadcrumb Style -->
-                <div class="smark-version-footer">
-                    <div class="version-info">
-                        <span class="version-label"><?php echo esc_html($this->get_dashboard_translation('smark_plugin', $current_lang)); ?></span>
-                        <span class="version-separator">•</span>
-                        <span class="version-number">v<?php echo esc_html(SMARK_VERSION); ?></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <style>
-        /* Import Vazirmatn font for Persian text */
-        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap');
-
-        /* SMark Dashboard specific styles only */
-
-        /* Dashboard Layout */
-        .smark-dashboard {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-            padding: 20px;
-            margin: 0 !important;
-            max-width: 100% !important;
-            box-sizing: border-box;
-        }
-
-        /* Header Section */
-        .smark-header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 20px;
-            color: white;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-
-        .smark-header h1 {
-            margin: 0 0 10px 0;
-            font-size: 2.5em;
-            font-weight: 300;
-            color: #ffffff;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-
-        .smark-header .subtitle {
-            margin: 0;
-            font-size: 1.1em;
-            opacity: 0.9;
-            color: #ffffff;
-        }
-
-        /* Breadcrumb */
-        .smark-breadcrumb {
-            margin-bottom: 30px;
-            padding: 15px 20px;
-            background: rgba(255, 255, 255, 0.7);
-            border-radius: 10px;
-            backdrop-filter: blur(10px);
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .breadcrumb-left {
-            display: flex;
-            align-items: center;
-            flex: 1;
-            order: 1;
-        }
-
-        .breadcrumb-right {
-            display: flex;
-            align-items: center;
-            order: 2;
-            margin-left: auto;
-        }
-
-        .smark-breadcrumb a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.3s ease;
-        }
-
-        .smark-breadcrumb a:hover {
-            color: #764ba2;
-        }
-
-        .smark-breadcrumb .separator {
-            margin: 0 10px;
-            color: #95a5a6;
-        }
-
-        /* Flip separator icon in RTL mode */
-        .smark-dashboard.rtl .smark-breadcrumb .separator {
-            display: inline-block;
-            transform: scaleX(-1);
-        }
-
-        .smark-breadcrumb .current {
-            color: #2c3e50;
-            font-weight: 600;
-        }
-
-        /* Language Selector */
-        .language-selector {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: 2px solid #e1e8ed;
-            transition: all 0.3s ease;
-        }
-
-        .language-selector:hover {
-            border-color: #667eea;
-            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
-        }
-
-        .language-selector .dashicons {
-            font-size: 18px;
-            width: 18px;
-            height: 18px;
-            color: #667eea;
-        }
-
-        .language-dropdown {
-            border: none;
-            background: transparent;
-            color: #2c3e50;
-            font-weight: 500;
-            cursor: pointer;
-            outline: none;
-        }
-
-        /* Content Area */
-        .smark-dashboard-content {
-            max-width: 100%;
-            margin: 0;
-        }
-
-        /* Daily Guide Section */
-        .smark-daily-guide-section {
-            margin-bottom: 60px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 25px;
-            padding: 40px 40px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .daily-guide-header {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-
-        .daily-guide-header h2 {
-            font-size: 2.2em;
-            color: #2c3e50;
-            margin: 0 0 10px 0;
-            font-weight: 400;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .daily-guide-header p {
-            color: #5a6c7d;
-            font-size: 1.15em;
-            margin: 0;
-            font-weight: 400;
-            line-height: 1.5;
-        }
-
-        .daily-guide-body {
-            max-width: 1100px;
-            margin: 0 auto;
-        }
-
-        .daily-guide-all-good {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 18px 20px;
-            background: rgba(46, 204, 113, 0.12);
-            border: 1px solid rgba(46, 204, 113, 0.2);
-            border-radius: 16px;
-            color: #1e7e34;
-            font-size: 1.05em;
-        }
-
-        .daily-guide-all-good .dashicons {
-            font-size: 22px;
-            width: 22px;
-            height: 22px;
-        }
-
-        .daily-guide-list {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .daily-guide-item {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 14px 16px;
-            background: rgba(255, 255, 255, 0.75);
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.06);
-        }
-
-        .daily-guide-item-left .dashicons {
-            color: #764ba2;
-            font-size: 20px;
-            width: 20px;
-            height: 20px;
-        }
-
-        .daily-guide-item-content {
-            flex: 1 1 auto;
-            color: #2c3e50;
-            font-size: 1.05em;
-            line-height: 1.5;
-        }
-
-        .daily-guide-item-action {
-            flex: 0 0 auto;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .daily-guide-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 10px 14px;
-            border-radius: 12px;
-            text-decoration: none;
-            background: #667eea;
-            color: #fff;
-            font-weight: 500;
-            border: 1px solid rgba(255,255,255,0.2);
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-
-        .daily-guide-btn:hover {
-            background: #5a71db;
-            transform: translateY(-1px);
-            box-shadow: 0 10px 20px rgba(102,126,234,0.25);
-            color: #fff;
-        }
-
-        .daily-guide-btn--smart {
-            background: rgba(255, 255, 255, 0.95);
-            color: #5a71db;
-            border: 1px solid rgba(90, 113, 219, 0.35);
-        }
-
-        .daily-guide-btn--smart:hover {
-            background: #ffffff;
-            color: #4f61c7;
-            border-color: rgba(90, 113, 219, 0.55);
-            box-shadow: 0 10px 20px rgba(90,113,219,0.18);
-        }
-
-        /* Smart action modal (dashboard) */
-        .smark-smart-modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(15, 23, 42, 0.55);
-            z-index: 1000000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 18px;
-            box-sizing: border-box;
-        }
-
-        .smark-smart-modal {
-            width: min(920px, 100%);
-            background: rgba(255,255,255,0.98);
-            border-radius: 18px;
-            box-shadow: 0 30px 70px rgba(0,0,0,0.25);
-            overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.35);
-        }
-
-        .smark-smart-modal__header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            padding: 14px 16px;
-            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-            background: linear-gradient(135deg, rgba(102,126,234,0.10), rgba(118,75,162,0.08));
-        }
-
-        .smark-smart-modal__title {
-            font-weight: 700;
-            color: #1f2937;
-            font-size: 15px;
-        }
-
-        .smark-smart-modal__close {
-            border: none;
-            background: transparent;
-            font-size: 22px;
-            line-height: 1;
-            cursor: pointer;
-            color: rgba(31,41,55,0.75);
-            padding: 4px 8px;
-            border-radius: 10px;
-        }
-
-        .smark-smart-modal__close:hover {
-            background: rgba(15, 23, 42, 0.06);
-            color: rgba(31,41,55,0.95);
-        }
-
-        .smark-smart-modal__body {
-            padding: 16px;
-        }
-
-        .smark-smart-modal__loading {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 18px 16px;
-            background: rgba(102, 126, 234, 0.08);
-            border: 1px solid rgba(102, 126, 234, 0.18);
-            border-radius: 14px;
-        }
-
-        .smark-smart-spinner.dashicons {
-            font-size: 22px;
-            width: 22px;
-            height: 22px;
-            color: #667eea;
-        }
-
-        @keyframes smarkSmartSpin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        .smark-smart-spinner {
-            animation: smarkSmartSpin 1s linear infinite;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .smark-smart-spinner {
-                animation: none;
-            }
-        }
-
-        .smark-smart-modal__loading-text {
-            font-size: 14px;
-            color: #334155;
-            font-weight: 600;
-        }
-
-        .smark-smart-modal__meta {
-            font-size: 13px;
-            color: #475569;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-
-        .smark-smart-modal__actions {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            margin-bottom: 10px;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .smark-smart-modal__section-title {
-            font-weight: 800;
-            color: #1f2937;
-            margin: 12px 0 8px;
-            font-size: 13px;
-        }
-
-        .smark-smart-modal__sources ul {
-            margin: 0;
-            padding-left: 18px;
-        }
-
-        .smark-smart-modal__pre {
-            margin: 0;
-            padding: 14px 14px;
-            background: #0b1220;
-            color: #e5e7eb;
-            border-radius: 14px;
-            overflow: auto;
-            max-height: 56vh;
-            white-space: pre-wrap;
-            word-break: break-word;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-            font-size: 12.5px;
-            line-height: 1.6;
-        }
-
-        .smark-smart-modal__pre--prompt {
-            background: #111827;
-            color: #e5e7eb;
-            max-height: 32vh;
-        }
-
-        .smark-smart-modal__details summary {
-            cursor: pointer;
-            font-weight: 700;
-            color: #334155;
-            margin: 10px 0;
-        }
-
-        /* Main Features Section - Enhanced prominence */
-        .smark-main-features-section {
-            margin-bottom: 60px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 25px;
-            padding: 50px 40px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .main-features-header {
-            text-align: center;
-            margin-bottom: 50px;
-        }
-
-        .main-features-header h2 {
-            font-size: 2.8em;
-            color: #2c3e50;
-            margin: 0 0 20px 0;
-            font-weight: 400;
-            position: relative;
-            display: inline-block;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-
-        .main-features-header p {
-            color: #5a6c7d;
-            font-size: 1.3em;
-            margin: 0;
-            font-weight: 400;
-            line-height: 1.5;
-        }
-
-        /* Main Features Grid - Enhanced 4 Columns */
-        .main-features-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 35px;
-            max-width: 100%;
-            margin: 0;
-            padding: 0;
-        }
-
-        /* Basic Features Section - Same styling as Main Features */
-        .smark-basic-features-section {
-            margin-bottom: 60px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 25px;
-            padding: 50px 40px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .basic-features-header {
-            text-align: center;
-            margin-bottom: 50px;
-        }
-
-        .basic-features-header h2 {
-            font-size: 2.8em;
-            color: #2c3e50;
-            margin: 0 0 20px 0;
-            font-weight: 400;
-            position: relative;
-            display: inline-block;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .basic-features-header p {
-            color: #5a6c7d;
-            font-size: 1.3em;
-            margin: 0;
-            font-weight: 400;
-            line-height: 1.5;
-        }
-
-        /* Basic Features Grid - Mixed layout */
-        .basic-features-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 25px;
-            max-width: 100%;
-            margin: 0;
-            padding: 0;
-        }
-
-        /* Regular cards grid in Basic Features */
-        .basic-features-regular-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 25px;
-        }
-
-        /* Horizontal Card Styles */
-        .basic-feature-box.horizontal-card {
-            grid-column: 1 / -1; /* Span full width */
-            padding: 20px 40px !important; /* Reduced padding for less height */
-        }
-
-        .horizontal-card-content {
-            display: flex;
-            align-items: center;
-            gap: 20px; /* Reduced gap for more compact layout */
-        }
-
-        .horizontal-icon {
-            flex-shrink: 0;
-        }
-
-        .horizontal-icon .dashicons {
-            font-size: 48px; /* Reduced icon size */
-            color: #667eea;
-            width: 48px;
-            height: 48px;
-            transition: all 0.3s ease;
-        }
-
-        .horizontal-card:hover .horizontal-icon .dashicons {
-            color: #764ba2;
-            transform: scale(1.1);
-        }
-
-        .horizontal-text {
-            flex: 1;
-            text-align: left;
-        }
-
-        .horizontal-text h3 {
-            margin: 0 0 8px 0; /* Reduced margin */
-            color: #2c3e50;
-            font-size: 1.5em; /* Reduced font size */
-            font-weight: 500;
-            line-height: 1.2; /* Tighter line height */
-            text-align: left;
-        }
-
-        .horizontal-text p {
-            color: #7f8c8d;
-            line-height: 1.4; /* Tighter line height */
-            margin: 0;
-            font-size: 1em; /* Reduced font size */
-            text-align: left;
-        }
-
-        /* Main Feature Box Styles */
-        .main-feature-box {
-            background: #fff;
-            border-radius: 25px;
-            padding: 40px 30px;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 12px 35px rgba(0,0,0,0.12);
-            border: 1px solid rgba(255,255,255,0.3);
-            backdrop-filter: blur(10px);
-        }
-
-        .main-feature-box:before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-            transform: scaleX(0);
-            transition: transform 0.3s ease;
-        }
-
-        .main-feature-box:hover {
-            transform: translateY(-12px) scale(1.03);
-            box-shadow: 0 25px 50px rgba(0,0,0,0.2);
-        }
-
-        .main-feature-box:hover:before {
-            transform: scaleX(1);
-        }
-
-        /* Basic Feature Box Styles */
-        .basic-feature-box {
-            background: #fff;
-            border-radius: 25px;
-            padding: 40px 30px;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 12px 35px rgba(0,0,0,0.12);
-            border: 1px solid rgba(255,255,255,0.3);
-            backdrop-filter: blur(10px);
-        }
-
-        .basic-feature-box:before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            width: 4px;
-            background: linear-gradient(180deg, #667eea, #764ba2);
-            transform: scaleY(0);
-            transition: transform 0.3s ease;
-        }
-
-        .basic-feature-box:hover {
-            transform: translateY(-12px) scale(1.03);
-            box-shadow: 0 25px 50px rgba(0,0,0,0.2);
-        }
-
-        .basic-feature-box:hover:before {
-            transform: scaleY(1);
-        }
-
-        .feature-box.coming-soon-feature {
-            opacity: 0.6;
-            cursor: not-allowed;
-            background: #f8f9fa;
-        }
-
-        .feature-box.coming-soon-feature:hover {
-            transform: none;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-        }
-
-        /* Main Feature Icon and Content */
-        .main-feature-icon {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-
-        .main-feature-icon .dashicons {
-            font-size: 56px;
-            color: #667eea;
-            width: 56px;
-            height: 56px;
-            transition: all 0.3s ease;
-        }
-
-        .main-feature-box:hover .main-feature-icon .dashicons {
-            color: #764ba2;
-            transform: scale(1.1);
-        }
-
-        .main-feature-content h3 {
-            margin: 0 0 15px 0;
-            color: #2c3e50;
-            font-size: 1.4em;
-            text-align: center;
-            font-weight: 500;
-            line-height: 1.3;
-        }
-
-        .main-feature-content p {
-            color: #7f8c8d;
-            line-height: 1.6;
-            margin: 0 0 20px 0;
-            text-align: center;
-            font-size: 0.95em;
-        }
-
-        .main-feature-status {
-            text-align: center;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 8px 16px;
-            border-radius: 25px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .status-badge.coming-soon {
-            background: linear-gradient(135deg, #ffeaa7, #fab1a0);
-            color: #d63031;
-            box-shadow: 0 2px 8px rgba(214, 48, 49, 0.2);
-        }
-
-        .status-badge.live {
-            background: linear-gradient(135deg, #93c5fd, #3b82f6);
-            color: #0b1f52;
-            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
-        }
-
-        .status-badge.active {
-            background: linear-gradient(135deg, #a7f3d0, #6ee7b7);
-            color: #065f46;
-            box-shadow: 0 2px 8px rgba(6, 95, 70, 0.2);
-        }
-
-        .status-badge.planned {
-            background: linear-gradient(135deg, #ddd6fe, #c7d2fe);
-            color: #6366f1;
-            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
-        }
-
-        /* Plugin Version Footer - Breadcrumb Style */
-        .smark-version-footer {
-            margin-top: 40px;
-            padding: 20px 0;
-            text-align: center;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .version-info {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 12px 24px;
-            border-radius: 25px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-
-        .version-label {
-            color: #5a6c7d;
-            font-size: 0.9em;
-            font-weight: 500;
-        }
-
-        .version-separator {
-            color: #95a5a6;
-            font-size: 1.2em;
-            font-weight: 300;
-        }
-
-        .version-number {
-            color: #667eea;
-            font-size: 0.9em;
-            font-weight: 600;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 1200px) {
-            .main-features-grid,
-            .basic-features-grid {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 30px;
-            }
-
-            .smark-main-features-section,
-            .smark-basic-features-section {
-                padding: 40px 30px;
-            }
-        }
-
-        @media (max-width: 900px) {
-            .main-features-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 25px;
-            }
-
-            .basic-features-regular-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 25px;
-            }
-
-            .smark-header h1 {
-                font-size: 2em;
-            }
-
-            .main-features-header h2,
-            .basic-features-header h2 {
-                font-size: 2.2em;
-            }
-
-            .smark-main-features-section,
-            .smark-basic-features-section {
-                padding: 35px 25px;
-            }
-        }
-
-        @media (max-width: 600px) {
-            .main-features-grid {
-                grid-template-columns: 1fr;
-                gap: 25px;
-            }
-
-            .basic-features-regular-grid {
-                grid-template-columns: 1fr;
-                gap: 25px;
-            }
-
-            .main-feature-box,
-            .basic-feature-box {
-                padding: 30px 25px;
-            }
-
-            .main-feature-icon .dashicons,
-            .horizontal-icon .dashicons {
-                font-size: 48px;
-                width: 48px;
-                height: 48px;
-            }
-
-            .smark-header {
-                padding: 30px 15px;
-            }
-
-            .smark-header h1 {
-                font-size: 1.8em;
-            }
-
-            .main-features-header h2,
-            .basic-features-header h2 {
-                font-size: 2em;
-            }
-
-            .smark-main-features-section,
-            .smark-basic-features-section {
-                padding: 30px 20px;
-            }
-
-            /* Version footer responsive */
-            .smark-version-footer {
-                margin-top: 30px;
-                padding: 15px 0;
-            }
-
-            .version-info {
-                padding: 10px 20px;
-                font-size: 0.85em;
-            }
-
-            /* Horizontal card responsive */
-            .basic-feature-box.horizontal-card {
-                padding: 15px 20px !important; /* Further reduced padding on mobile */
-            }
-
-            .horizontal-card-content {
-                flex-direction: column;
-                text-align: center;
-                gap: 20px;
-            }
-
-            .horizontal-text {
-                text-align: center;
-            }
-
-            .horizontal-text h3 {
-                text-align: center;
-                font-size: 1.3em; /* Reduced for mobile */
-            }
-
-            .horizontal-text p {
-                text-align: center;
-                font-size: 0.9em; /* Reduced for mobile */
-            }
-
-            .horizontal-icon .dashicons {
-                font-size: 40px; /* Reduced for mobile */
-                width: 40px;
-                height: 40px;
-            }
-        }
-
-        /* Hide WordPress Admin Footer on SMark Plugin Pages */
-        body.smark-plugin-page #wpfooter {
-            display: none !important;
-        }
-
-        /* Fix padding for SMark Plugin Dashboard */
-        body.smark-plugin-page #wpcontent {
-            padding-left: 0 !important;
-        }
-
-        body.smark-plugin-page #wpbody-content {
-            padding-bottom: 0 !important;
-        }
-
-        /* RTL Support for Persian */
-        .smark-dashboard.rtl {
-            direction: rtl;
-            text-align: right;
-            font-family: 'Vazirmatn', 'Tahoma', 'Arial', sans-serif;
-        }
-
-        /* Apply Vazirmatn font to Persian text elements (excluding icons) */
-        .smark-dashboard.rtl h1,
-        .smark-dashboard.rtl h2,
-        .smark-dashboard.rtl h3,
-        .smark-dashboard.rtl p,
-        .smark-dashboard.rtl .smark-header,
-        .smark-dashboard.rtl .smark-breadcrumb,
-        .smark-dashboard.rtl .daily-guide-header,
-        .smark-dashboard.rtl .main-features-header,
-        .smark-dashboard.rtl .basic-features-header,
-        .smark-dashboard.rtl .main-feature-content,
-        .smark-dashboard.rtl .horizontal-text,
-        .smark-dashboard.rtl .daily-guide-item-content,
-        .smark-dashboard.rtl .version-info {
-            font-family: 'Vazirmatn', 'Tahoma', 'Arial', sans-serif !important;
-        }
-
-        /* Exclude icons from font changes */
-        .smark-dashboard.rtl .dashicons,
-        .smark-dashboard.rtl .main-feature-icon,
-        .smark-dashboard.rtl .horizontal-icon,
-        .smark-dashboard.rtl .language-selector .dashicons {
-            font-family: 'dashicons' !important;
-        }
-
-        .smark-dashboard.rtl .smark-header h1,
-        .smark-dashboard.rtl .daily-guide-header h2,
-        .smark-dashboard.rtl .main-features-header h2,
-        .smark-dashboard.rtl .basic-features-header h2 {
-            text-align: center;
-        }
-
-        .smark-dashboard.rtl .daily-guide-header p,
-        .smark-dashboard.rtl .main-features-header p,
-        .smark-dashboard.rtl .basic-features-header p {
-            text-align: center;
-        }
-
-        .smark-dashboard.rtl .main-feature-content,
-        .smark-dashboard.rtl .horizontal-text,
-        .smark-dashboard.rtl .daily-guide-item-content {
-            text-align: right;
-        }
-
-        .smark-dashboard.rtl .main-feature-content h3,
-        .smark-dashboard.rtl .horizontal-text h3 {
-            text-align: right;
-        }
-
-        .smark-dashboard.rtl .main-feature-content p,
-        .smark-dashboard.rtl .horizontal-text p {
-            text-align: right;
-        }
-
-        /* RTL breadcrumb order fix */
-        .smark-dashboard.rtl .breadcrumb-left {
-            order: 1;
-            margin-left: auto;
-            margin-right: 0;
-        }
-
-        .smark-dashboard.rtl .breadcrumb-right {
-            order: 2;
-            margin-left: 0;
-            margin-right: 0;
-        }
-        </style>
-
-        <script>
-        jQuery(document).ready(function($) {
-            // Language selector functionality
-            $('#smark_language_select').on('change', function() {
-                var selectedLang = $(this).val();
-
-                // Save language preference
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'smark_save_language',
-                        language: selectedLang,
-                        nonce: <?php echo wp_json_encode(wp_create_nonce('smark_social_media_nonce')); ?>
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            // Reload page to apply language changes
-                            location.reload();
-                        }
-                    },
-                    error: function() {}
-                });
-            });
-
-            // Fix breadcrumb order based on RTL/LTR
-            function fixBreadcrumbOrder() {
-                const $page = $('.smark-dashboard');
-                const $breadcrumb = $('.smark-breadcrumb');
-                const $breadcrumbLeft = $('.breadcrumb-left');
-                const $breadcrumbRight = $('.breadcrumb-right');
-
-                if ($page.hasClass('rtl')) {
-                    // RTL: In RTL mode with direction:rtl, visual left is order 2, visual right is order 1
-                    // We want language selector on visual LEFT, so it needs order 2
-                    // We want breadcrumb text on visual RIGHT, so it needs order 1
-                    $breadcrumbLeft[0].style.setProperty('order', '1', 'important');
-                    $breadcrumbRight[0].style.setProperty('order', '2', 'important');
-                    $breadcrumbLeft[0].style.setProperty('margin-left', 'auto', 'important');
-                    $breadcrumbLeft[0].style.setProperty('margin-right', '0', 'important');
-                    $breadcrumbRight[0].style.setProperty('margin-left', '0', 'important');
-                    $breadcrumbRight[0].style.setProperty('margin-right', '0', 'important');
-
-                } else {
-                    // LTR: Breadcrumb text (left) should appear first (on left side)
-                    // Language selector (right) should appear second (on right side)
-                    $breadcrumbLeft[0].style.setProperty('order', '1', 'important');
-                    $breadcrumbRight[0].style.setProperty('order', '2', 'important');
-                    $breadcrumbLeft[0].style.setProperty('margin-left', '0', 'important');
-                    $breadcrumbLeft[0].style.setProperty('margin-right', '0', 'important');
-                    $breadcrumbRight[0].style.setProperty('margin-left', 'auto', 'important');
-                    $breadcrumbRight[0].style.setProperty('margin-right', '0', 'important');
-
-                }
-            }
-
-            // Apply breadcrumb order fix
-            fixBreadcrumbOrder();
-        });
-        </script>
+        <div id="smark-dashboard-root" class="wrap smark-dashboard-app-page" data-smark-logo="<?php echo esc_url(SMARK_PLUGIN_URL . 'assets/icons/menu-icon.svg'); ?>"></div>
         <?php
     }
 
@@ -4375,12 +2999,29 @@ class SMarkPlugin {
             return;
         }
 
+        $lang = get_option('smark_panel_language', 'en');
+        $lang = ($lang === 'fa') ? 'fa' : 'en';
+
+        wp_enqueue_style(
+            'vazirmatn-font',
+            'https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap',
+            array(),
+            SMARK_VERSION
+        );
+
         $admin_css_version = SMARK_VERSION;
         $admin_css_path = SMARK_PLUGIN_PATH . 'assets/css/admin.css';
         if (is_readable($admin_css_path)) {
             $admin_css_version .= '.' . (string) filemtime($admin_css_path);
         }
         wp_enqueue_style('smark-admin', SMARK_PLUGIN_URL . 'assets/css/admin.css', array(), $admin_css_version);
+
+        $dashboard_css_version = SMARK_VERSION;
+        $dashboard_css_path = SMARK_PLUGIN_PATH . 'assets/dashboard/dashboard.css';
+        if (is_readable($dashboard_css_path)) {
+            $dashboard_css_version .= '.' . (string) filemtime($dashboard_css_path);
+        }
+        wp_enqueue_style('smark-dashboard', SMARK_PLUGIN_URL . 'assets/dashboard/dashboard.css', array('vazirmatn-font', 'smark-admin'), $dashboard_css_version);
 
         $admin_js_version = SMARK_VERSION;
         $admin_js_path = SMARK_PLUGIN_PATH . 'assets/js/admin.js';
@@ -4389,8 +3030,6 @@ class SMarkPlugin {
         }
         wp_enqueue_script('smark-admin', SMARK_PLUGIN_URL . 'assets/js/admin.js', array('jquery'), $admin_js_version, true);
 
-        $lang = get_option('smark_panel_language', 'en');
-        $lang = ($lang === 'fa') ? 'fa' : 'en';
         wp_localize_script('smark-admin', 'SMarkAdmin', array(
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce'   => wp_create_nonce('smark_daily_guide_smart_action'),
@@ -4406,6 +3045,85 @@ class SMarkPlugin {
                 'smartRunning'  => ($lang === 'fa') ? 'در حال انجام عملیات هوشمند…' : 'Running smart action…',
                 'smartDone'     => ($lang === 'fa') ? 'برای «{keyword}» یک آیتم محتوا ساخته شد و پیش‌نویس بلاگ ایجاد شد.' : 'Created a content item and a blog draft for “{keyword}”.',
                 'smartError'    => ($lang === 'fa') ? 'عملیات هوشمند ناموفق بود. لطفاً دوباره امتحان کنید.' : 'Smart action failed. Please try again.',
+            ),
+        ));
+
+        $dashboard_js_version = SMARK_VERSION;
+        $dashboard_js_path = SMARK_PLUGIN_PATH . 'assets/dashboard/dashboard.js';
+        if (is_readable($dashboard_js_path)) {
+            $dashboard_js_version .= '.' . (string) filemtime($dashboard_js_path);
+        }
+        wp_enqueue_script('smark-dashboard', SMARK_PLUGIN_URL . 'assets/dashboard/dashboard.js', array('wp-element', 'smark-admin'), $dashboard_js_version, true);
+        wp_localize_script('smark-dashboard', 'SMarkDashboard', array(
+            'logoUrl' => SMARK_PLUGIN_URL . 'assets/icons/menu-icon.svg',
+            'version' => SMARK_VERSION,
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce'   => wp_create_nonce('smark_daily_guide_smart_action'),
+            'lang'    => $lang,
+            'urls'    => array(
+                'social' => admin_url('admin.php?page=smark-social-media'),
+                'seo' => admin_url('admin.php?page=smark-seo-optimization'),
+                'email' => admin_url('admin.php?page=smark-email-marketing'),
+                'settings' => admin_url('admin.php?page=smark-project-settings'),
+                'googleDocs' => admin_url('admin.php?page=smark-google-docs-converter'),
+                'headlineAnalyzer' => admin_url('admin.php?page=smark-headline-analyzer'),
+                'competitorAnalysis' => admin_url('admin.php?page=smark-competitor-analysis'),
+            ),
+            'dailyGuideCards' => $this->get_dashboard_daily_guide_cards($lang),
+            'stringsByLang' => array(
+                'en' => array(
+                    'dailyGuideTitle' => $this->get_dashboard_translation('daily_guide_title', 'en'),
+                    'dailyGuideAllGood' => $this->get_dashboard_translation('daily_guide_all_good', 'en'),
+                    'open' => $this->get_dashboard_translation('daily_guide_open', 'en'),
+                    'smartAction' => $this->get_dashboard_translation('daily_guide_smart_action', 'en'),
+                    'smartNotReady' => 'Smart action is not implemented for this item yet.',
+                    'smartRunning' => 'Running smart action...',
+                    'smartDone' => 'Smart action completed.',
+                    'smartError' => 'Smart action failed. Please try again.',
+                    'projectSettings' => $this->get_dashboard_translation('project_settings', 'en'),
+                    'googleDocsConverter' => $this->get_dashboard_translation('google_docs_converter', 'en'),
+                    'headlineAnalyzer' => $this->get_dashboard_translation('headline_analyzer', 'en'),
+                    'competitorAnalysis' => $this->get_dashboard_translation('competitor_analysis', 'en'),
+                ),
+                'fa' => array(
+                    'dailyGuideTitle' => $this->get_dashboard_translation('daily_guide_title', 'fa'),
+                    'dailyGuideAllGood' => $this->get_dashboard_translation('daily_guide_all_good', 'fa'),
+                    'open' => $this->get_dashboard_translation('daily_guide_open', 'fa'),
+                    'smartAction' => $this->get_dashboard_translation('daily_guide_smart_action', 'fa'),
+                    'smartNotReady' => 'این «انجام هوشمند» هنوز برای این آیتم آماده نیست.',
+                    'smartRunning' => 'در حال انجام عملیات هوشمند...',
+                    'smartDone' => 'عملیات هوشمند انجام شد.',
+                    'smartError' => 'عملیات هوشمند ناموفق بود. لطفاً دوباره امتحان کنید.',
+                    'projectSettings' => $this->get_dashboard_translation('project_settings', 'fa'),
+                    'googleDocsConverter' => $this->get_dashboard_translation('google_docs_converter', 'fa'),
+                    'headlineAnalyzer' => $this->get_dashboard_translation('headline_analyzer', 'fa'),
+                    'competitorAnalysis' => $this->get_dashboard_translation('competitor_analysis', 'fa'),
+                ),
+            ),
+            'strings' => array(
+                'workspace'      => __('SMark dashboard workspace', 'smark'),
+                'navigation'     => __('SMark dashboard navigation', 'smark'),
+                'smark'          => __('SMark', 'smark'),
+                'social'         => __('Social Media', 'smark'),
+                'seo'            => __('SEO', 'smark'),
+                'emailMarketing' => __('Email Marketing', 'smark'),
+                'language'       => __('Language', 'smark'),
+                'settings'       => __('Settings', 'smark'),
+                'chooseLanguage' => __('Choose language', 'smark'),
+                'persian'        => __('Persian', 'smark'),
+                'english'        => __('English', 'smark'),
+                'dailyGuideTitle' => $this->get_dashboard_translation('daily_guide_title', $lang),
+                'dailyGuideAllGood' => $this->get_dashboard_translation('daily_guide_all_good', $lang),
+                'open'           => $this->get_dashboard_translation('daily_guide_open', $lang),
+                'smartAction'    => $this->get_dashboard_translation('daily_guide_smart_action', $lang),
+                'smartNotReady'  => ($lang === 'fa') ? 'این «انجام هوشمند» هنوز برای این آیتم آماده نیست.' : 'Smart action is not implemented for this item yet.',
+                'smartRunning'   => ($lang === 'fa') ? 'در حال انجام عملیات هوشمند...' : 'Running smart action...',
+                'smartDone'      => ($lang === 'fa') ? 'عملیات هوشمند انجام شد.' : 'Smart action completed.',
+                'smartError'     => ($lang === 'fa') ? 'عملیات هوشمند ناموفق بود. لطفاً دوباره امتحان کنید.' : 'Smart action failed. Please try again.',
+                'projectSettings' => $this->get_dashboard_translation('project_settings', $lang),
+                'googleDocsConverter' => $this->get_dashboard_translation('google_docs_converter', $lang),
+                'headlineAnalyzer' => $this->get_dashboard_translation('headline_analyzer', $lang),
+                'competitorAnalysis' => $this->get_dashboard_translation('competitor_analysis', $lang),
             ),
         ));
     }
