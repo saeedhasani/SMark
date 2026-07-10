@@ -2663,6 +2663,7 @@ class SMarkPlugin {
                         'title' => 'Campaign Message',
                         'description' => 'Plan the subject, copy, offer, and call to action for each email.',
                         'url' => admin_url('admin.php?page=smark-email-campaign-message'),
+                        'view' => 'campaign-message',
                     ),
                     array(
                         'icon' => 'dashicons-admin-users',
@@ -2694,6 +2695,7 @@ class SMarkPlugin {
                         'title' => 'طراحی پیام کمپین',
                         'description' => 'موضوع، متن، پیشنهاد و فراخوان اقدام ایمیل را برنامه‌ریزی کنید.',
                         'url' => admin_url('admin.php?page=smark-email-campaign-message'),
+                        'view' => 'campaign-message',
                     ),
                     array(
                         'icon' => 'dashicons-admin-users',
@@ -3139,6 +3141,7 @@ class SMarkPlugin {
             'dailyGuideCards' => $this->get_dashboard_daily_guide_cards($lang),
             'emailWorkflow' => $this->get_dashboard_email_workflow(),
             'emailContactsViewNonce' => wp_create_nonce('smark_email_contacts_page_ajax'),
+            'emailCampaignMessageViewNonce' => wp_create_nonce('smark_email_campaign_message_ajax'),
             'stringsByLang' => array(
                 'en' => array(
                     'dailyGuideTitle' => $this->get_dashboard_translation('daily_guide_title', 'en'),

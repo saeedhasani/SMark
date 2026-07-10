@@ -41,6 +41,7 @@ class SMarkEmailMarketing {
         add_action('wp_ajax_smark_email_contacts_import', array($this, 'ajax_contacts_import'));
         add_action('wp_ajax_smark_email_contacts_page', array($this, 'ajax_contacts_page'));
         add_action('wp_ajax_smark_dashboard_email_contacts_view', array($this, 'ajax_dashboard_email_contacts_view'));
+        add_action('wp_ajax_smark_dashboard_email_campaign_message_view', array($this, 'ajax_dashboard_email_campaign_message_view'));
         add_action('wp_ajax_smark_email_contact_save_modal', array($this, 'ajax_email_contact_save_modal'));
         add_action('wp_ajax_smark_email_contact_delete_modal', array($this, 'ajax_email_contact_delete_modal'));
         add_action('wp_ajax_smark_email_campaign_message_send_start', array($this, 'ajax_campaign_message_send_start'));
@@ -551,6 +552,24 @@ class SMarkEmailMarketing {
         ));
     }
 
+    public function ajax_dashboard_email_campaign_message_view() {
+        check_ajax_referer('smark_email_campaign_message_ajax', 'nonce');
+
+        if (!current_user_can('smark_access')) {
+            wp_send_json_error(array(
+                'message' => esc_html__('You do not have sufficient permissions to access this page.', 'smark'),
+            ), 403);
+        }
+
+        ob_start();
+        $this->render_campaign_message_page();
+        $html = ob_get_clean();
+
+        wp_send_json_success(array(
+            'html' => $html,
+        ));
+    }
+
     public function render_campaign_message_page() {
         if (!current_user_can('smark_access')) {
             wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'smark'));
@@ -614,7 +633,7 @@ class SMarkEmailMarketing {
             <?php $this->render_standard_header($strings, $current_lang, $rtl_class, true); ?>
 
             <div class="seo-grid">
-                <section class="seo-step-card seo-step-card--full" data-step="strategy">
+                <section class="seo-step-card seo-step-card--full" data-step="strategy" data-smark-campaign-message-section>
                     <header class="seo-step-header smark-email-campaign-message-header">
                         <div>
                             <h2><?php echo esc_html($strings['form_title']); ?></h2>
@@ -764,7 +783,7 @@ class SMarkEmailMarketing {
                     </form>
                 </section>
 
-                <section class="seo-step-card seo-step-card--full smark-email-accounts-card" data-step="strategy">
+                <section class="seo-step-card seo-step-card--full smark-email-accounts-card" data-step="strategy" data-smark-campaign-message-section>
                     <header class="seo-step-header smark-email-campaign-messages-list-header">
                         <div>
                             <h2><?php echo esc_html($strings['list_title']); ?></h2>
@@ -776,11 +795,12 @@ class SMarkEmailMarketing {
                         <?php $this->render_campaign_messages_list_content($strings, $messages); ?>
                     </div>
                 </section>
+
+                <?php $this->render_campaign_audience_picker_modal($strings, $contacts, $contact_lists, $contact_tags); ?>
+                <?php $this->render_campaign_message_edit_modal($strings, $accounts, $daily_sent_counts); ?>
             </div>
 
             <?php $this->render_version_footer($current_lang); ?>
-            <?php $this->render_campaign_audience_picker_modal($strings, $contacts, $contact_lists, $contact_tags); ?>
-            <?php $this->render_campaign_message_edit_modal($strings, $accounts, $daily_sent_counts); ?>
             <?php $this->render_campaign_send_progress_modal($strings); ?>
             <?php $this->render_campaign_failure_detail_modal($this->get_performance_strings($current_lang)); ?>
         </div>
@@ -907,7 +927,7 @@ class SMarkEmailMarketing {
                             <td><?php echo esc_html($this->format_campaign_audience_summary($campaign_message, $strings)); ?></td>
                             <td><span class="smark-email-status smark-email-status--<?php echo esc_attr($campaign_message['message_status']); ?>"><?php echo esc_html($this->get_campaign_status_label($campaign_message['message_status'], $strings)); ?></span></td>
                             <td>
-                                <div class="smark-email-action-row">
+                                <div class="smark-email-action-row smark-email-campaign-action-row">
                                     <button type="button" class="button smark-email-edit-button" data-open-smark-campaign-edit="<?php echo esc_attr($campaign_message['id']); ?>">
                                         <?php echo esc_html($strings['edit_button']); ?>
                                     </button>
@@ -939,23 +959,20 @@ class SMarkEmailMarketing {
             </script>
         <?php endforeach; ?>
         <?php foreach ($messages as $campaign_message) : ?>
-            <div class="smark-email-import-modal smark-email-campaign-performance-modal" id="smarkEmailCampaignPerformanceModal-<?php echo esc_attr($campaign_message['id']); ?>" aria-hidden="true">
-                <div class="smark-email-import-modal__overlay" data-close-smark-campaign-performance></div>
-                <div class="smark-email-import-modal__dialog smark-email-campaign-performance-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="smarkEmailCampaignPerformanceTitle-<?php echo esc_attr($campaign_message['id']); ?>">
-                    <header class="smark-email-import-modal__header">
+            <section class="seo-step-card seo-step-card--full smark-email-accounts-card smark-email-campaign-performance-modal smark-email-campaign-performance-section" id="smarkEmailCampaignPerformanceModal-<?php echo esc_attr($campaign_message['id']); ?>" data-step="strategy" aria-hidden="true" hidden>
+                    <header class="seo-step-header smark-email-card-header-actions smark-email-contact-workflow-header smark-email-campaign-performance-header">
                         <div>
                             <h2 id="smarkEmailCampaignPerformanceTitle-<?php echo esc_attr($campaign_message['id']); ?>"><?php echo esc_html($performance_strings['campaign_title']); ?></h2>
                             <p><?php echo esc_html($performance_strings['campaign_description']); ?></p>
                         </div>
-                        <button type="button" class="smark-email-import-modal__close" data-close-smark-campaign-performance aria-label="<?php echo esc_attr($strings['performance_close']); ?>">
+                        <button type="button" class="smark-email-inline-panel__close" data-close-smark-campaign-performance aria-label="<?php echo esc_attr($strings['performance_close']); ?>">
                             <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
                         </button>
                     </header>
-                    <div class="smark-email-import-modal__body">
+                    <div class="smark-email-inline-panel__body">
                         <?php $this->render_campaign_performance_detail($campaign_message, $performance_strings, $strings); ?>
                     </div>
-                </div>
-            </div>
+            </section>
         <?php endforeach; ?>
         <?php
     }
@@ -986,20 +1003,18 @@ class SMarkEmailMarketing {
 
     private function render_campaign_message_edit_modal($strings, $accounts, $daily_sent_counts) {
         ?>
-        <div class="smark-email-import-modal smark-email-campaign-edit-modal" id="smarkEmailCampaignEditModal" aria-hidden="true">
-            <div class="smark-email-import-modal__overlay" data-close-smark-campaign-edit></div>
-            <div class="smark-email-import-modal__dialog smark-email-campaign-edit-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="smarkEmailCampaignEditTitle">
-                <header class="smark-email-import-modal__header">
+        <section class="seo-step-card seo-step-card--full smark-email-accounts-card smark-email-campaign-edit-modal smark-email-campaign-edit-section" id="smarkEmailCampaignEditModal" data-step="strategy" aria-hidden="true" hidden>
+                <header class="seo-step-header smark-email-card-header-actions smark-email-contact-workflow-header smark-email-campaign-edit-header">
                     <div>
                         <h2 id="smarkEmailCampaignEditTitle"><?php echo esc_html($strings['edit_modal_title']); ?></h2>
                         <p><?php echo esc_html($strings['edit_modal_description']); ?></p>
                     </div>
-                    <button type="button" class="smark-email-import-modal__close" data-close-smark-campaign-edit aria-label="<?php echo esc_attr($strings['edit_modal_close']); ?>">
+                    <button type="button" class="smark-email-inline-panel__close" data-close-smark-campaign-edit aria-label="<?php echo esc_attr($strings['edit_modal_close']); ?>">
                         <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
                     </button>
                 </header>
 
-                <div class="smark-email-import-modal__body">
+                <div class="smark-email-inline-panel__body">
                     <form class="smark-email-account-form" id="smarkEmailCampaignMessageEditForm" method="post">
                         <?php wp_nonce_field('smark_email_campaign_message_save', 'smark_email_campaign_message_nonce'); ?>
                         <input type="hidden" name="action" value="smark_email_campaign_message_save_modal">
@@ -1113,12 +1128,10 @@ class SMarkEmailMarketing {
 
                         <div class="smark-email-form-actions">
                             <button type="submit" class="button button-primary"><?php echo esc_html($strings['update_button']); ?></button>
-                            <button type="button" class="button smark-email-secondary-action" data-close-smark-campaign-edit><?php echo esc_html($strings['edit_modal_cancel']); ?></button>
                         </div>
                     </form>
                 </div>
-            </div>
-        </div>
+        </section>
         <?php
     }
 
@@ -1150,22 +1163,20 @@ class SMarkEmailMarketing {
     private function render_campaign_audience_picker_modal($strings, $contacts, $contact_lists, $contact_tags) {
         $today_sent_contact_ids = $this->get_today_sent_contact_ids($contacts);
         ?>
-        <div class="smark-email-import-modal smark-email-audience-modal" id="smarkEmailAudiencePickerModal" aria-hidden="true">
-            <div class="smark-email-import-modal__overlay" data-close-smark-audience-picker></div>
-            <div class="smark-email-import-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="smarkEmailAudiencePickerTitle">
-                <header class="smark-email-import-modal__header">
-                    <div>
-                        <h2 id="smarkEmailAudiencePickerTitle" data-include-title="<?php echo esc_attr($strings['audience_picker_include_title']); ?>" data-exclude-title="<?php echo esc_attr($strings['audience_picker_exclude_title']); ?>">
-                            <?php echo esc_html($strings['audience_picker_include_title']); ?>
-                        </h2>
-                        <p><?php echo esc_html($strings['audience_picker_description']); ?></p>
-                    </div>
-                    <button type="button" class="smark-email-import-modal__close" data-close-smark-audience-picker aria-label="<?php echo esc_attr($strings['audience_picker_close']); ?>">
-                        <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
-                    </button>
-                </header>
+        <section class="seo-step-card seo-step-card--full smark-email-accounts-card smark-email-audience-modal smark-email-campaign-audience-section" id="smarkEmailAudiencePickerModal" data-step="strategy" aria-hidden="true" hidden>
+            <header class="seo-step-header smark-email-card-header-actions smark-email-contact-workflow-header smark-email-campaign-audience-header">
+                <div>
+                    <h2 id="smarkEmailAudiencePickerTitle" data-include-title="<?php echo esc_attr($strings['audience_picker_include_title']); ?>" data-exclude-title="<?php echo esc_attr($strings['audience_picker_exclude_title']); ?>">
+                        <?php echo esc_html($strings['audience_picker_include_title']); ?>
+                    </h2>
+                    <p><?php echo esc_html($strings['audience_picker_description']); ?></p>
+                </div>
+                <button type="button" class="smark-email-inline-panel__close" data-close-smark-audience-picker aria-label="<?php echo esc_attr($strings['audience_picker_close']); ?>">
+                    <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+                </button>
+            </header>
 
-                <div class="smark-email-import-modal__body">
+            <div class="smark-email-inline-panel__body">
                     <div class="smark-email-audience-modal__section">
                         <h3><?php echo esc_html($strings['audience_picker_lists']); ?></h3>
                         <label class="smark-email-audience-option">
@@ -1228,9 +1239,8 @@ class SMarkEmailMarketing {
                     <div class="smark-email-form-actions">
                         <button type="button" class="button button-primary" data-apply-smark-audience-picker><?php echo esc_html($strings['audience_picker_apply']); ?></button>
                     </div>
-                </div>
             </div>
-        </div>
+        </section>
         <?php
     }
 
@@ -6357,6 +6367,7 @@ class SMarkEmailMarketing {
         var $title = $('#smarkEmailAudiencePickerTitle');
         var $form = $trigger && $trigger.length ? $trigger.closest('form') : $('#smarkEmailCampaignMessageForm');
         var formId = $form.attr('id') || 'smarkEmailCampaignMessageForm';
+        var returnPanelId = $form.closest('#smarkEmailCampaignEditModal').length ? 'smarkEmailCampaignEditModal' : '';
         var selected = {};
         getAudienceTokens(normalizedMode, $form).forEach(function (token) {
             selected[token] = true;
@@ -6364,6 +6375,7 @@ class SMarkEmailMarketing {
 
         $modal.attr('data-mode', normalizedMode);
         $modal.attr('data-target-form', formId);
+        $modal.attr('data-return-panel', returnPanelId);
         $title.text(normalizedMode === 'exclude' ? ($title.attr('data-exclude-title') || $title.text()) : ($title.attr('data-include-title') || $title.text()));
         $modal.find('[data-smark-audience-option]').each(function () {
             $(this).prop('checked', !!selected[$(this).val()]);
@@ -6371,15 +6383,67 @@ class SMarkEmailMarketing {
         $modal.find('[data-smark-audience-contact-search]').val('');
         updateAudienceContactSearch();
         updateAudienceSelectedCount();
-        $modal.addClass('is-open').attr('aria-hidden', 'false');
-        $('body').addClass('smark-email-modal-open');
+        showCampaignAudienceSection($modal);
     }
 
     function closeAudiencePicker() {
-        $('#smarkEmailAudiencePickerModal').removeClass('is-open').attr('aria-hidden', 'true');
-        if (!$('#smarkEmailImportModal').hasClass('is-open') && !$('#smarkEmailAccountEditModal').hasClass('is-open') && !$('#smarkEmailContactListModal').hasClass('is-open') && !$('#smarkEmailContactTagModal').hasClass('is-open') && !$('#smarkEmailCampaignEditModal').hasClass('is-open')) {
-            $('body').removeClass('smark-email-modal-open');
+        hideCampaignAudienceSection();
+    }
+
+    function showCampaignAudienceSection($panel) {
+        showCampaignWorkflowPanel($panel);
+    }
+
+    function hideCampaignAudienceSection() {
+        var $panel = $('#smarkEmailAudiencePickerModal');
+        var returnPanelId = $panel.attr('data-return-panel') || '';
+        hideCampaignWorkflowPanel($panel, returnPanelId ? $('#' + returnPanelId) : null);
+        $panel.removeAttr('data-return-panel');
+    }
+
+    function showCampaignWorkflowPanel($panel) {
+        if (!$panel.length) {
+            return;
         }
+
+        var $grid = $panel.closest('.seo-grid');
+        $grid.find('[data-smark-campaign-message-section], #smarkEmailAudiencePickerModal, #smarkEmailCampaignEditModal, .smark-email-campaign-performance-section')
+            .addClass('smark-email-contact-section-hidden')
+            .prop('hidden', true)
+            .attr('aria-hidden', 'true');
+
+        $panel
+            .removeClass('smark-email-contact-section-hidden')
+            .prop('hidden', false)
+            .attr('aria-hidden', 'false');
+
+        resetContactWorkflowScroll();
+    }
+
+    function hideCampaignWorkflowPanel($panel, $returnPanel) {
+        var $grid = $panel.closest('.seo-grid');
+
+        if (!$panel.length || $panel.prop('hidden')) {
+            return;
+        }
+
+        $panel
+            .addClass('smark-email-contact-section-hidden')
+            .prop('hidden', true)
+            .attr('aria-hidden', 'true');
+
+        if ($returnPanel && $returnPanel.length) {
+            $returnPanel
+                .removeClass('smark-email-contact-section-hidden')
+                .prop('hidden', false)
+                .attr('aria-hidden', 'false');
+            return;
+        }
+
+        $grid.find('[data-smark-campaign-message-section]')
+            .removeClass('smark-email-contact-section-hidden')
+            .prop('hidden', false)
+            .attr('aria-hidden', 'false');
     }
 
     function updateAudienceContactSearch() {
@@ -6528,6 +6592,33 @@ class SMarkEmailMarketing {
         $('#smark_email_edit_body_editor').val(content);
     }
 
+    function initializeCampaignMessageEditor() {
+        var editorId = 'smark_email_body_editor';
+        var $editor = $('#' + editorId);
+
+        if (!$editor.length || (window.tinyMCE && window.tinyMCE.get(editorId))) {
+            return;
+        }
+
+        $editor.closest('.wp-editor-wrap').find('.wp-editor-tabs').remove();
+
+        if (window.wp && window.wp.editor && typeof window.wp.editor.initialize === 'function') {
+            window.wp.editor.initialize(editorId, {
+                tinymce: {
+                    toolbar1: 'formatselect,bold,italic,bullist,numlist,blockquote,alignleft,aligncenter,alignright,link,unlink,forecolor,undo,redo',
+                    toolbar2: 'strikethrough,hr,pastetext,removeformat,charmap,outdent,indent,wp_adv'
+                },
+                quicktags: true,
+                mediaButtons: false
+            });
+            return;
+        }
+
+        if (window.quicktags && typeof window.quicktags === 'function' && !$('#qt_' + editorId + '_toolbar').length) {
+            window.quicktags({ id: editorId });
+        }
+    }
+
     function populateAudienceBuilder($form, mode, tokens) {
         var $builder = $form.find('[data-smark-audience-builder="' + mode + '"]');
         var $inputs = $builder.find('[data-smark-audience-inputs]');
@@ -6571,18 +6662,14 @@ class SMarkEmailMarketing {
         setCampaignEditEditorContent(data.email_body || '');
         updateCampaignCapacityWarning($form);
 
-        $modal.addClass('is-open').attr('aria-hidden', 'false');
-        $('body').addClass('smark-email-modal-open');
+        showCampaignWorkflowPanel($modal);
         window.setTimeout(function () {
             $form.find('[name="campaign_name"]').trigger('focus');
         }, 50);
     }
 
     function closeCampaignEditModal() {
-        $('#smarkEmailCampaignEditModal').removeClass('is-open').attr('aria-hidden', 'true');
-        if (!$('#smarkEmailAudiencePickerModal').hasClass('is-open')) {
-            $('body').removeClass('smark-email-modal-open');
-        }
+        hideCampaignWorkflowPanel($('#smarkEmailCampaignEditModal'));
     }
 
     $(function () {
@@ -6598,6 +6685,17 @@ class SMarkEmailMarketing {
             updateSenderPicker($(this));
         });
         syncAudienceBuilders();
+
+        $(document).on('smark:dashboard-embedded-view-loaded', function (event) {
+            var detail = event.originalEvent && event.originalEvent.detail ? event.originalEvent.detail : {};
+            $('[data-smark-sender-picker]').each(function () {
+                updateSenderPicker($(this));
+            });
+            syncAudienceBuilders();
+            if (detail.view === 'campaign-message') {
+                initializeCampaignMessageEditor();
+            }
+        });
 
         $(document).on('change', '#smark_email_provider', function () {
             updateEmailProviderForm($(this).val());
@@ -6641,19 +6739,22 @@ class SMarkEmailMarketing {
 
         $(document).on('click', '[data-open-smark-campaign-performance]', function (event) {
             event.preventDefault();
+            var $trigger = $(this);
             var campaignId = $(this).attr('data-open-smark-campaign-performance') || '';
             var $modal = $('#smarkEmailCampaignPerformanceModal-' + campaignId);
+            var $grid = $trigger.closest('.seo-grid');
             if (!$modal.length) {
                 return;
             }
-            $modal.addClass('is-open').attr('aria-hidden', 'false');
-            $('body').addClass('smark-email-modal-open');
+            if ($grid.length && !$modal.parent().is($grid)) {
+                $modal.detach().appendTo($grid);
+            }
+            showCampaignWorkflowPanel($modal);
         });
 
         $(document).on('click', '[data-close-smark-campaign-performance]', function (event) {
             event.preventDefault();
-            $(this).closest('.smark-email-campaign-performance-modal').removeClass('is-open').attr('aria-hidden', 'true');
-            $('body').removeClass('smark-email-modal-open');
+            hideCampaignWorkflowPanel($(this).closest('.smark-email-campaign-performance-section'));
         });
 
         $(document).on('click', '[data-open-smark-campaign-edit]', function (event) {
@@ -7513,8 +7614,12 @@ class SMarkEmailMarketing {
                 closeContactTagModal();
                 closeContactEditModal();
                 closeAudiencePicker();
+                closeCampaignEditModal();
+                $('.smark-email-campaign-performance-section').each(function () {
+                    hideCampaignWorkflowPanel($(this));
+                });
                 closeSenderPickers();
-                $('.smark-email-campaign-performance-modal, #smarkEmailFailureDetailModal, #smarkEmailFailureRetryModal').removeClass('is-open').attr('aria-hidden', 'true');
+                $('#smarkEmailFailureDetailModal, #smarkEmailFailureRetryModal').removeClass('is-open').attr('aria-hidden', 'true');
                 $('body').removeClass('smark-email-modal-open');
             }
         });
@@ -8953,7 +9058,10 @@ JS;
             #smarkEmailContactAddModal[hidden],
             #smarkEmailImportModal[hidden],
             #smarkEmailContactListModal[hidden],
-            #smarkEmailContactTagModal[hidden] {
+            #smarkEmailContactTagModal[hidden],
+            #smarkEmailCampaignEditModal[hidden],
+            .smark-email-campaign-performance-section[hidden],
+            #smarkEmailAudiencePickerModal[hidden] {
                 display: none !important;
             }
 
@@ -9259,9 +9367,9 @@ JS;
             }
 
             .smark-email-editor-field .wp-editor-container {
-                border: 1px solid rgba(148, 163, 184, 0.35);
-                border-radius: 14px;
-                overflow: hidden;
+                border: 0 !important;
+                border-radius: 0;
+                overflow: visible;
                 box-shadow: none;
             }
 
@@ -9306,8 +9414,12 @@ JS;
             .smark-email-editor-field textarea.wp-editor-area {
                 width: 100%;
                 min-height: 320px;
-                border: 0;
-                border-radius: 0;
+                border: 1px solid rgba(99, 102, 241, 0.32);
+                border-radius: 12px;
+                color: #111827 !important;
+                -webkit-text-fill-color: #111827;
+                background: #ffffff !important;
+                caret-color: #111827;
             }
 
             .smark-email-editor-field .mce-tinymce,
@@ -9315,6 +9427,12 @@ JS;
             .smark-email-editor-field .mce-panel {
                 max-width: 100%;
                 box-sizing: border-box;
+            }
+
+            .smark-email-editor-field .mce-edit-area {
+                border: 1px solid rgba(99, 102, 241, 0.32) !important;
+                border-radius: 0 0 12px 12px;
+                overflow: hidden;
             }
 
             .smark-email-account-form {
@@ -9679,6 +9797,20 @@ JS;
                 align-items: center;
                 gap: 8px;
                 flex-wrap: wrap;
+            }
+
+            .smark-email-campaign-action-row {
+                flex-wrap: nowrap;
+                gap: 6px;
+                white-space: nowrap;
+            }
+
+            .smark-email-campaign-action-row .button {
+                min-height: 34px;
+                padding: 0 12px;
+                border-radius: 9px;
+                font-size: 12px;
+                line-height: 34px;
             }
 
             .smark-email-inline-action {

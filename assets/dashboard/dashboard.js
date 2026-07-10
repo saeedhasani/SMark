@@ -5,7 +5,7 @@
         return;
     }
 
-    const { createElement: h, useState } = wp.element;
+    const { createElement: h, useEffect, useState } = wp.element;
     const config = window.SMarkDashboard || {};
     const strings = config.strings || {};
     const stringsByLang = config.stringsByLang || {};
@@ -195,9 +195,30 @@
         const [emailContactsHtml, setEmailContactsHtml] = useState('');
         const [emailContactsLoading, setEmailContactsLoading] = useState(false);
         const [emailContactsError, setEmailContactsError] = useState('');
+        const [emailCampaignMessageHtml, setEmailCampaignMessageHtml] = useState('');
+        const [emailCampaignMessageLoading, setEmailCampaignMessageLoading] = useState(false);
+        const [emailCampaignMessageError, setEmailCampaignMessageError] = useState('');
         const [languageOpen, setLanguageOpen] = useState(false);
         const [settingsOpen, setSettingsOpen] = useState(false);
         const [language, setLanguage] = useState(config.lang === 'en' ? 'en' : 'fa');
+
+        useEffect(function() {
+            if (emailSubView === 'contacts' && !emailContactsHtml) {
+                return;
+            }
+
+            if (emailSubView === 'campaign-message' && !emailCampaignMessageHtml) {
+                return;
+            }
+
+            window.setTimeout(function() {
+                document.dispatchEvent(new window.CustomEvent('smark:dashboard-embedded-view-loaded', {
+                    detail: {
+                        view: emailSubView,
+                    },
+                }));
+            }, 0);
+        }, [emailSubView, emailContactsHtml, emailCampaignMessageHtml]);
         const mainItems = [
             { id: 'email', label: text('emailMarketing', 'Email Marketing'), icon: h(SvgIcon, { path: icons.email, viewBox: '0 0 504 540' }) },
             { id: 'seo', label: text('seo', 'SEO'), href: urls.seo || '', icon: h(SvgIcon, { path: icons.seo, viewBox: '0 0 504 540' }) },
@@ -224,23 +245,54 @@
         };
 
         const openEmailSubView = function(view) {
-            if (view !== 'contacts') {
+            if (view !== 'contacts' && view !== 'campaign-message') {
                 setEmailSubView('workflow');
                 return;
             }
 
-            setEmailSubView('contacts');
-            setEmailContactsError('');
+            setEmailSubView(view);
 
-            if (emailContactsHtml) {
+            if (view === 'contacts') {
+                setEmailContactsError('');
+
+                if (emailContactsHtml) {
+                    return;
+                }
+
+                setEmailContactsLoading(true);
+
+                loadEmailEmbeddedView('smark_dashboard_email_contacts_view', config.emailContactsViewNonce || '', function(html) {
+                    setEmailContactsHtml(html);
+                }, function(message) {
+                    setEmailContactsError(message);
+                }, function() {
+                    setEmailContactsLoading(false);
+                });
+
                 return;
             }
 
-            setEmailContactsLoading(true);
+            setEmailCampaignMessageError('');
 
+            if (emailCampaignMessageHtml) {
+                return;
+            }
+
+            setEmailCampaignMessageLoading(true);
+
+            loadEmailEmbeddedView('smark_dashboard_email_campaign_message_view', config.emailCampaignMessageViewNonce || '', function(html) {
+                setEmailCampaignMessageHtml(html);
+            }, function(message) {
+                setEmailCampaignMessageError(message);
+            }, function() {
+                setEmailCampaignMessageLoading(false);
+            });
+        };
+
+        const loadEmailEmbeddedView = function(action, nonce, onSuccess, onError, onComplete) {
             const body = new window.URLSearchParams();
-            body.append('action', 'smark_dashboard_email_contacts_view');
-            body.append('nonce', config.emailContactsViewNonce || '');
+            body.append('action', action);
+            body.append('nonce', nonce);
 
             window.fetch(config.ajaxUrl || window.ajaxurl || '', {
                 method: 'POST',
@@ -253,15 +305,15 @@
                 return response.json();
             }).then(function(response) {
                 if (response && response.success && response.data && response.data.html) {
-                    setEmailContactsHtml(response.data.html);
+                    onSuccess(response.data.html);
                     return;
                 }
 
-                setEmailContactsError((response && response.data && response.data.message) || text('loadError', 'Unable to load this section.'));
+                onError((response && response.data && response.data.message) || text('loadError', 'Unable to load this section.'));
             }).catch(function() {
-                setEmailContactsError(text('loadError', 'Unable to load this section.'));
+                onError(text('loadError', 'Unable to load this section.'));
             }).finally(function() {
-                setEmailContactsLoading(false);
+                onComplete();
             });
         };
 
@@ -277,6 +329,12 @@
                         emailContactsLoading ? h('div', { className: 'smark-dashboard-embedded-view__state' }, text('loading', 'Loading...')) : null,
                         emailContactsError ? h('div', { className: 'smark-dashboard-embedded-view__state smark-dashboard-embedded-view__state--error' }, emailContactsError) : null,
                         emailContactsHtml ? h('div', { className: 'smark-dashboard-embedded-view__content', dangerouslySetInnerHTML: { __html: emailContactsHtml } }) : null
+                    )
+                    : emailSubView === 'campaign-message'
+                    ? h('section', { key: 'email-campaign-message', className: 'smark-dashboard-embedded-view smark-dashboard-view' },
+                        emailCampaignMessageLoading ? h('div', { className: 'smark-dashboard-embedded-view__state' }, text('loading', 'Loading...')) : null,
+                        emailCampaignMessageError ? h('div', { className: 'smark-dashboard-embedded-view__state smark-dashboard-embedded-view__state--error' }, emailCampaignMessageError) : null,
+                        emailCampaignMessageHtml ? h('div', { className: 'smark-dashboard-embedded-view__content', dangerouslySetInnerHTML: { __html: emailCampaignMessageHtml } }) : null
                     )
                     : h(EmailWorkflowPanel, { key: 'email', language: language, onOpenView: openEmailSubView })
             ) : null,
