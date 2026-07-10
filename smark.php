@@ -2670,12 +2670,14 @@ class SMarkPlugin {
                         'title' => 'Email Accounts',
                         'description' => 'Manage sender accounts and daily send limits.',
                         'url' => admin_url('admin.php?page=smark-email-accounts'),
+                        'view' => 'email-accounts',
                     ),
                     array(
                         'icon' => 'dashicons-chart-area',
                         'title' => 'Performance Review',
                         'description' => 'Track opens, clicks, conversions, and unsubscribes.',
                         'url' => admin_url('admin.php?page=smark-email-performance'),
+                        'view' => 'performance-review',
                     ),
                 ),
             ),
@@ -2702,15 +2704,32 @@ class SMarkPlugin {
                         'title' => 'حساب‌های ایمیل',
                         'description' => 'مدیریت حساب‌های فرستنده و سقف ارسال روزانه آن‌ها.',
                         'url' => admin_url('admin.php?page=smark-email-accounts'),
+                        'view' => 'email-accounts',
                     ),
                     array(
                         'icon' => 'dashicons-chart-area',
                         'title' => 'پایش عملکرد',
                         'description' => 'نرخ باز شدن، کلیک، تبدیل و خروج از لیست را بررسی کنید.',
                         'url' => admin_url('admin.php?page=smark-email-performance'),
+                        'view' => 'performance-review',
                     ),
                 ),
             ),
+        );
+    }
+
+    private function get_dashboard_module_visibility() {
+        if (class_exists('SMarkProjectSettings', false) && method_exists('SMarkProjectSettings', 'get_module_visibility')) {
+            return SMarkProjectSettings::get_module_visibility();
+        }
+
+        $saved = get_option('smark_dashboard_module_visibility', array());
+        $saved = is_array($saved) ? $saved : array();
+
+        return array(
+            'email' => array_key_exists('email', $saved) ? (bool) $saved['email'] : true,
+            'seo' => array_key_exists('seo', $saved) ? (bool) $saved['seo'] : true,
+            'social' => array_key_exists('social', $saved) ? (bool) $saved['social'] : true,
         );
     }
 
@@ -3140,8 +3159,12 @@ class SMarkPlugin {
             ),
             'dailyGuideCards' => $this->get_dashboard_daily_guide_cards($lang),
             'emailWorkflow' => $this->get_dashboard_email_workflow(),
+            'moduleVisibility' => $this->get_dashboard_module_visibility(),
             'emailContactsViewNonce' => wp_create_nonce('smark_email_contacts_page_ajax'),
+            'emailAccountsViewNonce' => wp_create_nonce('smark_email_accounts_ajax'),
             'emailCampaignMessageViewNonce' => wp_create_nonce('smark_email_campaign_message_ajax'),
+            'emailPerformanceViewNonce' => wp_create_nonce('smark_email_performance_ajax'),
+            'projectSettingsViewNonce' => wp_create_nonce('smark_project_settings_dashboard_ajax'),
             'stringsByLang' => array(
                 'en' => array(
                     'dailyGuideTitle' => $this->get_dashboard_translation('daily_guide_title', 'en'),

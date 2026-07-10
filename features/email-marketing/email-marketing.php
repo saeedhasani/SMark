@@ -41,7 +41,9 @@ class SMarkEmailMarketing {
         add_action('wp_ajax_smark_email_contacts_import', array($this, 'ajax_contacts_import'));
         add_action('wp_ajax_smark_email_contacts_page', array($this, 'ajax_contacts_page'));
         add_action('wp_ajax_smark_dashboard_email_contacts_view', array($this, 'ajax_dashboard_email_contacts_view'));
+        add_action('wp_ajax_smark_dashboard_email_accounts_view', array($this, 'ajax_dashboard_email_accounts_view'));
         add_action('wp_ajax_smark_dashboard_email_campaign_message_view', array($this, 'ajax_dashboard_email_campaign_message_view'));
+        add_action('wp_ajax_smark_dashboard_email_performance_view', array($this, 'ajax_dashboard_email_performance_view'));
         add_action('wp_ajax_smark_email_contact_save_modal', array($this, 'ajax_email_contact_save_modal'));
         add_action('wp_ajax_smark_email_contact_delete_modal', array($this, 'ajax_email_contact_delete_modal'));
         add_action('wp_ajax_smark_email_campaign_message_send_start', array($this, 'ajax_campaign_message_send_start'));
@@ -234,7 +236,7 @@ class SMarkEmailMarketing {
             <?php $this->render_standard_header($strings, $current_lang, $rtl_class, true); ?>
 
             <div class="seo-grid">
-                <section class="seo-step-card seo-step-card--full" data-step="strategy">
+                <section class="seo-step-card seo-step-card--full" data-step="strategy" data-smark-email-account-section>
                     <header class="seo-step-header smark-email-account-form-header">
                         <div>
                             <h2 data-smark-provider-text data-email-text="<?php echo esc_attr($strings['form_title_email']); ?>" data-gmail-text="<?php echo esc_attr($strings['form_title_gmail']); ?>" data-outlook-text="<?php echo esc_attr($strings['form_title_outlook']); ?>"><?php echo esc_html($strings['form_title_email']); ?></h2>
@@ -352,7 +354,7 @@ class SMarkEmailMarketing {
                     </form>
                 </section>
 
-                <section class="seo-step-card seo-step-card--full smark-email-accounts-card" data-step="strategy">
+                <section class="seo-step-card seo-step-card--full smark-email-accounts-card" data-step="strategy" data-smark-email-account-section>
                     <header class="seo-step-header smark-email-accounts-list-header">
                         <div>
                             <h2><?php echo esc_html($strings['list_title']); ?></h2>
@@ -430,12 +432,31 @@ class SMarkEmailMarketing {
                         </div>
                     <?php endif; ?>
                 </section>
+
+                <?php $this->render_email_account_edit_modal($strings); ?>
             </div>
 
-            <?php $this->render_email_account_edit_modal($strings); ?>
             <?php $this->render_version_footer($current_lang); ?>
         </div>
         <?php
+    }
+
+    public function ajax_dashboard_email_accounts_view() {
+        check_ajax_referer('smark_email_accounts_ajax', 'nonce');
+
+        if (!current_user_can('smark_access')) {
+            wp_send_json_error(array(
+                'message' => esc_html__('You do not have sufficient permissions to access this page.', 'smark'),
+            ), 403);
+        }
+
+        ob_start();
+        $this->render_email_accounts_page();
+        $html = ob_get_clean();
+
+        wp_send_json_success(array(
+            'html' => $html,
+        ));
     }
 
     public function render_contacts_page() {
@@ -820,6 +841,9 @@ class SMarkEmailMarketing {
         $modal_strings = array_merge($message_strings, $strings);
         $messages = $this->get_campaign_messages();
         $selected_campaign_id = isset($_GET['campaign_id']) ? sanitize_text_field(wp_unslash($_GET['campaign_id'])) : '';
+        if ($selected_campaign_id === '' && isset($_POST['campaign_id'])) {
+            $selected_campaign_id = sanitize_text_field(wp_unslash($_POST['campaign_id']));
+        }
 
         if ($selected_campaign_id === '' && !empty($messages[0]['id'])) {
             $selected_campaign_id = (string) $messages[0]['id'];
@@ -835,7 +859,7 @@ class SMarkEmailMarketing {
             <?php $this->render_standard_header($strings, $current_lang, $rtl_class, true); ?>
 
             <div class="seo-grid">
-                <section class="seo-step-card seo-step-card--full smark-email-performance-card" data-step="strategy">
+                <section class="seo-step-card seo-step-card--full smark-email-performance-card" data-step="strategy" data-smark-performance-section>
                     <header class="seo-step-header smark-email-performance-header">
                         <div>
                             <h2><?php echo esc_html($strings['overview_title']); ?></h2>
@@ -848,7 +872,7 @@ class SMarkEmailMarketing {
                     </div>
                 </section>
 
-                <section class="seo-step-card seo-step-card--full" data-step="strategy">
+                <section class="seo-step-card seo-step-card--full" data-step="strategy" data-smark-performance-section>
                     <header class="seo-step-header smark-email-performance-header">
                         <div>
                             <h2><?php echo esc_html($strings['campaign_title']); ?></h2>
@@ -863,7 +887,7 @@ class SMarkEmailMarketing {
                             <input type="hidden" name="page" value="smark-email-performance">
                             <label>
                                 <span><?php echo esc_html($strings['field_campaign']); ?></span>
-                                <select name="campaign_id" onchange="this.form.submit()">
+                                <select name="campaign_id" data-smark-performance-campaign-select>
                                     <?php foreach ($messages as $message) : ?>
                                         <option value="<?php echo esc_attr($message['id']); ?>" <?php selected($selected_campaign_id, $message['id']); ?>>
                                             <?php echo esc_html($message['campaign_name'] . ' - ' . $message['subject_line']); ?>
@@ -886,6 +910,24 @@ class SMarkEmailMarketing {
             <?php $this->render_campaign_failure_detail_modal($strings); ?>
         </div>
         <?php
+    }
+
+    public function ajax_dashboard_email_performance_view() {
+        check_ajax_referer('smark_email_performance_ajax', 'nonce');
+
+        if (!current_user_can('smark_access')) {
+            wp_send_json_error(array(
+                'message' => esc_html__('You do not have sufficient permissions to access this page.', 'smark'),
+            ), 403);
+        }
+
+        ob_start();
+        $this->render_performance_page();
+        $html = ob_get_clean();
+
+        wp_send_json_success(array(
+            'html' => $html,
+        ));
     }
 
     private function render_campaign_messages_list_content($strings, $messages) {
@@ -1382,94 +1424,90 @@ class SMarkEmailMarketing {
 
     private function render_email_account_edit_modal($strings) {
         ?>
-        <div class="smark-email-import-modal smark-email-account-edit-modal" id="smarkEmailAccountEditModal" aria-hidden="true">
-            <div class="smark-email-import-modal__overlay" data-close-smark-account-edit></div>
-            <div class="smark-email-import-modal__dialog smark-email-account-edit-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="smarkEmailAccountEditTitle">
-                <header class="smark-email-import-modal__header">
-                    <div>
-                        <h2 id="smarkEmailAccountEditTitle"><?php echo esc_html($strings['edit_modal_title']); ?></h2>
-                        <p><?php echo esc_html($strings['edit_modal_description']); ?></p>
-                    </div>
-                    <button type="button" class="smark-email-import-modal__close" data-close-smark-account-edit aria-label="<?php echo esc_attr($strings['close_modal']); ?>">
-                        <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
-                    </button>
-                </header>
-
-                <div class="smark-email-import-modal__body">
-                    <form id="smarkEmailAccountEditForm" class="smark-email-account-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                        <?php wp_nonce_field('smark_email_account_save', 'smark_email_account_nonce'); ?>
-                        <input type="hidden" name="action" value="smark_email_account_save">
-                        <input type="hidden" name="account_id" value="">
-
-                        <div class="smark-email-form-grid">
-                            <label>
-                                <span><?php echo esc_html($strings['provider_label']); ?></span>
-                                <select name="provider" required data-smark-edit-provider>
-                                    <option value="email"><?php echo esc_html($strings['provider_email']); ?></option>
-                                    <option value="gmail"><?php echo esc_html($strings['provider_gmail']); ?></option>
-                                    <option value="outlook"><?php echo esc_html($strings['provider_outlook']); ?></option>
-                                </select>
-                            </label>
-
-                            <label>
-                                <span><?php echo esc_html($strings['field_label']); ?></span>
-                                <input type="text" name="account_label" required placeholder="<?php echo esc_attr($strings['field_label_placeholder_email']); ?>">
-                            </label>
-
-                            <label>
-                                <span><?php echo esc_html($strings['field_sender_name']); ?></span>
-                                <input type="text" name="sender_name" required placeholder="<?php echo esc_attr($strings['field_sender_name_placeholder']); ?>">
-                            </label>
-
-                            <label>
-                                <span><?php echo esc_html($strings['field_email']); ?></span>
-                                <input type="email" name="email_address" required placeholder="name@example.com">
-                            </label>
-
-                            <label>
-                                <span><?php echo esc_html($strings['field_app_password']); ?></span>
-                                <input type="password" name="app_password" autocomplete="new-password" placeholder="<?php echo esc_attr($strings['field_password_placeholder_keep']); ?>">
-                                <small><?php echo esc_html($strings['field_password_keep_help']); ?></small>
-                            </label>
-
-                            <label>
-                                <span><?php echo esc_html($strings['field_daily_limit']); ?></span>
-                                <input type="number" name="daily_limit" required min="1" max="2000" value="100">
-                            </label>
-
-                            <label>
-                                <span><?php echo esc_html($strings['field_smtp_host']); ?></span>
-                                <input type="text" name="smtp_host" required placeholder="mail.example.com" data-gmail-value="smtp.gmail.com" data-outlook-value="smtp.office365.com">
-                            </label>
-
-                            <label>
-                                <span><?php echo esc_html($strings['field_smtp_port']); ?></span>
-                                <select name="smtp_port" required>
-                                    <option value="587">587 - TLS</option>
-                                    <option value="465">465 - SSL</option>
-                                    <option value="25">25</option>
-                                    <option value="2525">2525</option>
-                                </select>
-                            </label>
-
-                            <label>
-                                <span><?php echo esc_html($strings['field_encryption']); ?></span>
-                                <select name="encryption" required>
-                                    <option value="tls">TLS</option>
-                                    <option value="ssl">SSL</option>
-                                    <option value="none"><?php echo esc_html($strings['encryption_none']); ?></option>
-                                </select>
-                            </label>
-                        </div>
-
-                        <div class="smark-email-form-actions">
-                            <button type="submit" class="button button-primary"><?php echo esc_html($strings['update_button']); ?></button>
-                            <button type="button" class="button smark-email-secondary-action" data-close-smark-account-edit><?php echo esc_html($strings['cancel_edit_button']); ?></button>
-                        </div>
-                    </form>
+        <section class="seo-step-card seo-step-card--full smark-email-accounts-card smark-email-account-edit-section" id="smarkEmailAccountEditModal" data-step="strategy" aria-hidden="true" hidden>
+            <header class="seo-step-header smark-email-card-header-actions smark-email-contact-workflow-header smark-email-account-edit-header">
+                <div>
+                    <h2 id="smarkEmailAccountEditTitle"><?php echo esc_html($strings['edit_modal_title']); ?></h2>
+                    <p><?php echo esc_html($strings['edit_modal_description']); ?></p>
                 </div>
+                <button type="button" class="smark-email-inline-panel__close" data-close-smark-account-edit aria-label="<?php echo esc_attr($strings['close_modal']); ?>">
+                    <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+                </button>
+            </header>
+
+            <div class="smark-email-inline-panel__body">
+                <form id="smarkEmailAccountEditForm" class="smark-email-account-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                    <?php wp_nonce_field('smark_email_account_save', 'smark_email_account_nonce'); ?>
+                    <input type="hidden" name="action" value="smark_email_account_save">
+                    <input type="hidden" name="account_id" value="">
+
+                    <div class="smark-email-form-grid">
+                        <label>
+                            <span><?php echo esc_html($strings['provider_label']); ?></span>
+                            <select name="provider" required data-smark-edit-provider>
+                                <option value="email"><?php echo esc_html($strings['provider_email']); ?></option>
+                                <option value="gmail"><?php echo esc_html($strings['provider_gmail']); ?></option>
+                                <option value="outlook"><?php echo esc_html($strings['provider_outlook']); ?></option>
+                            </select>
+                        </label>
+
+                        <label>
+                            <span><?php echo esc_html($strings['field_label']); ?></span>
+                            <input type="text" name="account_label" required placeholder="<?php echo esc_attr($strings['field_label_placeholder_email']); ?>">
+                        </label>
+
+                        <label>
+                            <span><?php echo esc_html($strings['field_sender_name']); ?></span>
+                            <input type="text" name="sender_name" required placeholder="<?php echo esc_attr($strings['field_sender_name_placeholder']); ?>">
+                        </label>
+
+                        <label>
+                            <span><?php echo esc_html($strings['field_email']); ?></span>
+                            <input type="email" name="email_address" required placeholder="name@example.com">
+                        </label>
+
+                        <label>
+                            <span><?php echo esc_html($strings['field_app_password']); ?></span>
+                            <input type="password" name="app_password" autocomplete="new-password" placeholder="<?php echo esc_attr($strings['field_password_placeholder_keep']); ?>">
+                            <small><?php echo esc_html($strings['field_password_keep_help']); ?></small>
+                        </label>
+
+                        <label>
+                            <span><?php echo esc_html($strings['field_daily_limit']); ?></span>
+                            <input type="number" name="daily_limit" required min="1" max="2000" value="100">
+                        </label>
+
+                        <label>
+                            <span><?php echo esc_html($strings['field_smtp_host']); ?></span>
+                            <input type="text" name="smtp_host" required placeholder="mail.example.com" data-gmail-value="smtp.gmail.com" data-outlook-value="smtp.office365.com">
+                        </label>
+
+                        <label>
+                            <span><?php echo esc_html($strings['field_smtp_port']); ?></span>
+                            <select name="smtp_port" required>
+                                <option value="587">587 - TLS</option>
+                                <option value="465">465 - SSL</option>
+                                <option value="25">25</option>
+                                <option value="2525">2525</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            <span><?php echo esc_html($strings['field_encryption']); ?></span>
+                            <select name="encryption" required>
+                                <option value="tls">TLS</option>
+                                <option value="ssl">SSL</option>
+                                <option value="none"><?php echo esc_html($strings['encryption_none']); ?></option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <div class="smark-email-form-actions">
+                        <button type="submit" class="button button-primary"><?php echo esc_html($strings['update_button']); ?></button>
+                    </div>
+                </form>
             </div>
-        </div>
+        </section>
         <?php
     }
 
@@ -6211,18 +6249,51 @@ class SMarkEmailMarketing {
         $form.find('[name="smtp_port"]').val($trigger.attr('data-smtp-port') || '587');
         $form.find('[name="encryption"]').val($trigger.attr('data-encryption') || 'tls');
 
-        $modal.addClass('is-open').attr('aria-hidden', 'false');
-        $('body').addClass('smark-email-modal-open');
+        showEmailAccountWorkflowPanel($modal);
         window.setTimeout(function () {
             $form.find('[name="account_label"]').trigger('focus');
         }, 50);
     }
 
     function closeAccountEditModal() {
-        $('#smarkEmailAccountEditModal').removeClass('is-open').attr('aria-hidden', 'true');
-        if (!$('#smarkEmailImportModal').hasClass('is-open') && !$('#smarkEmailContactListModal').hasClass('is-open') && !$('#smarkEmailContactTagModal').hasClass('is-open') && !$('#smarkEmailAudiencePickerModal').hasClass('is-open')) {
-            $('body').removeClass('smark-email-modal-open');
+        hideEmailAccountWorkflowPanel($('#smarkEmailAccountEditModal'));
+    }
+
+    function showEmailAccountWorkflowPanel($panel) {
+        if (!$panel.length) {
+            return;
         }
+
+        var $grid = $panel.closest('.seo-grid');
+        $grid.find('[data-smark-email-account-section], #smarkEmailAccountEditModal')
+            .addClass('smark-email-contact-section-hidden')
+            .prop('hidden', true)
+            .attr('aria-hidden', 'true');
+
+        $panel
+            .removeClass('smark-email-contact-section-hidden')
+            .prop('hidden', false)
+            .attr('aria-hidden', 'false');
+
+        resetContactWorkflowScroll();
+    }
+
+    function hideEmailAccountWorkflowPanel($panel) {
+        var $grid = $panel.closest('.seo-grid');
+
+        if (!$panel.length || $panel.prop('hidden')) {
+            return;
+        }
+
+        $panel
+            .addClass('smark-email-contact-section-hidden')
+            .prop('hidden', true)
+            .attr('aria-hidden', 'true');
+
+        $grid.find('[data-smark-email-account-section]')
+            .removeClass('smark-email-contact-section-hidden')
+            .prop('hidden', false)
+            .attr('aria-hidden', 'false');
     }
 
     function updateEmailProviderForm(provider) {
@@ -6691,6 +6762,7 @@ class SMarkEmailMarketing {
             $('[data-smark-sender-picker]').each(function () {
                 updateSenderPicker($(this));
             });
+            updateEmailProviderForm($('#smark_email_provider').val() || 'email');
             syncAudienceBuilders();
             if (detail.view === 'campaign-message') {
                 initializeCampaignMessageEditor();
@@ -6699,6 +6771,23 @@ class SMarkEmailMarketing {
 
         $(document).on('change', '#smark_email_provider', function () {
             updateEmailProviderForm($(this).val());
+        });
+
+        $(document).on('change', '[data-smark-performance-campaign-select]', function () {
+            var $select = $(this);
+            if ($select.closest('.smark-dashboard-embedded-view').length) {
+                document.dispatchEvent(new window.CustomEvent('smark:dashboard-load-email-view', {
+                    detail: {
+                        view: 'performance-review',
+                        params: {
+                            campaign_id: $select.val() || ''
+                        }
+                    }
+                }));
+                return;
+            }
+
+            $select.closest('form').trigger('submit');
         });
 
         $(document).on('click', '[data-smark-sender-picker-toggle]', function (event) {
@@ -9059,6 +9148,7 @@ JS;
             #smarkEmailImportModal[hidden],
             #smarkEmailContactListModal[hidden],
             #smarkEmailContactTagModal[hidden],
+            #smarkEmailAccountEditModal[hidden],
             #smarkEmailCampaignEditModal[hidden],
             .smark-email-campaign-performance-section[hidden],
             #smarkEmailAudiencePickerModal[hidden] {

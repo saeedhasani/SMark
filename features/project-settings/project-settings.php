@@ -18,6 +18,7 @@ class SMarkProjectSettings {
     const OPTION_SETUP_COMPLETED = 'smark_project_settings_completed';
     const OPTION_CENTRAL_PROJECT_DB_ID = 'smark_central_project_db_id';
     const OPTION_CENTRAL_BASE_URL = 'smark_central_base_url';
+    const OPTION_MODULE_VISIBILITY = 'smark_dashboard_module_visibility';
     const CENTRAL_SYNC_TOKEN_HEADER = 'x-smark-sync-token';
     const DEFAULT_CENTRAL_BASE_URL = 'https://saeedhasani.com';
     const CENTRAL_SYNC_PATH = '/wp-json/smark-core/v1/projects/sync';
@@ -43,6 +44,8 @@ class SMarkProjectSettings {
         add_action('wp_ajax_SMARK_project_settings_connect_search_console', array($this, 'ajax_connect_search_console'));
         add_action('wp_ajax_SMARK_project_settings_claim_search_console', array($this, 'ajax_claim_search_console'));
         add_action('wp_ajax_SMARK_project_settings_store_search_console_tokens', array($this, 'ajax_store_search_console_tokens'));
+        add_action('wp_ajax_smark_dashboard_project_settings_view', array($this, 'ajax_dashboard_project_settings_view'));
+        add_action('wp_ajax_smark_dashboard_project_settings_save', array($this, 'ajax_dashboard_project_settings_save'));
         add_action('rest_api_init', array($this, 'register_sc_oauth_broker_routes'));
     }
 
@@ -179,6 +182,13 @@ class SMarkProjectSettings {
                 'sc_client_secret_help' => 'Required for completing Search Console connection.',
                 'sc_save_secret' => 'Save Secret',
                 'sc_secret_saved' => 'Client Secret saved. Please click Connect again.',
+                'modules' => 'Modules',
+                'modules_help' => 'Turn dashboard modules on or off. Disabled modules are hidden from the right dashboard menu.',
+                'module_email' => 'Email Marketing',
+                'module_seo' => 'SEO',
+                'module_social' => 'Social Media',
+                'module_on' => 'On',
+                'module_off' => 'Off',
             ),
             'fa' => array(
                 'menu' => 'تنظیمات پروژه',
@@ -214,10 +224,51 @@ class SMarkProjectSettings {
                 'sc_client_secret_help' => 'برای تکمیل اتصال به سرچ کنسول ضروری است.',
                 'sc_save_secret' => 'ذخیره Client Secret',
                 'sc_secret_saved' => 'Client Secret ذخیره شد. دوباره روی اتصال کلیک کنید.',
+                'modules' => 'ماژول‌ها',
+                'modules_help' => 'ماژول‌های داشبورد را روشن یا خاموش کنید. ماژول‌های خاموش در منوی سمت راست داشبورد نمایش داده نمی‌شوند.',
+                'module_email' => 'ایمیل مارکتینگ',
+                'module_seo' => 'سئو',
+                'module_social' => 'سوشال مدیا',
+                'module_on' => 'روشن',
+                'module_off' => 'خاموش',
             ),
         );
 
         return isset($strings[$lang]) ? $strings[$lang] : $strings['en'];
+    }
+
+    public static function get_default_module_visibility() {
+        return array(
+            'email' => true,
+            'seo' => true,
+            'social' => true,
+        );
+    }
+
+    public static function get_module_visibility() {
+        $defaults = self::get_default_module_visibility();
+        $saved = get_option(self::OPTION_MODULE_VISIBILITY, array());
+        $saved = is_array($saved) ? $saved : array();
+        $visibility = array();
+
+        foreach ($defaults as $module => $enabled) {
+            $visibility[$module] = array_key_exists($module, $saved) ? (bool) $saved[$module] : (bool) $enabled;
+        }
+
+        return $visibility;
+    }
+
+    private function save_module_visibility_from_request() {
+        $modules = self::get_default_module_visibility();
+        $enabled_modules = isset($_POST['smark_enabled_modules']) ? (array) wp_unslash($_POST['smark_enabled_modules']) : array();
+        $enabled_modules = array_map('sanitize_key', $enabled_modules);
+        $visibility = array();
+
+        foreach ($modules as $module => $enabled) {
+            $visibility[$module] = in_array($module, $enabled_modules, true);
+        }
+
+        update_option(self::OPTION_MODULE_VISIBILITY, $visibility, false);
     }
 
     private function get_google_client_id() {
@@ -1409,7 +1460,10 @@ class SMarkProjectSettings {
     }
 
     public function enqueue_assets($hook) {
-        if (strpos((string) $hook, 'smark-project-settings') === false) {
+        $hook = (string) $hook;
+        $is_project_settings_page = strpos($hook, 'smark-project-settings') !== false;
+        $is_dashboard_page = in_array($hook, array('toplevel_page_smark-dashboard', 'smark_page_smark-dashboard-page'), true);
+        if (!$is_project_settings_page && !$is_dashboard_page) {
             return;
         }
 
@@ -1502,6 +1556,8 @@ class SMarkProjectSettings {
                 'connect' => $strings['connect'],
                 'connected' => $strings['connected'],
                 'checking' => $strings['checking'],
+                'saving' => $strings['saving'],
+                'saved' => $strings['project_settings_saved'],
                 'scSuccess' => $strings['sc_success_notice'],
                 'scError' => $strings['sc_error_notice'],
             ),
@@ -1646,6 +1702,7 @@ class SMarkProjectSettings {
         $project = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$projects_table_sql} WHERE id = %d", $db_id), ARRAY_A); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
         $this->ensure_project_id($project);
         $this->maybe_sync_project_to_central($project);
+        $this->save_module_visibility_from_request();
   
         update_option(self::OPTION_SETUP_COMPLETED, true, false);
         add_settings_error('smark_project_settings', 'saved', $strings['project_settings_saved'], 'updated');
@@ -2274,6 +2331,13 @@ class SMarkProjectSettings {
         } catch (Exception $e) {
             // Ignore sync failures.
         }
+
+        $module_visibility = self::get_module_visibility();
+        $dashboard_modules = array(
+            'email' => $strings['module_email'],
+            'seo' => $strings['module_seo'],
+            'social' => $strings['module_social'],
+        );
    
         ?>
         <div class="wrap smark-project-settings-page <?php echo esc_attr($rtl_class); ?>" data-lang="<?php echo esc_attr($current_lang); ?>">
@@ -2305,7 +2369,7 @@ class SMarkProjectSettings {
                 <?php settings_errors('smark_project_settings'); ?>
 
                 <div class="smark-card smark-project-settings-card">
-                    <form method="post" action="">
+                    <form method="post" action="<?php echo esc_url(admin_url('admin.php?page=smark-project-settings')); ?>">
                         <?php wp_nonce_field('smark_project_settings_save', 'smark_project_settings_nonce'); ?>
                         <input type="hidden" name="project_db_id" value="<?php echo esc_attr((string) (int) $project['id']); ?>">
 
@@ -2371,6 +2435,36 @@ class SMarkProjectSettings {
                                         </div>
                                     </td>
                                 </tr>
+                                <tr>
+                                    <th scope="row"><?php echo esc_html($strings['modules']); ?></th>
+                                    <td>
+                                        <div class="smark-module-toggles" role="group" aria-label="<?php echo esc_attr($strings['modules']); ?>">
+                                            <?php foreach ($dashboard_modules as $module_key => $module_label) : ?>
+                                                <?php $input_id = 'smark_module_' . $module_key; ?>
+                                                <label class="smark-module-toggle" for="<?php echo esc_attr($input_id); ?>">
+                                                    <input
+                                                        id="<?php echo esc_attr($input_id); ?>"
+                                                        type="checkbox"
+                                                        name="smark_enabled_modules[]"
+                                                        value="<?php echo esc_attr($module_key); ?>"
+                                                        <?php checked(!empty($module_visibility[$module_key])); ?>
+                                                    >
+                                                    <span class="smark-module-toggle__switch" aria-hidden="true">
+                                                        <span class="smark-module-toggle__knob"></span>
+                                                    </span>
+                                                    <span class="smark-module-toggle__content">
+                                                        <strong><?php echo esc_html($module_label); ?></strong>
+                                                        <span class="smark-module-toggle__state">
+                                                            <span class="smark-module-toggle__state-on"><?php echo esc_html($strings['module_on']); ?></span>
+                                                            <span class="smark-module-toggle__state-off"><?php echo esc_html($strings['module_off']); ?></span>
+                                                        </span>
+                                                    </span>
+                                                </label>
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <p class="description"><?php echo esc_html($strings['modules_help']); ?></p>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
 
@@ -2388,5 +2482,46 @@ class SMarkProjectSettings {
             </div>
         </div>
         <?php
+    }
+
+    public function ajax_dashboard_project_settings_view() {
+        check_ajax_referer('smark_project_settings_dashboard_ajax', 'nonce');
+
+        if (!current_user_can('smark_access')) {
+            wp_send_json_error(array(
+                'message' => esc_html__('You do not have sufficient permissions to access this page.', 'smark'),
+            ), 403);
+        }
+
+        ob_start();
+        $this->render_page();
+        $html = ob_get_clean();
+
+        wp_send_json_success(array(
+            'html' => $html,
+        ));
+    }
+
+    public function ajax_dashboard_project_settings_save() {
+        if (!current_user_can('smark_access')) {
+            wp_send_json_error(array(
+                'message' => esc_html__('You do not have sufficient permissions to perform this action.', 'smark'),
+            ), 403);
+        }
+
+        $saved = $this->handle_submit();
+        if (!$saved) {
+            $errors = get_settings_errors('smark_project_settings');
+            $message = !empty($errors[0]['message']) ? wp_strip_all_tags((string) $errors[0]['message']) : esc_html__('Unable to save project settings.', 'smark');
+            wp_send_json_error(array(
+                'message' => $message,
+            ), 400);
+        }
+
+        $strings = $this->get_strings();
+        wp_send_json_success(array(
+            'message' => $strings['project_settings_saved'],
+            'moduleVisibility' => self::get_module_visibility(),
+        ));
     }
 }

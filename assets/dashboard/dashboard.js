@@ -195,12 +195,22 @@
         const [emailContactsHtml, setEmailContactsHtml] = useState('');
         const [emailContactsLoading, setEmailContactsLoading] = useState(false);
         const [emailContactsError, setEmailContactsError] = useState('');
+        const [emailAccountsHtml, setEmailAccountsHtml] = useState('');
+        const [emailAccountsLoading, setEmailAccountsLoading] = useState(false);
+        const [emailAccountsError, setEmailAccountsError] = useState('');
         const [emailCampaignMessageHtml, setEmailCampaignMessageHtml] = useState('');
         const [emailCampaignMessageLoading, setEmailCampaignMessageLoading] = useState(false);
         const [emailCampaignMessageError, setEmailCampaignMessageError] = useState('');
+        const [emailPerformanceHtml, setEmailPerformanceHtml] = useState('');
+        const [emailPerformanceLoading, setEmailPerformanceLoading] = useState(false);
+        const [emailPerformanceError, setEmailPerformanceError] = useState('');
+        const [projectSettingsHtml, setProjectSettingsHtml] = useState('');
+        const [projectSettingsLoading, setProjectSettingsLoading] = useState(false);
+        const [projectSettingsError, setProjectSettingsError] = useState('');
         const [languageOpen, setLanguageOpen] = useState(false);
         const [settingsOpen, setSettingsOpen] = useState(false);
         const [language, setLanguage] = useState(config.lang === 'en' ? 'en' : 'fa');
+        const [moduleVisibility, setModuleVisibility] = useState(config.moduleVisibility || {});
 
         useEffect(function() {
             if (emailSubView === 'contacts' && !emailContactsHtml) {
@@ -211,6 +221,14 @@
                 return;
             }
 
+            if (emailSubView === 'email-accounts' && !emailAccountsHtml) {
+                return;
+            }
+
+            if (emailSubView === 'performance-review' && !emailPerformanceHtml) {
+                return;
+            }
+
             window.setTimeout(function() {
                 document.dispatchEvent(new window.CustomEvent('smark:dashboard-embedded-view-loaded', {
                     detail: {
@@ -218,14 +236,52 @@
                     },
                 }));
             }, 0);
-        }, [emailSubView, emailContactsHtml, emailCampaignMessageHtml]);
+        }, [emailSubView, emailContactsHtml, emailCampaignMessageHtml, emailAccountsHtml, emailPerformanceHtml]);
+
+        useEffect(function() {
+            const handleEmbeddedViewLoad = function(event) {
+                const detail = event.detail || {};
+                if (detail.view === 'performance-review') {
+                    loadEmailPerformanceView(detail.params || {});
+                }
+            };
+
+            document.addEventListener('smark:dashboard-load-email-view', handleEmbeddedViewLoad);
+            return function() {
+                document.removeEventListener('smark:dashboard-load-email-view', handleEmbeddedViewLoad);
+            };
+        }, []);
+
+        useEffect(function() {
+            const handleModuleVisibilityUpdate = function(event) {
+                const detail = event.detail || {};
+                setModuleVisibility(detail.moduleVisibility || {});
+            };
+
+            document.addEventListener('smark:dashboard-module-visibility-updated', handleModuleVisibilityUpdate);
+            return function() {
+                document.removeEventListener('smark:dashboard-module-visibility-updated', handleModuleVisibilityUpdate);
+            };
+        }, []);
+
+        useEffect(function() {
+            if (active !== 'project-settings' || !projectSettingsHtml) {
+                return;
+            }
+
+            window.setTimeout(function() {
+                document.dispatchEvent(new window.CustomEvent('smark:project-settings-view-loaded'));
+            }, 0);
+        }, [active, projectSettingsHtml]);
         const mainItems = [
-            { id: 'email', label: text('emailMarketing', 'Email Marketing'), icon: h(SvgIcon, { path: icons.email, viewBox: '0 0 504 540' }) },
-            { id: 'seo', label: text('seo', 'SEO'), href: urls.seo || '', icon: h(SvgIcon, { path: icons.seo, viewBox: '0 0 504 540' }) },
-            { id: 'social', label: text('social', 'Social Media'), href: urls.social || '', icon: h(SvgIcon, { path: icons.social, viewBox: '0 0 504 540' }) },
-        ];
+            { id: 'email', enabled: moduleVisibility.email !== false, label: text('emailMarketing', 'Email Marketing'), icon: h(SvgIcon, { path: icons.email, viewBox: '0 0 504 540' }) },
+            { id: 'seo', enabled: moduleVisibility.seo !== false, label: text('seo', 'SEO'), href: urls.seo || '', icon: h(SvgIcon, { path: icons.seo, viewBox: '0 0 504 540' }) },
+            { id: 'social', enabled: moduleVisibility.social !== false, label: text('social', 'Social Media'), href: urls.social || '', icon: h(SvgIcon, { path: icons.social, viewBox: '0 0 504 540' }) },
+        ].filter(function(item) {
+            return item.enabled;
+        });
         const settingsItems = [
-            { id: 'project-settings', label: textForLanguage(language, 'projectSettings', 'Project Settings'), href: urls.settings || '' },
+            { id: 'project-settings', label: textForLanguage(language, 'projectSettings', 'Project Settings'), view: 'project-settings' },
             { id: 'google-docs', label: textForLanguage(language, 'googleDocsConverter', 'Google Docs Converter'), href: urls.googleDocs || '' },
             { id: 'headline-analyzer', label: textForLanguage(language, 'headlineAnalyzer', 'Headline Analyzer'), href: urls.headlineAnalyzer || '' },
             { id: 'competitor-analysis', label: textForLanguage(language, 'competitorAnalysis', 'Competitor Analysis'), href: urls.competitorAnalysis || '' },
@@ -236,6 +292,9 @@
             if (id === 'email') {
                 setEmailSubView('workflow');
             }
+            if (id !== 'project-settings') {
+                setProjectSettingsError('');
+            }
             if (id !== 'language') {
                 setLanguageOpen(false);
             }
@@ -244,8 +303,34 @@
             }
         };
 
+        const openSettingsView = function(view) {
+            setSettingsOpen(false);
+            setLanguageOpen(false);
+
+            if (view !== 'project-settings') {
+                return;
+            }
+
+            setActive('project-settings');
+            setProjectSettingsError('');
+
+            if (projectSettingsHtml) {
+                return;
+            }
+
+            setProjectSettingsLoading(true);
+
+            loadEmailEmbeddedView('smark_dashboard_project_settings_view', config.projectSettingsViewNonce || '', {}, function(html) {
+                setProjectSettingsHtml(html);
+            }, function(message) {
+                setProjectSettingsError(message);
+            }, function() {
+                setProjectSettingsLoading(false);
+            });
+        };
+
         const openEmailSubView = function(view) {
-            if (view !== 'contacts' && view !== 'campaign-message') {
+            if (view !== 'contacts' && view !== 'campaign-message' && view !== 'email-accounts' && view !== 'performance-review') {
                 setEmailSubView('workflow');
                 return;
             }
@@ -261,13 +346,45 @@
 
                 setEmailContactsLoading(true);
 
-                loadEmailEmbeddedView('smark_dashboard_email_contacts_view', config.emailContactsViewNonce || '', function(html) {
+                loadEmailEmbeddedView('smark_dashboard_email_contacts_view', config.emailContactsViewNonce || '', {}, function(html) {
                     setEmailContactsHtml(html);
                 }, function(message) {
                     setEmailContactsError(message);
                 }, function() {
                     setEmailContactsLoading(false);
                 });
+
+                return;
+            }
+
+            if (view === 'email-accounts') {
+                setEmailAccountsError('');
+
+                if (emailAccountsHtml) {
+                    return;
+                }
+
+                setEmailAccountsLoading(true);
+
+                loadEmailEmbeddedView('smark_dashboard_email_accounts_view', config.emailAccountsViewNonce || '', {}, function(html) {
+                    setEmailAccountsHtml(html);
+                }, function(message) {
+                    setEmailAccountsError(message);
+                }, function() {
+                    setEmailAccountsLoading(false);
+                });
+
+                return;
+            }
+
+            if (view === 'performance-review') {
+                setEmailPerformanceError('');
+
+                if (emailPerformanceHtml) {
+                    return;
+                }
+
+                loadEmailPerformanceView({});
 
                 return;
             }
@@ -280,7 +397,7 @@
 
             setEmailCampaignMessageLoading(true);
 
-            loadEmailEmbeddedView('smark_dashboard_email_campaign_message_view', config.emailCampaignMessageViewNonce || '', function(html) {
+            loadEmailEmbeddedView('smark_dashboard_email_campaign_message_view', config.emailCampaignMessageViewNonce || '', {}, function(html) {
                 setEmailCampaignMessageHtml(html);
             }, function(message) {
                 setEmailCampaignMessageError(message);
@@ -289,10 +406,27 @@
             });
         };
 
-        const loadEmailEmbeddedView = function(action, nonce, onSuccess, onError, onComplete) {
+        const loadEmailPerformanceView = function(params) {
+            setEmailSubView('performance-review');
+            setEmailPerformanceError('');
+            setEmailPerformanceLoading(true);
+
+            loadEmailEmbeddedView('smark_dashboard_email_performance_view', config.emailPerformanceViewNonce || '', params || {}, function(html) {
+                setEmailPerformanceHtml(html);
+            }, function(message) {
+                setEmailPerformanceError(message);
+            }, function() {
+                setEmailPerformanceLoading(false);
+            });
+        };
+
+        const loadEmailEmbeddedView = function(action, nonce, params, onSuccess, onError, onComplete) {
             const body = new window.URLSearchParams();
             body.append('action', action);
             body.append('nonce', nonce);
+            Object.keys(params || {}).forEach(function(key) {
+                body.append(key, params[key]);
+            });
 
             window.fetch(config.ajaxUrl || window.ajaxurl || '', {
                 method: 'POST',
@@ -336,7 +470,26 @@
                         emailCampaignMessageError ? h('div', { className: 'smark-dashboard-embedded-view__state smark-dashboard-embedded-view__state--error' }, emailCampaignMessageError) : null,
                         emailCampaignMessageHtml ? h('div', { className: 'smark-dashboard-embedded-view__content', dangerouslySetInnerHTML: { __html: emailCampaignMessageHtml } }) : null
                     )
+                    : emailSubView === 'email-accounts'
+                    ? h('section', { key: 'email-accounts', className: 'smark-dashboard-embedded-view smark-dashboard-view' },
+                        emailAccountsLoading ? h('div', { className: 'smark-dashboard-embedded-view__state' }, text('loading', 'Loading...')) : null,
+                        emailAccountsError ? h('div', { className: 'smark-dashboard-embedded-view__state smark-dashboard-embedded-view__state--error' }, emailAccountsError) : null,
+                        emailAccountsHtml ? h('div', { className: 'smark-dashboard-embedded-view__content', dangerouslySetInnerHTML: { __html: emailAccountsHtml } }) : null
+                    )
+                    : emailSubView === 'performance-review'
+                    ? h('section', { key: 'performance-review', className: 'smark-dashboard-embedded-view smark-dashboard-view' },
+                        emailPerformanceLoading ? h('div', { className: 'smark-dashboard-embedded-view__state' }, text('loading', 'Loading...')) : null,
+                        emailPerformanceError ? h('div', { className: 'smark-dashboard-embedded-view__state smark-dashboard-embedded-view__state--error' }, emailPerformanceError) : null,
+                        emailPerformanceHtml ? h('div', { className: 'smark-dashboard-embedded-view__content', dangerouslySetInnerHTML: { __html: emailPerformanceHtml } }) : null
+                    )
                     : h(EmailWorkflowPanel, { key: 'email', language: language, onOpenView: openEmailSubView })
+            ) : null,
+            active === 'project-settings' ? h('div', { className: 'smark-dashboard-workspace-content' },
+                h('section', { key: 'project-settings', className: 'smark-dashboard-embedded-view smark-dashboard-view' },
+                    projectSettingsLoading ? h('div', { className: 'smark-dashboard-embedded-view__state' }, text('loading', 'Loading...')) : null,
+                    projectSettingsError ? h('div', { className: 'smark-dashboard-embedded-view__state smark-dashboard-embedded-view__state--error' }, projectSettingsError) : null,
+                    projectSettingsHtml ? h('div', { className: 'smark-dashboard-embedded-view__content', dangerouslySetInnerHTML: { __html: projectSettingsHtml } }) : null
+                )
             ) : null,
             h('nav', { className: 'smark-dashboard-glass-menu', 'aria-label': text('navigation', 'SMark dashboard navigation') },
                 h(MenuItem, {
@@ -398,7 +551,7 @@
                     h('div', { className: 'smark-dashboard-glass-menu__settings-wrap' + (settingsOpen ? ' is-open' : '') },
                         h(MenuItem, {
                             label: text('settings', 'Settings'),
-                            active: false,
+                            active: active === 'project-settings',
                             expanded: settingsOpen,
                             onClick: function() {
                                 setSettingsOpen(!settingsOpen);
@@ -407,12 +560,26 @@
                         }, h(SvgIcon, { path: icons.settings, viewBox: '0 0 468 540' })),
                         h('div', { className: 'smark-dashboard-glass-menu__settings-panel', role: 'menu', 'aria-label': text('settings', 'Settings') },
                             settingsItems.map(function(option) {
-                                return h('a', {
+                                const commonProps = {
                                     key: option.id,
                                     className: 'smark-dashboard-glass-menu__language-option',
-                                    href: option.href || '#',
                                     role: 'menuitem',
-                                }, option.label);
+                                };
+
+                                if (option.view) {
+                                    return h('button', Object.assign({}, commonProps, {
+                                        type: 'button',
+                                        onClick: function(event) {
+                                            event.preventDefault();
+                                            event.stopPropagation();
+                                            openSettingsView(option.view);
+                                        },
+                                    }), option.label);
+                                }
+
+                                return h('a', Object.assign({}, commonProps, {
+                                    href: option.href || '#',
+                                }), option.label);
                             })
                         )
                     )

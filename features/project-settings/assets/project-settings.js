@@ -338,6 +338,14 @@
     const mainContent = document.querySelector(".smark-project-settings-content");
     const footer = document.querySelector(".smark-version-footer");
 
+    if (!wrap) {
+      return;
+    }
+
+    if (wrap.closest(".smark-dashboard-embedded-view")) {
+      return;
+    }
+
     if (wpBody && wpBodyContent) {
       wpBodyContent.style.height = getComputedStyle(wpBody).height;
       wpBodyContent.style.minHeight = wpBodyContent.style.height;
@@ -429,6 +437,69 @@
       });
   }
 
+  function saveEmbeddedProjectSettings($form) {
+    const cfg = window.SMarkProjectSettings || {};
+    if (!cfg.ajaxUrl) {
+      return false;
+    }
+
+    const formData = new FormData($form.get(0));
+    const $button = $form.find('input[type="submit"], button[type="submit"]').first();
+    const originalText = $button.is("input") ? $button.val() : $button.text();
+
+    formData.set("action", "smark_dashboard_project_settings_save");
+
+    $button.prop("disabled", true);
+    if ($button.is("input")) {
+      $button.val((cfg.strings && cfg.strings.saving) || "Saving...");
+    } else {
+      $button.text((cfg.strings && cfg.strings.saving) || "Saving...");
+    }
+
+    $.ajax({
+      url: cfg.ajaxUrl,
+      method: "POST",
+      data: formData,
+      processData: false,
+      contentType: false,
+    })
+      .done(function (resp) {
+        if (resp && resp.success && resp.data) {
+          showNotification(resp.data.message || (cfg.strings && cfg.strings.saved) || "Saved", "success");
+          document.dispatchEvent(
+            new window.CustomEvent("smark:dashboard-module-visibility-updated", {
+              detail: {
+                moduleVisibility: resp.data.moduleVisibility || {},
+              },
+            })
+          );
+          return;
+        }
+
+        showNotification((resp && resp.data && resp.data.message) || "Unable to save project settings.", "error");
+      })
+      .fail(function (xhr) {
+        const message =
+          xhr &&
+          xhr.responseJSON &&
+          xhr.responseJSON.data &&
+          xhr.responseJSON.data.message
+            ? xhr.responseJSON.data.message
+            : "Unable to save project settings.";
+        showNotification(message, "error");
+      })
+      .always(function () {
+        $button.prop("disabled", false);
+        if ($button.is("input")) {
+          $button.val(originalText);
+        } else {
+          $button.text(originalText);
+        }
+      });
+
+    return true;
+  }
+
   $(function () {
     $(document).on("change", "#SMARK_language_select", function () {
       const cfg = window.SMarkProjectSettings || {};
@@ -460,9 +531,20 @@
       connectSearchConsole();
     });
 
+    $(document).on("submit", ".smark-dashboard-embedded-view .smark-project-settings-card form", function (e) {
+      e.preventDefault();
+      saveEmbeddedProjectSettings($(this));
+    });
+
     maybeHandleBrokerClaim();
     maybeShowOAuthNotices();
     maybeFixMarkBalanceDisplay();
     fixFooterLayout();
+
+    $(document).on("smark:project-settings-view-loaded", function () {
+      maybeShowOAuthNotices();
+      maybeFixMarkBalanceDisplay();
+      fixFooterLayout();
+    });
   });
 })(jQuery);

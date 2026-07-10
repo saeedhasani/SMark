@@ -436,12 +436,23 @@ body.toplevel_page_smark-dashboard #wpbody-content > .error {
   padding: 0;
   background: transparent;
 }
+.smark-dashboard-embedded-view .wrap.smark-project-settings-page {
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0;
+  padding: 0 !important;
+  background: transparent;
+}
 .smark-dashboard-embedded-view .smark-page-header,
 .smark-dashboard-embedded-view .smark-breadcrumb,
 .smark-dashboard-embedded-view .smark-version-footer {
-  display: none;
+  display: none !important;
 }
 .smark-dashboard-embedded-view .seo-grid {
+  margin: 0;
+}
+.smark-dashboard-embedded-view .smark-project-settings-content {
+  min-height: 0 !important;
   margin: 0;
 }
 
