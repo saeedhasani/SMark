@@ -89,6 +89,22 @@ body.toplevel_page_smark-dashboard #wpbody-content > .error {
   z-index: 1;
 }
 
+.smark-dashboard-view {
+  animation: smarkDashboardViewIn 260ms ease both;
+}
+
+@keyframes smarkDashboardViewIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .smark-dashboard-daily-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -334,6 +350,174 @@ body.toplevel_page_smark-dashboard #wpbody-content > .error {
   }
 }
 
+.smark-dashboard-email-workflow {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 26px;
+  border: 1px solid rgba(255, 255, 255, .72);
+  border-radius: 24px;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+
+  &__header {
+    margin-bottom: 22px;
+    text-align: left;
+  }
+
+  &__header h2 {
+    margin: 0 0 6px;
+    color: var(--ink);
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1.3;
+    letter-spacing: 0;
+  }
+
+  &__header p {
+    margin: 0;
+    color: #35506f;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.7;
+  }
+
+  &__list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__item {
+    margin: 0;
+    padding: 0;
+  }
+
+  &__link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  &__button {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font: inherit;
+    text-align: inherit;
+    background: transparent;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  &__link:hover,
+  &__link:focus,
+  &__link:active {
+    color: inherit;
+    text-decoration: none;
+    outline: none;
+  }
+
+  &__content {
+    min-height: 74px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 18px;
+    border: 1px solid rgba(123, 44, 255, .16);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, .34);
+    transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+  }
+
+  &__link:hover &__content,
+  &__link:focus-visible &__content {
+    border-color: rgba(123, 44, 255, .28);
+    background: rgba(255, 255, 255, .52);
+    box-shadow: 0 14px 34px rgba(82, 37, 157, .08);
+  }
+
+  &__icon {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 12px;
+    color: #645cff;
+    background: rgba(100, 92, 255, .12);
+    font-size: 18px;
+    line-height: 34px;
+  }
+
+  &__text {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__text strong {
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.35;
+  }
+
+  &__text small {
+    color: #35506f;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.6;
+  }
+}
+
+.smark-dashboard-embedded-view {
+  width: 100%;
+
+  &__state {
+    padding: 22px;
+    border: 1px solid rgba(255, 255, 255, .72);
+    border-radius: 24px;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 700;
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+  }
+
+  &__state--error {
+    color: #b42318;
+    background: rgba(255, 245, 245, .72);
+  }
+
+  .wrap.smark-seo-optimization-page {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+  }
+
+  .smark-page-header,
+  .smark-breadcrumb,
+  .smark-version-footer {
+    display: none;
+  }
+
+  .seo-grid {
+    margin: 0;
+  }
+}
+
 .smark-dashboard-app-canvas--rtl {
   font-family: "Vazirmatn", "Inter", "Segoe UI", Tahoma, Arial, sans-serif;
   direction: rtl;
@@ -346,15 +530,24 @@ body.toplevel_page_smark-dashboard #wpbody-content > .error {
     flex-direction: row-reverse;
     text-align: right;
   }
+
+  .smark-dashboard-email-workflow__header {
+    text-align: right;
+  }
+
+  .smark-dashboard-email-workflow__content {
+    flex-direction: row-reverse;
+    text-align: right;
+  }
 }
 
 .smark-dashboard-glass-menu {
-  position: sticky !important;
+  position: fixed !important;
   top: 56px !important;
-  right: auto !important;
+  right: 28px !important;
   bottom: auto !important;
   left: auto !important;
-  z-index: 2;
+  z-index: 20;
   width: 62px;
   display: flex;
   flex-direction: column;
@@ -363,8 +556,8 @@ body.toplevel_page_smark-dashboard #wpbody-content > .error {
   min-height: min(560px, calc(100vh - 108px));
   height: fit-content;
   margin-top: 0;
-  margin-right: 28px;
-  margin-left: auto;
+  margin-right: 0;
+  margin-left: 0;
   padding: 12px 8px;
   border: 1px solid rgba(255, 255, 255, .72);
   border-radius: 24px;
@@ -647,9 +840,10 @@ body.toplevel_page_smark-dashboard #wpbody-content > .error {
 
   .smark-dashboard-glass-menu {
     top: 52px;
+    right: 18px !important;
     min-height: min(520px, calc(100vh - 100px));
     margin-top: 0;
-    margin-right: 18px;
+    margin-right: 0;
   }
 }
 

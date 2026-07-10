@@ -12,6 +12,7 @@
     const logoUrl = config.logoUrl || '';
     const urls = config.urls || {};
     const dailyGuideCards = Array.isArray(config.dailyGuideCards) ? config.dailyGuideCards : [];
+    const emailWorkflow = config.emailWorkflow || {};
 
     const text = function(key, fallback) {
         return strings[key] || fallback;
@@ -148,13 +149,57 @@
         );
     }
 
+    function EmailWorkflowPanel(props) {
+        const language = props.language === 'fa' ? 'fa' : 'en';
+        const workflow = emailWorkflow[language] || emailWorkflow.en || {};
+        const tasks = Array.isArray(workflow.tasks) ? workflow.tasks : [];
+
+        return h('section', { className: 'smark-dashboard-email-workflow smark-dashboard-view', 'aria-label': workflow.sectionTitle || text('emailMarketing', 'Email Marketing') },
+            h('header', { className: 'smark-dashboard-email-workflow__header' },
+                h('h2', null, workflow.sectionTitle || text('emailMarketing', 'Email Marketing')),
+                h('p', null, workflow.sectionDescription || '')
+            ),
+            h('ul', { className: 'smark-dashboard-email-workflow__list' },
+                tasks.map(function(task, index) {
+                    const content = h('div', { className: 'smark-dashboard-email-workflow__content' },
+                        h('span', { className: 'smark-dashboard-email-workflow__icon dashicons ' + (task.icon || 'dashicons-email-alt'), 'aria-hidden': true }),
+                        h('span', { className: 'smark-dashboard-email-workflow__text' },
+                            h('strong', null, task.title || ''),
+                            h('small', null, task.description || '')
+                        )
+                    );
+
+                    return h('li', { key: task.title || index, className: 'smark-dashboard-email-workflow__item' },
+                        task.view
+                            ? h('button', {
+                                type: 'button',
+                                className: 'smark-dashboard-email-workflow__link smark-dashboard-email-workflow__button',
+                                onClick: function() {
+                                    if (typeof props.onOpenView === 'function') {
+                                        props.onOpenView(task.view);
+                                    }
+                                },
+                            }, content)
+                            : task.url
+                            ? h('a', { className: 'smark-dashboard-email-workflow__link', href: task.url }, content)
+                            : content
+                    );
+                })
+            )
+        );
+    }
+
     function DashboardApp() {
         const [active, setActive] = useState('smark');
+        const [emailSubView, setEmailSubView] = useState('workflow');
+        const [emailContactsHtml, setEmailContactsHtml] = useState('');
+        const [emailContactsLoading, setEmailContactsLoading] = useState(false);
+        const [emailContactsError, setEmailContactsError] = useState('');
         const [languageOpen, setLanguageOpen] = useState(false);
         const [settingsOpen, setSettingsOpen] = useState(false);
         const [language, setLanguage] = useState(config.lang === 'en' ? 'en' : 'fa');
         const mainItems = [
-            { id: 'email', label: text('emailMarketing', 'Email Marketing'), href: urls.email || '', icon: h(SvgIcon, { path: icons.email, viewBox: '0 0 504 540' }) },
+            { id: 'email', label: text('emailMarketing', 'Email Marketing'), icon: h(SvgIcon, { path: icons.email, viewBox: '0 0 504 540' }) },
             { id: 'seo', label: text('seo', 'SEO'), href: urls.seo || '', icon: h(SvgIcon, { path: icons.seo, viewBox: '0 0 504 540' }) },
             { id: 'social', label: text('social', 'Social Media'), href: urls.social || '', icon: h(SvgIcon, { path: icons.social, viewBox: '0 0 504 540' }) },
         ];
@@ -167,6 +212,9 @@
 
         const setActiveItem = function(id) {
             setActive(id);
+            if (id === 'email') {
+                setEmailSubView('workflow');
+            }
             if (id !== 'language') {
                 setLanguageOpen(false);
             }
@@ -175,9 +223,62 @@
             }
         };
 
+        const openEmailSubView = function(view) {
+            if (view !== 'contacts') {
+                setEmailSubView('workflow');
+                return;
+            }
+
+            setEmailSubView('contacts');
+            setEmailContactsError('');
+
+            if (emailContactsHtml) {
+                return;
+            }
+
+            setEmailContactsLoading(true);
+
+            const body = new window.URLSearchParams();
+            body.append('action', 'smark_dashboard_email_contacts_view');
+            body.append('nonce', config.emailContactsViewNonce || '');
+
+            window.fetch(config.ajaxUrl || window.ajaxurl || '', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                },
+                body: body.toString(),
+            }).then(function(response) {
+                return response.json();
+            }).then(function(response) {
+                if (response && response.success && response.data && response.data.html) {
+                    setEmailContactsHtml(response.data.html);
+                    return;
+                }
+
+                setEmailContactsError((response && response.data && response.data.message) || text('loadError', 'Unable to load this section.'));
+            }).catch(function() {
+                setEmailContactsError(text('loadError', 'Unable to load this section.'));
+            }).finally(function() {
+                setEmailContactsLoading(false);
+            });
+        };
+
         return h('main', { className: 'smark-dashboard-app-canvas smark-dashboard-app-canvas--' + (language === 'fa' ? 'rtl' : 'ltr'), 'aria-label': text('workspace', 'SMark dashboard workspace') },
             active === 'smark' ? h('div', { className: 'smark-dashboard-workspace-content' },
-                h(DailyGuideGrid, { language: language })
+                h('div', { key: 'smark', className: 'smark-dashboard-view' },
+                    h(DailyGuideGrid, { language: language })
+                )
+            ) : null,
+            active === 'email' ? h('div', { className: 'smark-dashboard-workspace-content' },
+                emailSubView === 'contacts'
+                    ? h('section', { key: 'email-contacts', className: 'smark-dashboard-embedded-view smark-dashboard-view' },
+                        emailContactsLoading ? h('div', { className: 'smark-dashboard-embedded-view__state' }, text('loading', 'Loading...')) : null,
+                        emailContactsError ? h('div', { className: 'smark-dashboard-embedded-view__state smark-dashboard-embedded-view__state--error' }, emailContactsError) : null,
+                        emailContactsHtml ? h('div', { className: 'smark-dashboard-embedded-view__content', dangerouslySetInnerHTML: { __html: emailContactsHtml } }) : null
+                    )
+                    : h(EmailWorkflowPanel, { key: 'email', language: language, onOpenView: openEmailSubView })
             ) : null,
             h('nav', { className: 'smark-dashboard-glass-menu', 'aria-label': text('navigation', 'SMark dashboard navigation') },
                 h(MenuItem, {
@@ -200,6 +301,7 @@
                             label: item.label,
                             href: item.href,
                             active: active === item.id,
+                            onClick: item.href ? undefined : function() { setActiveItem(item.id); },
                         }, item.icon);
                     })
                 ),

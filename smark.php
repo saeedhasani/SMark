@@ -2645,6 +2645,73 @@ class SMarkPlugin {
         return $cards;
     }
 
+    private function get_dashboard_email_workflow() {
+        return array(
+            'en' => array(
+                'sectionTitle' => 'Email Campaign Workflow',
+                'sectionDescription' => 'Organize audience, messaging, schedule, and campaign performance in one guided workspace.',
+                'tasks' => array(
+                    array(
+                        'icon' => 'dashicons-groups',
+                        'title' => 'Contacts',
+                        'description' => 'Prepare contact lists and tags based on each campaign goal.',
+                        'url' => admin_url('admin.php?page=smark-email-contacts'),
+                        'view' => 'contacts',
+                    ),
+                    array(
+                        'icon' => 'dashicons-email-alt',
+                        'title' => 'Campaign Message',
+                        'description' => 'Plan the subject, copy, offer, and call to action for each email.',
+                        'url' => admin_url('admin.php?page=smark-email-campaign-message'),
+                    ),
+                    array(
+                        'icon' => 'dashicons-admin-users',
+                        'title' => 'Email Accounts',
+                        'description' => 'Manage sender accounts and daily send limits.',
+                        'url' => admin_url('admin.php?page=smark-email-accounts'),
+                    ),
+                    array(
+                        'icon' => 'dashicons-chart-area',
+                        'title' => 'Performance Review',
+                        'description' => 'Track opens, clicks, conversions, and unsubscribes.',
+                        'url' => admin_url('admin.php?page=smark-email-performance'),
+                    ),
+                ),
+            ),
+            'fa' => array(
+                'sectionTitle' => 'برنامه کمپین‌های ایمیلی',
+                'sectionDescription' => 'مخاطب، پیام، زمان‌بندی و عملکرد کمپین‌ها را در یک مسیر منظم مدیریت کنید.',
+                'tasks' => array(
+                    array(
+                        'icon' => 'dashicons-groups',
+                        'title' => 'مخاطبین',
+                        'description' => 'لیست‌ها و برچسب‌های مخاطبان را بر اساس هدف کمپین آماده کنید.',
+                        'url' => admin_url('admin.php?page=smark-email-contacts'),
+                        'view' => 'contacts',
+                    ),
+                    array(
+                        'icon' => 'dashicons-email-alt',
+                        'title' => 'طراحی پیام کمپین',
+                        'description' => 'موضوع، متن، پیشنهاد و فراخوان اقدام ایمیل را برنامه‌ریزی کنید.',
+                        'url' => admin_url('admin.php?page=smark-email-campaign-message'),
+                    ),
+                    array(
+                        'icon' => 'dashicons-admin-users',
+                        'title' => 'حساب‌های ایمیل',
+                        'description' => 'مدیریت حساب‌های فرستنده و سقف ارسال روزانه آن‌ها.',
+                        'url' => admin_url('admin.php?page=smark-email-accounts'),
+                    ),
+                    array(
+                        'icon' => 'dashicons-chart-area',
+                        'title' => 'پایش عملکرد',
+                        'description' => 'نرخ باز شدن، کلیک، تبدیل و خروج از لیست را بررسی کنید.',
+                        'url' => admin_url('admin.php?page=smark-email-performance'),
+                    ),
+                ),
+            ),
+        );
+    }
+
     public function output_admin_menu_icon_css() {
         ?>
         <style>
@@ -3063,13 +3130,15 @@ class SMarkPlugin {
             'urls'    => array(
                 'social' => admin_url('admin.php?page=smark-social-media'),
                 'seo' => admin_url('admin.php?page=smark-seo-optimization'),
-                'email' => admin_url('admin.php?page=smark-email-marketing'),
+                'email' => '',
                 'settings' => admin_url('admin.php?page=smark-project-settings'),
                 'googleDocs' => admin_url('admin.php?page=smark-google-docs-converter'),
                 'headlineAnalyzer' => admin_url('admin.php?page=smark-headline-analyzer'),
                 'competitorAnalysis' => admin_url('admin.php?page=smark-competitor-analysis'),
             ),
             'dailyGuideCards' => $this->get_dashboard_daily_guide_cards($lang),
+            'emailWorkflow' => $this->get_dashboard_email_workflow(),
+            'emailContactsViewNonce' => wp_create_nonce('smark_email_contacts_page_ajax'),
             'stringsByLang' => array(
                 'en' => array(
                     'dailyGuideTitle' => $this->get_dashboard_translation('daily_guide_title', 'en'),

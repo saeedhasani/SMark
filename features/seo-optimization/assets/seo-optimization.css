@@ -175,7 +175,6 @@ body.smark-plugin-page #wpbody-content {
 }
 
 .smark-seo-optimization-page .seo-grid {
-    margin-top: 20px;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 28px;

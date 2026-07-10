@@ -40,6 +40,7 @@ class SMarkEmailMarketing {
         add_action('wp_ajax_smark_email_contacts_import_preview', array($this, 'ajax_contacts_import_preview'));
         add_action('wp_ajax_smark_email_contacts_import', array($this, 'ajax_contacts_import'));
         add_action('wp_ajax_smark_email_contacts_page', array($this, 'ajax_contacts_page'));
+        add_action('wp_ajax_smark_dashboard_email_contacts_view', array($this, 'ajax_dashboard_email_contacts_view'));
         add_action('wp_ajax_smark_email_contact_save_modal', array($this, 'ajax_email_contact_save_modal'));
         add_action('wp_ajax_smark_email_contact_delete_modal', array($this, 'ajax_email_contact_delete_modal'));
         add_action('wp_ajax_smark_email_campaign_message_send_start', array($this, 'ajax_campaign_message_send_start'));
@@ -60,15 +61,6 @@ class SMarkEmailMarketing {
     }
 
     public function add_submenu_page() {
-        add_submenu_page(
-            null,
-            __('Email Marketing', 'smark'),
-            __('Email Marketing', 'smark'),
-            'smark_access',
-            'smark-email-marketing',
-            array($this, 'render_page')
-        );
-
         add_submenu_page(
             null,
             __('Email Accounts', 'smark'),
@@ -107,7 +99,7 @@ class SMarkEmailMarketing {
     }
 
     public function enqueue_assets($hook) {
-        if (!in_array($hook, array('admin_page_smark-email-marketing', 'admin_page_smark-email-accounts', 'admin_page_smark-email-contacts', 'admin_page_smark-email-campaign-message', 'admin_page_smark-email-performance'), true)) {
+        if (!in_array($hook, array('toplevel_page_smark-dashboard', 'smark_page_smark-dashboard-page', 'admin_page_smark-email-accounts', 'admin_page_smark-email-contacts', 'admin_page_smark-email-campaign-message', 'admin_page_smark-email-performance'), true)) {
             return;
         }
 
@@ -473,91 +465,7 @@ class SMarkEmailMarketing {
             <?php $this->render_standard_header($strings, $current_lang, $rtl_class, true); ?>
 
             <div class="seo-grid">
-                <section class="seo-step-card seo-step-card--full" data-step="strategy">
-                    <header class="seo-step-header smark-email-card-header-actions smark-email-contacts-header-actions">
-                        <div>
-                            <h2><?php echo esc_html($strings['form_title']); ?></h2>
-                            <p><?php echo esc_html($strings['form_description']); ?></p>
-                        </div>
-                        <button type="button" class="button button-primary smark-email-open-import" data-open-smark-import>
-                            <?php echo esc_html($strings['bulk_button']); ?>
-                        </button>
-                    </header>
-
-                    <form class="smark-email-account-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                        <?php wp_nonce_field('smark_email_contact_save', 'smark_email_contact_nonce'); ?>
-                        <input type="hidden" name="action" value="smark_email_contact_save">
-
-                        <div class="smark-email-form-grid">
-                            <label>
-                                <span><?php echo esc_html($strings['field_first_name']); ?></span>
-                                <input type="text" name="first_name" placeholder="<?php echo esc_attr($strings['field_first_name_placeholder']); ?>">
-                            </label>
-
-                            <label>
-                                <span><?php echo esc_html($strings['field_last_name']); ?></span>
-                                <input type="text" name="last_name" placeholder="<?php echo esc_attr($strings['field_last_name_placeholder']); ?>">
-                            </label>
-
-                            <label>
-                                <span><?php echo esc_html($strings['field_email']); ?></span>
-                                <input type="email" name="email_address" required placeholder="name@example.com">
-                            </label>
-
-                            <label>
-                                <span><?php echo esc_html($strings['field_phone']); ?></span>
-                                <input type="tel" name="phone" placeholder="<?php echo esc_attr($strings['field_phone_placeholder']); ?>">
-                            </label>
-
-                            <label>
-                                <span><?php echo esc_html($strings['field_segment']); ?></span>
-                                <select name="contact_list_id">
-                                    <option value=""><?php echo esc_html($strings['field_list_empty']); ?></option>
-                                    <?php foreach ($contact_lists as $contact_list) : ?>
-                                        <option value="<?php echo esc_attr($contact_list['id']); ?>"><?php echo esc_html($contact_list['name']); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </label>
-
-                            <label>
-                                <span><?php echo esc_html($strings['field_source']); ?></span>
-                                <input type="text" name="source" placeholder="<?php echo esc_attr($strings['field_source_placeholder']); ?>">
-                            </label>
-
-                            <label>
-                                <span><?php echo esc_html($strings['field_status']); ?></span>
-                                <select name="status" required>
-                                    <option value="subscribed"><?php echo esc_html($strings['status_subscribed']); ?></option>
-                                    <option value="lead"><?php echo esc_html($strings['status_lead']); ?></option>
-                                    <option value="unsubscribed"><?php echo esc_html($strings['status_unsubscribed']); ?></option>
-                                </select>
-                            </label>
-
-                            <label>
-                                <span><?php echo esc_html($strings['field_tags']); ?></span>
-                                <select name="contact_tag_ids[]" multiple size="4">
-                                    <?php foreach ($contact_tags as $contact_tag) : ?>
-                                        <option value="<?php echo esc_attr($contact_tag['id']); ?>"><?php echo esc_html($contact_tag['name']); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <small class="smark-email-field-note"><?php echo esc_html($strings['field_tags_help']); ?></small>
-                            </label>
-
-                            <label class="smark-email-form-field--wide">
-                                <span><?php echo esc_html($strings['field_notes']); ?></span>
-                                <textarea name="notes" rows="3" placeholder="<?php echo esc_attr($strings['field_notes_placeholder']); ?>"></textarea>
-                            </label>
-                        </div>
-
-                        <p class="smark-email-help"><?php echo esc_html($strings['contact_help']); ?></p>
-
-                        <div class="smark-email-form-actions">
-                            <button type="submit" class="button button-primary"><?php echo esc_html($strings['save_button']); ?></button>
-                        </div>
-                    </form>
-                </section>
-
-                <section class="seo-step-card seo-step-card--full smark-email-accounts-card" data-step="strategy">
+                <section class="seo-step-card seo-step-card--full smark-email-accounts-card" data-step="strategy" data-smark-contact-section>
                     <header class="seo-step-header smark-email-card-header-actions smark-email-contact-lists-header">
                         <div>
                             <h2><?php echo esc_html($strings['lists_title']); ?></h2>
@@ -571,7 +479,7 @@ class SMarkEmailMarketing {
                     <?php $this->render_contact_lists_content($strings, $contacts, $contact_lists); ?>
                 </section>
 
-                <section class="seo-step-card seo-step-card--full smark-email-accounts-card" data-step="strategy">
+                <section class="seo-step-card seo-step-card--full smark-email-accounts-card" data-step="strategy" data-smark-contact-section>
                     <header class="seo-step-header smark-email-card-header-actions smark-email-contact-tags-header">
                         <div>
                             <h2><?php echo esc_html($strings['tags_title']); ?></h2>
@@ -585,7 +493,7 @@ class SMarkEmailMarketing {
                     <?php $this->render_contact_tags_content($strings, $contacts, $contact_tags, $daily_sent_hashes); ?>
                 </section>
 
-                <section class="seo-step-card seo-step-card--full smark-email-accounts-card" data-step="strategy">
+                <section class="seo-step-card seo-step-card--full smark-email-accounts-card" data-step="strategy" data-smark-contact-section>
                     <header class="seo-step-header smark-email-saved-contacts-header">
                         <div>
                             <h2><?php echo esc_html($strings['list_title']); ?></h2>
@@ -594,25 +502,53 @@ class SMarkEmailMarketing {
                         <div class="smark-email-contacts-search-bar">
                             <input type="search" data-smark-contacts-search placeholder="<?php echo esc_attr($strings['contacts_search_placeholder']); ?>" autocomplete="off" aria-label="<?php echo esc_attr($strings['contacts_search_aria']); ?>">
                         </div>
-                        <span class="smark-email-contacts-count-badge">
-                            <?php echo esc_html(sprintf($strings['contacts_count_badge'], number_format_i18n(count($contacts)))); ?>
-                        </span>
+                        <div class="smark-email-contacts-actions-wrapper" style="display: flex; gap: 8px; align-items: center;">
+                            <span class="smark-email-contacts-count-badge">
+                                <?php echo esc_html(sprintf($strings['contacts_count_badge'], number_format_i18n(count($contacts)))); ?>
+                            </span>
+                            <button type="button" class="button button-primary" data-open-smark-contact-add>
+                                <?php echo esc_html($strings['save_button']); ?>
+                            </button>
+                            <button type="button" class="button button-primary smark-email-open-import" data-open-smark-import>
+                                <?php echo esc_html($strings['bulk_button']); ?>
+                            </button>
+                        </div>
                     </header>
 
                     <div id="smarkEmailContactsList">
                         <?php $this->render_contacts_list_content($strings, $contacts, $contact_lists, $contact_tags, $daily_sent_hashes); ?>
                     </div>
                 </section>
+
+                <?php $this->render_contact_add_modal($strings, $contact_lists, $contact_tags); ?>
+                <?php $this->render_contacts_import_modal($strings, $import_token, $import_preview); ?>
+                <?php $this->render_contact_list_modal($strings); ?>
+                <?php $this->render_contact_tag_modal($strings); ?>
             </div>
 
-            <?php $this->render_contact_list_modal($strings); ?>
-            <?php $this->render_contact_tag_modal($strings); ?>
             <?php $this->render_contact_edit_modal($strings, $contact_lists, $contact_tags); ?>
-            <?php $this->render_contacts_import_modal($strings, $import_token, $import_preview); ?>
 
             <?php $this->render_version_footer($current_lang); ?>
         </div>
         <?php
+    }
+
+    public function ajax_dashboard_email_contacts_view() {
+        check_ajax_referer('smark_email_contacts_page_ajax', 'nonce');
+
+        if (!current_user_can('smark_access')) {
+            wp_send_json_error(array(
+                'message' => esc_html__('You do not have sufficient permissions to access this page.', 'smark'),
+            ), 403);
+        }
+
+        ob_start();
+        $this->render_contacts_page();
+        $html = ob_get_clean();
+
+        wp_send_json_success(array(
+            'html' => $html,
+        ));
     }
 
     public function render_campaign_message_page() {
@@ -1529,72 +1465,156 @@ class SMarkEmailMarketing {
 
     private function render_contact_list_modal($strings) {
         ?>
-        <div class="smark-email-import-modal" id="smarkEmailContactListModal" aria-hidden="true">
-            <div class="smark-email-import-modal__overlay" data-close-smark-contact-list></div>
-            <div class="smark-email-import-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="smarkEmailContactListTitle">
-                <header class="smark-email-import-modal__header">
-                    <div>
-                        <h2 id="smarkEmailContactListTitle"><?php echo esc_html($strings['list_modal_title']); ?></h2>
-                        <p><?php echo esc_html($strings['list_modal_description']); ?></p>
-                    </div>
-                    <button type="button" class="smark-email-import-modal__close" data-close-smark-contact-list aria-label="<?php echo esc_attr($strings['bulk_close']); ?>">
-                        <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
-                    </button>
-                </header>
-
-                <div class="smark-email-import-modal__body">
-                    <form class="smark-email-account-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                        <?php wp_nonce_field('smark_email_contact_list_save', 'smark_email_contact_list_nonce'); ?>
-                        <input type="hidden" name="action" value="smark_email_contact_list_save">
-                        <div class="smark-email-form-grid">
-                            <label class="smark-email-form-field--wide">
-                                <span><?php echo esc_html($strings['list_name_label']); ?></span>
-                                <input type="text" name="list_name" required placeholder="<?php echo esc_attr($strings['list_name_placeholder']); ?>">
-                            </label>
-                        </div>
-                        <div class="smark-email-form-actions">
-                            <button type="submit" class="button button-primary"><?php echo esc_html($strings['create_list_button']); ?></button>
-                        </div>
-                    </form>
+        <section class="seo-step-card seo-step-card--full smark-email-accounts-card smark-email-contact-list-section" id="smarkEmailContactListModal" data-step="strategy" aria-hidden="true" hidden>
+            <header class="seo-step-header smark-email-card-header-actions smark-email-contact-workflow-header smark-email-contact-list-create-header">
+                <div>
+                    <h2 id="smarkEmailContactListTitle"><?php echo esc_html($strings['list_modal_title']); ?></h2>
+                    <p><?php echo esc_html($strings['list_modal_description']); ?></p>
                 </div>
+                <button type="button" class="smark-email-inline-panel__close" data-close-smark-contact-list aria-label="<?php echo esc_attr($strings['bulk_close']); ?>">
+                    <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+                </button>
+            </header>
+
+            <div class="smark-email-inline-panel__body">
+                <form class="smark-email-account-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                    <?php wp_nonce_field('smark_email_contact_list_save', 'smark_email_contact_list_nonce'); ?>
+                    <input type="hidden" name="action" value="smark_email_contact_list_save">
+                    <div class="smark-email-form-grid">
+                        <label class="smark-email-form-field--wide">
+                            <span><?php echo esc_html($strings['list_name_label']); ?></span>
+                            <input type="text" name="list_name" required placeholder="<?php echo esc_attr($strings['list_name_placeholder']); ?>">
+                        </label>
+                    </div>
+                    <div class="smark-email-form-actions">
+                        <button type="submit" class="button button-primary"><?php echo esc_html($strings['create_list_button']); ?></button>
+                    </div>
+                </form>
             </div>
-        </div>
+        </section>
         <?php
     }
 
     private function render_contact_tag_modal($strings) {
         ?>
-        <div class="smark-email-import-modal" id="smarkEmailContactTagModal" aria-hidden="true">
-            <div class="smark-email-import-modal__overlay" data-close-smark-contact-tag></div>
-            <div class="smark-email-import-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="smarkEmailContactTagTitle">
-                <header class="smark-email-import-modal__header">
-                    <div>
-                        <h2 id="smarkEmailContactTagTitle"><?php echo esc_html($strings['tag_modal_title']); ?></h2>
-                        <p><?php echo esc_html($strings['tag_modal_description']); ?></p>
-                    </div>
-                    <button type="button" class="smark-email-import-modal__close" data-close-smark-contact-tag aria-label="<?php echo esc_attr($strings['bulk_close']); ?>">
-                        <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
-                    </button>
-                </header>
-
-                <div class="smark-email-import-modal__body">
-                    <form class="smark-email-account-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                        <?php wp_nonce_field('smark_email_contact_tag_save', 'smark_email_contact_tag_nonce'); ?>
-                        <input type="hidden" name="action" value="smark_email_contact_tag_save">
-                        <div class="smark-email-form-grid">
-                            <label class="smark-email-form-field--wide">
-                                <span><?php echo esc_html($strings['tag_name_label']); ?></span>
-                                <input type="text" name="tag_name" required placeholder="<?php echo esc_attr($strings['tag_name_placeholder']); ?>">
-                            </label>
-                        </div>
-                        <p class="smark-email-help"><?php echo esc_html($strings['system_tags_help']); ?></p>
-                        <div class="smark-email-form-actions">
-                            <button type="submit" class="button button-primary"><?php echo esc_html($strings['create_tag_button']); ?></button>
-                        </div>
-                    </form>
+        <section class="seo-step-card seo-step-card--full smark-email-accounts-card smark-email-contact-tag-section" id="smarkEmailContactTagModal" data-step="strategy" aria-hidden="true" hidden>
+            <header class="seo-step-header smark-email-card-header-actions smark-email-contact-workflow-header smark-email-contact-tag-create-header">
+                <div>
+                    <h2 id="smarkEmailContactTagTitle"><?php echo esc_html($strings['tag_modal_title']); ?></h2>
+                    <p><?php echo esc_html($strings['tag_modal_description']); ?></p>
                 </div>
+                <button type="button" class="smark-email-inline-panel__close" data-close-smark-contact-tag aria-label="<?php echo esc_attr($strings['bulk_close']); ?>">
+                    <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+                </button>
+            </header>
+
+            <div class="smark-email-inline-panel__body">
+                <form class="smark-email-account-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                    <?php wp_nonce_field('smark_email_contact_tag_save', 'smark_email_contact_tag_nonce'); ?>
+                    <input type="hidden" name="action" value="smark_email_contact_tag_save">
+                    <div class="smark-email-form-grid">
+                        <label class="smark-email-form-field--wide">
+                            <span><?php echo esc_html($strings['tag_name_label']); ?></span>
+                            <input type="text" name="tag_name" required placeholder="<?php echo esc_attr($strings['tag_name_placeholder']); ?>">
+                        </label>
+                    </div>
+                    <p class="smark-email-help"><?php echo esc_html($strings['system_tags_help']); ?></p>
+                    <div class="smark-email-form-actions">
+                        <button type="submit" class="button button-primary"><?php echo esc_html($strings['create_tag_button']); ?></button>
+                    </div>
+                </form>
             </div>
-        </div>
+        </section>
+        <?php
+    }
+
+    private function render_contact_add_modal($strings, $contact_lists, $contact_tags) {
+        ?>
+        <section class="seo-step-card seo-step-card--full smark-email-accounts-card smark-email-contact-add-section" id="smarkEmailContactAddModal" data-step="strategy" aria-hidden="true" hidden>
+            <header class="seo-step-header smark-email-card-header-actions smark-email-contact-workflow-header smark-email-contact-add-header">
+                <div>
+                    <h2 id="smarkEmailContactAddTitle"><?php echo esc_html($strings['form_title']); ?></h2>
+                    <p><?php echo esc_html($strings['form_description']); ?></p>
+                </div>
+                <button type="button" class="smark-email-inline-panel__close" data-close-smark-contact-add aria-label="<?php echo esc_attr($strings['edit_modal_close']); ?>">
+                    <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+                </button>
+            </header>
+
+            <div class="smark-email-inline-panel__body">
+                <form class="smark-email-account-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                    <?php wp_nonce_field('smark_email_contact_save', 'smark_email_contact_nonce'); ?>
+                    <input type="hidden" name="action" value="smark_email_contact_save">
+
+                    <div class="smark-email-form-grid">
+                        <label>
+                            <span><?php echo esc_html($strings['field_first_name']); ?></span>
+                            <input type="text" name="first_name" placeholder="<?php echo esc_attr($strings['field_first_name_placeholder']); ?>">
+                        </label>
+
+                        <label>
+                            <span><?php echo esc_html($strings['field_last_name']); ?></span>
+                            <input type="text" name="last_name" placeholder="<?php echo esc_attr($strings['field_last_name_placeholder']); ?>">
+                        </label>
+
+                        <label>
+                            <span><?php echo esc_html($strings['field_email']); ?></span>
+                            <input type="email" name="email_address" required placeholder="name@example.com">
+                        </label>
+
+                        <label>
+                            <span><?php echo esc_html($strings['field_phone']); ?></span>
+                            <input type="tel" name="phone" placeholder="<?php echo esc_attr($strings['field_phone_placeholder']); ?>">
+                        </label>
+
+                        <label>
+                            <span><?php echo esc_html($strings['field_segment']); ?></span>
+                            <select name="contact_list_id">
+                                <option value=""><?php echo esc_html($strings['field_list_empty']); ?></option>
+                                <?php foreach ($contact_lists as $contact_list) : ?>
+                                    <option value="<?php echo esc_attr($contact_list['id']); ?>"><?php echo esc_html($contact_list['name']); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </label>
+
+                        <label>
+                            <span><?php echo esc_html($strings['field_source']); ?></span>
+                            <input type="text" name="source" placeholder="<?php echo esc_attr($strings['field_source_placeholder']); ?>">
+                        </label>
+
+                        <label>
+                            <span><?php echo esc_html($strings['field_status']); ?></span>
+                            <select name="status" required>
+                                <option value="subscribed"><?php echo esc_html($strings['status_subscribed']); ?></option>
+                                <option value="lead"><?php echo esc_html($strings['status_lead']); ?></option>
+                                <option value="unsubscribed"><?php echo esc_html($strings['status_unsubscribed']); ?></option>
+                            </select>
+                        </label>
+
+                        <label>
+                            <span><?php echo esc_html($strings['field_tags']); ?></span>
+                            <select name="contact_tag_ids[]" multiple size="4">
+                                <?php foreach ($contact_tags as $contact_tag) : ?>
+                                    <option value="<?php echo esc_attr($contact_tag['id']); ?>"><?php echo esc_html($contact_tag['name']); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <small class="smark-email-field-note"><?php echo esc_html($strings['field_tags_help']); ?></small>
+                        </label>
+
+                        <label class="smark-email-form-field--wide">
+                            <span><?php echo esc_html($strings['field_notes']); ?></span>
+                            <textarea name="notes" rows="3" placeholder="<?php echo esc_attr($strings['field_notes_placeholder']); ?>"></textarea>
+                        </label>
+                    </div>
+
+                    <p class="smark-email-help"><?php echo esc_html($strings['contact_help']); ?></p>
+
+                    <div class="smark-email-form-actions">
+                        <button type="submit" class="button button-primary"><?php echo esc_html($strings['save_button']); ?></button>
+                    </div>
+                </form>
+            </div>
+        </section>
         <?php
     }
 
@@ -1693,45 +1713,42 @@ class SMarkEmailMarketing {
 
     private function render_contacts_import_modal($strings, $import_token, $import_preview) {
         ?>
-        <div class="smark-email-import-modal" id="smarkEmailImportModal" aria-hidden="true">
-            <div class="smark-email-import-modal__overlay" data-close-smark-import></div>
-            <div class="smark-email-import-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="smarkEmailImportTitle">
-                <header class="smark-email-import-modal__header">
-                    <div>
-                        <h2 id="smarkEmailImportTitle"><?php echo esc_html($strings['bulk_title']); ?></h2>
-                        <p><?php echo esc_html($strings['bulk_description']); ?></p>
+        <section class="seo-step-card seo-step-card--full smark-email-accounts-card smark-email-contact-import-section" id="smarkEmailImportModal" data-step="strategy" aria-hidden="true" hidden>
+            <header class="seo-step-header smark-email-card-header-actions smark-email-contact-workflow-header smark-email-contact-import-header">
+                <div>
+                    <h2 id="smarkEmailImportTitle"><?php echo esc_html($strings['bulk_title']); ?></h2>
+                    <p><?php echo esc_html($strings['bulk_description']); ?></p>
+                </div>
+                <button type="button" class="smark-email-inline-panel__close" data-close-smark-import aria-label="<?php echo esc_attr($strings['bulk_close']); ?>">
+                    <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+                </button>
+            </header>
+
+            <div class="smark-email-inline-panel__body">
+                <form class="smark-email-account-form" id="smarkEmailImportPreviewForm" method="post" enctype="multipart/form-data" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                    <?php wp_nonce_field('smark_email_contacts_import_preview', 'smark_email_contacts_import_nonce'); ?>
+                    <input type="hidden" name="action" value="smark_email_contacts_import_preview">
+
+                    <div class="smark-email-import-upload">
+                        <label>
+                            <span><?php echo esc_html($strings['bulk_file_label']); ?></span>
+                            <input type="file" name="contacts_file" accept=".csv,.xlsx" required>
+                        </label>
+                        <button type="submit" class="button button-primary" data-default-text="<?php echo esc_attr($strings['bulk_preview_button']); ?>"><?php echo esc_html($strings['bulk_preview_button']); ?></button>
                     </div>
-                    <button type="button" class="smark-email-import-modal__close" data-close-smark-import aria-label="<?php echo esc_attr($strings['bulk_close']); ?>">
-                        <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
-                    </button>
-                </header>
 
-                <div class="smark-email-import-modal__body">
-                    <form class="smark-email-account-form" id="smarkEmailImportPreviewForm" method="post" enctype="multipart/form-data" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                        <?php wp_nonce_field('smark_email_contacts_import_preview', 'smark_email_contacts_import_nonce'); ?>
-                        <input type="hidden" name="action" value="smark_email_contacts_import_preview">
+                    <p class="smark-email-help"><?php echo esc_html($strings['bulk_help']); ?></p>
+                </form>
 
-                        <div class="smark-email-import-upload">
-                            <label>
-                                <span><?php echo esc_html($strings['bulk_file_label']); ?></span>
-                                <input type="file" name="contacts_file" accept=".csv,.xlsx" required>
-                            </label>
-                            <button type="submit" class="button button-primary" data-default-text="<?php echo esc_attr($strings['bulk_preview_button']); ?>"><?php echo esc_html($strings['bulk_preview_button']); ?></button>
-                        </div>
-
-                        <p class="smark-email-help"><?php echo esc_html($strings['bulk_help']); ?></p>
-                    </form>
-
-                    <div id="smarkEmailImportMappingContainer">
-                        <?php
-                        if (!empty($import_preview['rows']) && !empty($import_preview['headers'])) {
-                            $this->render_contacts_import_mapping($strings, $import_token, $import_preview);
-                        }
-                        ?>
-                    </div>
+                <div id="smarkEmailImportMappingContainer">
+                    <?php
+                    if (!empty($import_preview['rows']) && !empty($import_preview['headers'])) {
+                        $this->render_contacts_import_mapping($strings, $import_token, $import_preview);
+                    }
+                    ?>
                 </div>
             </div>
-        </div>
+        </section>
         <?php
     }
 
@@ -6004,39 +6021,117 @@ class SMarkEmailMarketing {
     }
 
     function openImportModal() {
-        $('#smarkEmailImportModal').addClass('is-open').attr('aria-hidden', 'false');
-        $('body').addClass('smark-email-modal-open');
+        var $panel = $('#smarkEmailImportModal');
+        var $grid = $panel.closest('.seo-grid');
+
+        $grid.find('[data-smark-contact-section], #smarkEmailContactAddModal, #smarkEmailContactListModal, #smarkEmailContactTagModal')
+            .addClass('smark-email-contact-section-hidden')
+            .prop('hidden', true)
+            .attr('aria-hidden', 'true');
+
+        $panel
+            .removeClass('smark-email-contact-section-hidden')
+            .prop('hidden', false)
+            .attr('aria-hidden', 'false');
+
+        resetContactWorkflowScroll();
+    }
+
+    function resetContactWorkflowScroll() {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
     }
 
     function closeImportModal() {
-        $('#smarkEmailImportModal').removeClass('is-open').attr('aria-hidden', 'true');
-        if (!$('#smarkEmailAccountEditModal').hasClass('is-open') && !$('#smarkEmailContactListModal').hasClass('is-open') && !$('#smarkEmailContactTagModal').hasClass('is-open') && !$('#smarkEmailContactEditModal').hasClass('is-open') && !$('#smarkEmailAudiencePickerModal').hasClass('is-open')) {
-            $('body').removeClass('smark-email-modal-open');
+        var $panel = $('#smarkEmailImportModal');
+        var $grid = $panel.closest('.seo-grid');
+
+        if (!$panel.length || $panel.prop('hidden')) {
+            return;
         }
+
+        $panel
+            .addClass('smark-email-contact-section-hidden')
+            .prop('hidden', true)
+            .attr('aria-hidden', 'true');
+
+        $grid.find('[data-smark-contact-section]')
+            .removeClass('smark-email-contact-section-hidden')
+            .prop('hidden', false)
+            .attr('aria-hidden', 'false');
     }
 
     function openContactListModal() {
-        $('#smarkEmailContactListModal').addClass('is-open').attr('aria-hidden', 'false');
-        $('body').addClass('smark-email-modal-open');
+        var $panel = $('#smarkEmailContactListModal');
+        var $grid = $panel.closest('.seo-grid');
+
+        $grid.find('[data-smark-contact-section], #smarkEmailContactAddModal, #smarkEmailImportModal, #smarkEmailContactTagModal')
+            .addClass('smark-email-contact-section-hidden')
+            .prop('hidden', true)
+            .attr('aria-hidden', 'true');
+
+        $panel
+            .removeClass('smark-email-contact-section-hidden')
+            .prop('hidden', false)
+            .attr('aria-hidden', 'false');
+
+        resetContactWorkflowScroll();
     }
 
     function closeContactListModal() {
-        $('#smarkEmailContactListModal').removeClass('is-open').attr('aria-hidden', 'true');
-        if (!$('#smarkEmailImportModal').hasClass('is-open') && !$('#smarkEmailAccountEditModal').hasClass('is-open') && !$('#smarkEmailContactTagModal').hasClass('is-open') && !$('#smarkEmailContactEditModal').hasClass('is-open') && !$('#smarkEmailAudiencePickerModal').hasClass('is-open')) {
-            $('body').removeClass('smark-email-modal-open');
+        var $panel = $('#smarkEmailContactListModal');
+        var $grid = $panel.closest('.seo-grid');
+
+        if (!$panel.length || $panel.prop('hidden')) {
+            return;
         }
+
+        $panel
+            .addClass('smark-email-contact-section-hidden')
+            .prop('hidden', true)
+            .attr('aria-hidden', 'true');
+
+        $grid.find('[data-smark-contact-section]')
+            .removeClass('smark-email-contact-section-hidden')
+            .prop('hidden', false)
+            .attr('aria-hidden', 'false');
     }
 
     function openContactTagModal() {
-        $('#smarkEmailContactTagModal').addClass('is-open').attr('aria-hidden', 'false');
-        $('body').addClass('smark-email-modal-open');
+        var $panel = $('#smarkEmailContactTagModal');
+        var $grid = $panel.closest('.seo-grid');
+
+        $grid.find('[data-smark-contact-section], #smarkEmailContactAddModal, #smarkEmailImportModal, #smarkEmailContactListModal')
+            .addClass('smark-email-contact-section-hidden')
+            .prop('hidden', true)
+            .attr('aria-hidden', 'true');
+
+        $panel
+            .removeClass('smark-email-contact-section-hidden')
+            .prop('hidden', false)
+            .attr('aria-hidden', 'false');
+
+        resetContactWorkflowScroll();
     }
 
     function closeContactTagModal() {
-        $('#smarkEmailContactTagModal').removeClass('is-open').attr('aria-hidden', 'true');
-        if (!$('#smarkEmailImportModal').hasClass('is-open') && !$('#smarkEmailAccountEditModal').hasClass('is-open') && !$('#smarkEmailContactListModal').hasClass('is-open') && !$('#smarkEmailContactEditModal').hasClass('is-open') && !$('#smarkEmailAudiencePickerModal').hasClass('is-open')) {
-            $('body').removeClass('smark-email-modal-open');
+        var $panel = $('#smarkEmailContactTagModal');
+        var $grid = $panel.closest('.seo-grid');
+
+        if (!$panel.length || $panel.prop('hidden')) {
+            return;
         }
+
+        $panel
+            .addClass('smark-email-contact-section-hidden')
+            .prop('hidden', true)
+            .attr('aria-hidden', 'true');
+
+        $grid.find('[data-smark-contact-section]')
+            .removeClass('smark-email-contact-section-hidden')
+            .prop('hidden', false)
+            .attr('aria-hidden', 'false');
     }
 
     function getContactEditData(contactId) {
@@ -6637,6 +6732,87 @@ class SMarkEmailMarketing {
 
         $(document).on('change', '#smarkEmailAudiencePickerModal [data-smark-audience-option]', function () {
             updateAudienceSelectedCount();
+        });
+
+        function showContactAddSection() {
+            var $panel = $('#smarkEmailContactAddModal');
+            var $grid = $panel.closest('.seo-grid');
+
+            $grid.find('[data-smark-contact-section], #smarkEmailImportModal, #smarkEmailContactListModal, #smarkEmailContactTagModal')
+                .addClass('smark-email-contact-section-hidden')
+                .prop('hidden', true)
+                .attr('aria-hidden', 'true');
+
+            $panel
+                .removeClass('smark-email-contact-section-hidden')
+                .prop('hidden', false)
+                .attr('aria-hidden', 'false');
+
+            resetContactWorkflowScroll();
+        }
+
+        function hideContactAddSection() {
+            var $panel = $('#smarkEmailContactAddModal');
+            var $grid = $panel.closest('.seo-grid');
+
+            $panel
+                .addClass('smark-email-contact-section-hidden')
+                .prop('hidden', true)
+                .attr('aria-hidden', 'true');
+
+            $grid.find('[data-smark-contact-section]')
+                .removeClass('smark-email-contact-section-hidden')
+                .prop('hidden', false)
+                .attr('aria-hidden', 'false');
+        }
+
+        $(document).on('click', '[data-open-smark-contact-add]', function (event) {
+            event.preventDefault();
+            showContactAddSection();
+        });
+
+        $(document).on('click', '[data-close-smark-contact-add]', function (event) {
+            event.preventDefault();
+            hideContactAddSection();
+        });
+
+        $(document).on('submit', '#smarkEmailContactAddModal form', function (event) {
+            event.preventDefault();
+            var $form = $(this);
+            var $button = $form.find('button[type="submit"]');
+            var originalText = $button.text();
+            var formData = new FormData(this);
+
+            formData.set('action', 'smark_email_contact_save_modal');
+            formData.set('search_query', getContactsSearchQuery());
+            $button.prop('disabled', true).text((smarkSeoOptimization.strings || {}).saving || 'Saving...');
+
+            $.ajax({
+                url: smarkSeoOptimization.ajaxUrl,
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false
+            }).done(function (response) {
+                if (response && response.success && response.data) {
+                    if (response.data.html) {
+                        $('#smarkEmailContactsList').html(response.data.html);
+                    }
+                    if (response.data.badge) {
+                        $('.smark-email-contacts-count-badge').text(response.data.badge);
+                    }
+                    hideContactAddSection();
+                    $form[0].reset();
+                    showNotification(response.data.message || '', 'success');
+                } else {
+                    showNotification((response && response.data && response.data.message) || (smarkSeoOptimization.strings || {}).error || 'Error', 'error');
+                }
+            }).fail(function (xhr) {
+                var message = xhr && xhr.responseJSON && xhr.responseJSON.data ? xhr.responseJSON.data.message : '';
+                showNotification(message || (smarkSeoOptimization.strings || {}).error || 'Error', 'error');
+            }).always(function () {
+                $button.prop('disabled', false).text(originalText);
+            });
         });
 
         $(document).on('click', '[data-open-smark-contact-list]', function (event) {
@@ -7398,7 +7574,7 @@ JS;
                 <a href="<?php echo esc_url(admin_url('admin.php?page=smark-dashboard')); ?>"><?php echo esc_html($strings['breadcrumb_dashboard']); ?></a>
                 <span class="separator"><?php echo $rtl_class ? '‹' : '›'; ?></span>
                 <?php if ($include_parent_breadcrumb) : ?>
-                    <a href="<?php echo esc_url(admin_url('admin.php?page=smark-email-marketing')); ?>"><?php echo esc_html($strings['breadcrumb_parent']); ?></a>
+                    <a href="<?php echo esc_url(admin_url('admin.php?page=smark-dashboard')); ?>"><?php echo esc_html($strings['breadcrumb_parent']); ?></a>
                     <span class="separator"><?php echo $rtl_class ? '‹' : '›'; ?></span>
                 <?php endif; ?>
                 <span class="current"><?php echo esc_html($strings['breadcrumb_current']); ?></span>
@@ -7702,7 +7878,7 @@ JS;
                 'assignment_contacts_help'      => 'برای انتخاب چند مخاطب از Ctrl/Cmd استفاده کنید.',
                 'save_assignments_button'       => 'ذخیره انتخاب‌ها',
                 'assigned_contacts_count'       => '%s مخاطب',
-                'list_title'                    => 'مخاطبان ثبت‌شده',
+                'list_title'                    => 'مخاطبان',
                 'list_description'              => 'این لیست بعدا برای انتخاب مخاطبان هدف کمپین استفاده می‌شود.',
                 'contacts_count_badge'          => '%s مخاطب',
                 'contacts_search_aria'          => 'جست‌وجوی مخاطبین',
@@ -7820,7 +7996,7 @@ JS;
             'assignment_contacts_help'      => 'Use Ctrl/Cmd to select multiple contacts.',
             'save_assignments_button'       => 'Save Selection',
             'assigned_contacts_count'       => '%s contacts',
-            'list_title'                    => 'Saved Contacts',
+            'list_title'                    => 'Contacts',
             'list_description'              => 'Use this list later to select campaign audiences.',
             'contacts_count_badge'          => '%s contacts total',
             'contacts_search_aria'          => 'Search contacts',
@@ -8360,19 +8536,9 @@ JS;
                     'url' => admin_url('admin.php?page=smark-email-campaign-message'),
                 ),
                 array(
-                    'icon' => 'dashicons-calendar-alt',
-                    'title' => 'تقویم ارسال',
-                    'description' => 'زمان ارسال کمپین‌ها و پیگیری‌های بعدی را مشخص کنید.',
-                ),
-                array(
-                    'icon' => 'dashicons-randomize',
-                    'title' => 'اتوماسیون و دنباله‌ها',
-                    'description' => 'مسیرهای خوشامدگویی، پرورش لید و فعال‌سازی مجدد را طراحی کنید.',
-                ),
-                array(
                     'icon' => 'dashicons-admin-users',
                     'title' => 'حساب‌های ایمیل',
-                    'description' => 'حساب‌های جیمیل ارسال‌کننده و سقف ارسال روزانه هر حساب را مدیریت کنید.',
+                    'description' => 'مدیریت حساب‌های فرستنده و سقف ارسال روزانه آن‌ها.',
                     'url' => admin_url('admin.php?page=smark-email-accounts'),
                 ),
                 array(
@@ -8398,19 +8564,9 @@ JS;
                 'url' => admin_url('admin.php?page=smark-email-campaign-message'),
             ),
             array(
-                'icon' => 'dashicons-calendar-alt',
-                'title' => 'Send Calendar',
-                'description' => 'Schedule campaign sends and follow-up touchpoints.',
-            ),
-            array(
-                'icon' => 'dashicons-randomize',
-                'title' => 'Automation Flows',
-                'description' => 'Map welcome, nurture, and reactivation sequences.',
-            ),
-            array(
                 'icon' => 'dashicons-admin-users',
                 'title' => 'Email Accounts',
-                'description' => 'Manage Gmail sender accounts and the daily send limit for each account.',
+                'description' => 'Manage sender accounts and daily send limits.',
                 'url' => admin_url('admin.php?page=smark-email-accounts'),
             ),
             array(
@@ -8672,11 +8828,15 @@ JS;
                 min-height: 42px;
                 display: inline-flex;
                 align-items: center;
+                justify-content: center;
                 padding: 0 18px;
                 border-radius: 12px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                border: none;
-                font-weight: 600;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+                border: none !important;
+                font-weight: 700;
+                color: #ffffff !important;
+                text-decoration: none !important;
+                box-shadow: 0 12px 24px rgba(99, 102, 241, 0.2) !important;
             }
 
             .smark-email-card-header-actions {
@@ -8686,16 +8846,21 @@ JS;
                 gap: 16px;
             }
 
-            .smark-email-card-header-actions .button-primary {
+            .smark-email-card-header-actions .button-primary,
+            .smark-email-saved-contacts-header .button-primary {
                 flex: 0 0 auto;
                 min-height: 42px;
                 display: inline-flex;
                 align-items: center;
+                justify-content: center;
                 padding: 0 18px;
                 border-radius: 12px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                border: none;
-                font-weight: 600;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+                border: none !important;
+                font-weight: 700;
+                color: #ffffff !important;
+                text-decoration: none !important;
+                box-shadow: 0 12px 24px rgba(99, 102, 241, 0.2) !important;
             }
 
             .smark-seo-optimization-page[data-lang="en"] .smark-email-contacts-header-actions > div {
@@ -8714,11 +8879,15 @@ JS;
                 flex-wrap: nowrap;
             }
 
-            .smark-seo-optimization-page[data-lang="en"] .smark-email-saved-contacts-header > div:not(.smark-email-contacts-search-bar) {
+            .smark-seo-optimization-page[data-lang="en"] .smark-email-saved-contacts-header > div:first-child {
                 order: 1;
                 direction: ltr;
                 text-align: left;
-                margin-right: 0;
+                margin-right: auto;
+            }
+
+            .smark-seo-optimization-page[data-lang="en"] .smark-email-saved-contacts-header .smark-email-contacts-actions-wrapper {
+                order: 3;
             }
 
             .smark-email-contacts-count-badge {
@@ -8736,11 +8905,6 @@ JS;
                 white-space: nowrap;
             }
 
-            .smark-seo-optimization-page[data-lang="en"] .smark-email-saved-contacts-header .smark-email-contacts-count-badge {
-                order: 3;
-                margin-left: 0;
-            }
-
             .smark-email-contacts-search-bar {
                 flex: 0 1 320px;
                 max-width: 320px;
@@ -8749,7 +8913,7 @@ JS;
 
             .smark-seo-optimization-page[data-lang="en"] .smark-email-saved-contacts-header .smark-email-contacts-search-bar {
                 order: 2;
-                margin-left: auto;
+                margin-left: 0;
                 direction: ltr;
             }
 
@@ -8768,6 +8932,86 @@ JS;
                 border-color: #6366f1;
                 box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.16);
                 outline: none;
+            }
+
+            .smark-email-inline-panel {
+                margin: 0 0 18px;
+                border: 1px solid rgba(148, 163, 184, 0.2);
+                border-radius: 16px;
+                background: rgba(248, 250, 252, 0.82);
+                overflow: hidden;
+            }
+
+            .smark-email-inline-panel[hidden] {
+                display: none !important;
+            }
+
+            .smark-email-contact-section-hidden {
+                display: none !important;
+            }
+
+            #smarkEmailContactAddModal[hidden],
+            #smarkEmailImportModal[hidden],
+            #smarkEmailContactListModal[hidden],
+            #smarkEmailContactTagModal[hidden] {
+                display: none !important;
+            }
+
+            .smark-email-inline-panel__header {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 18px;
+                padding: 18px 20px;
+                border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+                background: rgba(255, 255, 255, 0.78);
+            }
+
+            .smark-email-inline-panel__header h2 {
+                margin: 0 0 6px;
+                color: #111827;
+                font-size: 1.16rem;
+                font-weight: 900;
+            }
+
+            .smark-email-inline-panel__header p {
+                margin: 0;
+                color: #64748b;
+                line-height: 1.7;
+            }
+
+            .smark-email-inline-panel__close {
+                width: 38px;
+                height: 38px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                flex: 0 0 auto;
+                border: 1px solid rgba(148, 163, 184, 0.28);
+                border-radius: 12px;
+                background: #ffffff;
+                color: #475569;
+                cursor: pointer;
+            }
+
+            .smark-email-inline-panel__body {
+                padding: 20px;
+            }
+
+            .smark-seo-optimization-page[data-lang="en"] .smark-email-contact-workflow-header {
+                direction: ltr;
+                flex-direction: row;
+            }
+
+            .smark-seo-optimization-page[data-lang="en"] .smark-email-contact-workflow-header > div {
+                order: 1;
+                text-align: left;
+                margin-right: auto;
+            }
+
+            .smark-seo-optimization-page[data-lang="en"] .smark-email-contact-workflow-header .smark-email-inline-panel__close {
+                order: 2;
+                margin-left: auto;
             }
 
             .smark-seo-optimization-page[data-lang="en"] .smark-email-contacts-header-actions {
@@ -9386,6 +9630,12 @@ JS;
 
             .smark-email-form-actions .button-primary:hover,
             .smark-email-form-actions .button-primary:focus,
+            .smark-email-page-actions .button-primary:hover,
+            .smark-email-page-actions .button-primary:focus,
+            .smark-email-card-header-actions .button-primary:hover,
+            .smark-email-card-header-actions .button-primary:focus,
+            .smark-email-saved-contacts-header .button-primary:hover,
+            .smark-email-saved-contacts-header .button-primary:focus,
             .smark-email-secondary-action:hover,
             .smark-email-secondary-action:focus,
             .smark-email-test-send-action:hover,
