@@ -1834,6 +1834,7 @@ class SMarkPlugin {
         add_action('wp_ajax_smark_daily_guide_smart_action', array($this, 'ajax_daily_guide_smart_action'));
         add_action('wp_ajax_smark_save_signalhire_contact_search_settings', array($this, 'ajax_save_signalhire_contact_search_settings'));
         add_action('wp_ajax_smark_dashboard_offer_products_save', array($this, 'ajax_dashboard_offer_products_save'));
+        add_action('wp_ajax_smark_dashboard_offer_sections_get', array($this, 'ajax_dashboard_offer_sections_get'));
         add_action('init', array($this, 'check_database_schema'));
         add_action('rest_api_init', array($this, 'register_rest_routes'));
         add_filter('map_meta_cap', array($this, 'map_meta_cap'), 10, 4);
@@ -3362,6 +3363,13 @@ class SMarkPlugin {
                 'offerItemName' => ($lang === 'fa') ? 'عنوان' : __('Title', 'smark'),
                 'offerProductPrice' => ($lang === 'fa') ? 'قیمت' : __('Price', 'smark'),
                 'offerProductUrl' => ($lang === 'fa') ? 'لینک محصول' : __('Product URL', 'smark'),
+                'offerAudienceDetails' => ($lang === 'fa') ? 'توضیحات' : __('Description', 'smark'),
+                'offerStrategyDetails' => ($lang === 'fa') ? 'توضیحات' : __('Description', 'smark'),
+                'offerOfferDetails' => ($lang === 'fa') ? 'توضیحات' : __('Description', 'smark'),
+                'offerLinkedProduct' => ($lang === 'fa') ? 'محصول' : __('Product', 'smark'),
+                'offerLinkedStrategy' => ($lang === 'fa') ? 'استراتژی' : __('Strategy', 'smark'),
+                'offerLinkedAudienceType' => ($lang === 'fa') ? 'نوع مخاطب' : __('Audience Type', 'smark'),
+                'offerSelectPlaceholder' => ($lang === 'fa') ? 'انتخاب کنید' : __('Select', 'smark'),
                 'offerProductNotes' => ($lang === 'fa') ? 'توضیحات' : __('Notes', 'smark'),
                 'offerProductAdd' => ($lang === 'fa') ? 'افزودن محصول' : __('Add product', 'smark'),
                 'offerItemAdd' => ($lang === 'fa') ? 'افزودن آیتم' : __('Add item', 'smark'),
@@ -4203,6 +4211,12 @@ class SMarkPlugin {
                 'name' => $name,
                 'price' => isset($item['price']) ? sanitize_text_field((string) $item['price']) : '',
                 'url' => isset($item['url']) ? esc_url_raw((string) $item['url']) : '',
+                'audience_details' => isset($item['audience_details']) ? sanitize_textarea_field((string) $item['audience_details']) : '',
+                'strategy_details' => isset($item['strategy_details']) ? sanitize_textarea_field((string) $item['strategy_details']) : '',
+                'offer_details' => isset($item['offer_details']) ? sanitize_textarea_field((string) $item['offer_details']) : '',
+                'product_id' => isset($item['product_id']) ? sanitize_key((string) $item['product_id']) : '',
+                'strategy_id' => isset($item['strategy_id']) ? sanitize_key((string) $item['strategy_id']) : '',
+                'audience_type_id' => isset($item['audience_type_id']) ? sanitize_key((string) $item['audience_type_id']) : '',
                 'notes' => isset($item['notes']) ? sanitize_textarea_field((string) $item['notes']) : '',
             );
         }
@@ -4240,6 +4254,21 @@ class SMarkPlugin {
 
         wp_send_json_success(array(
             'products' => $sections['product'],
+            'sections' => $sections,
+        ));
+    }
+
+    public function ajax_dashboard_offer_sections_get() {
+        check_ajax_referer('smark_dashboard_offer_products', 'nonce');
+
+        if (!current_user_can(self::CAP_ACCESS)) {
+            wp_send_json_error(array('message' => __('Permission denied', 'smark')), 403);
+        }
+
+        $sections = $this->get_dashboard_offer_sections();
+
+        wp_send_json_success(array(
+            'products' => isset($sections['product']) ? $sections['product'] : array(),
             'sections' => $sections,
         ));
     }

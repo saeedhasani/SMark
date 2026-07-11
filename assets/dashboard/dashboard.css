@@ -13,9 +13,23 @@ body:has(.smark-dashboard-app-page) #wpbody-content {
 
 body.toplevel_page_smark-dashboard #wpbody-content > .notice,
 body.toplevel_page_smark-dashboard #wpbody-content > .updated,
-body.toplevel_page_smark-dashboard #wpbody-content > .error {
-  margin-left: 20px;
-  margin-right: 20px;
+body.toplevel_page_smark-dashboard #wpbody-content > .error,
+body.toplevel_page_smark-dashboard #wpbody-content > .update-nag,
+body.toplevel_page_smark-dashboard #wpbody-content > #screen-meta,
+body.toplevel_page_smark-dashboard #wpbody-content > .litespeed_icon,
+body.smark_page_smark-dashboard-page #wpbody-content > .notice,
+body.smark_page_smark-dashboard-page #wpbody-content > .updated,
+body.smark_page_smark-dashboard-page #wpbody-content > .error,
+body.smark_page_smark-dashboard-page #wpbody-content > .update-nag,
+body.smark_page_smark-dashboard-page #wpbody-content > #screen-meta,
+body.smark_page_smark-dashboard-page #wpbody-content > .litespeed_icon,
+body:has(.smark-dashboard-app-page) #wpbody-content > .notice,
+body:has(.smark-dashboard-app-page) #wpbody-content > .updated,
+body:has(.smark-dashboard-app-page) #wpbody-content > .error,
+body:has(.smark-dashboard-app-page) #wpbody-content > .update-nag,
+body:has(.smark-dashboard-app-page) #wpbody-content > #screen-meta,
+body:has(.smark-dashboard-app-page) #wpbody-content > .litespeed_icon {
+  display: none !important;
 }
 
 .smark-dashboard-app-page {
@@ -564,6 +578,7 @@ body.toplevel_page_smark-dashboard #wpbody-content > .error {
   line-height: 1.4;
 }
 .smark-dashboard-offer__form input,
+.smark-dashboard-offer__form select,
 .smark-dashboard-offer__form textarea {
   width: 100%;
   min-height: 40px;
@@ -576,6 +591,18 @@ body.toplevel_page_smark-dashboard #wpbody-content > .error {
   font-family: inherit;
   background: rgba(255, 255, 255, 0.78);
   box-shadow: none;
+}
+.smark-dashboard-offer__form select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 36px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--purple-900) 50%), linear-gradient(135deg, var(--purple-900) 50%, transparent 50%);
+  background-position: calc(100% - 20px) 50%, calc(100% - 14px) 50%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+.smark-dashboard-offer__select-field {
+  grid-column: auto;
 }
 .smark-dashboard-offer__form textarea {
   min-height: 82px;
@@ -885,6 +912,11 @@ body.toplevel_page_smark-dashboard #wpbody-content > .error {
 .smark-dashboard-app-canvas--rtl .smark-dashboard-offer__actions,
 .smark-dashboard-app-canvas--rtl .smark-dashboard-offer__row-actions {
   flex-direction: row-reverse;
+}
+.smark-dashboard-app-canvas--rtl .smark-dashboard-offer__form select {
+  padding-right: 12px;
+  padding-left: 36px;
+  background-position: 20px 50%, 14px 50%;
 }
 .smark-dashboard-app-canvas--rtl .smark-dashboard-signalhire-panel__header,
 .smark-dashboard-app-canvas--rtl .smark-dashboard-signalhire-panel__section h3,

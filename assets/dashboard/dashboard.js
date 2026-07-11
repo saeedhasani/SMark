@@ -230,6 +230,33 @@
         const products = props.itemsBySection && Array.isArray(props.itemsBySection[currentSection.id]) ? props.itemsBySection[currentSection.id] : [];
         const form = props.form || {};
         const isProduct = currentSection.id === 'product';
+        const isAudienceType = currentSection.id === 'audience_type';
+        const isStrategy = currentSection.id === 'strategy';
+        const isOffer = currentSection.id === 'offer';
+        const hasDescriptionOnly = !isProduct;
+        const productOptions = props.itemsBySection && Array.isArray(props.itemsBySection.product) ? props.itemsBySection.product : [];
+        const strategyOptions = props.itemsBySection && Array.isArray(props.itemsBySection.strategy) ? props.itemsBySection.strategy : [];
+        const audienceTypeOptions = props.itemsBySection && Array.isArray(props.itemsBySection.audience_type) ? props.itemsBySection.audience_type : [];
+        const getLinkedName = function(options, id) {
+            const item = options.filter(function(option) {
+                return String(option.id || option.name || '') === String(id || '');
+            })[0];
+            return item ? (item.name || '') : '';
+        };
+        const renderOfferSelect = function(fieldKey, label, options) {
+            return h('label', { className: 'smark-dashboard-offer__select-field' },
+                h('span', null, label),
+                h('select', {
+                    value: form[fieldKey] || '',
+                    onChange: function(event) { props.onFormChange(fieldKey, event.target.value); },
+                },
+                    h('option', { value: '' }, text('offerSelectPlaceholder', 'Select')),
+                    options.map(function(option) {
+                        return h('option', { key: option.id || option.name, value: option.id || option.name || '' }, option.name || '');
+                    })
+                )
+            );
+        };
 
         return h('section', { className: 'smark-dashboard-offer smark-dashboard-view', 'aria-label': text('offerManagementTitle', 'Offering Management') },
             h('header', { className: 'smark-dashboard-offer__header' },
@@ -267,7 +294,7 @@
                     }
                 },
             },
-                h('label', null,
+                h('label', { className: isOffer ? 'smark-dashboard-offer__field-wide' : null },
                     h('span', null, isProduct ? text('offerProductName', 'Product name') : text('offerItemName', 'Title')),
                     h('input', {
                         type: 'text',
@@ -275,7 +302,17 @@
                         onChange: function(event) { props.onFormChange('name', event.target.value); },
                     })
                 ),
-                h('label', null,
+                isOffer ? renderOfferSelect('product_id', text('offerLinkedProduct', 'Product'), productOptions) : null,
+                isOffer ? renderOfferSelect('strategy_id', text('offerLinkedStrategy', 'Strategy'), strategyOptions) : null,
+                isOffer ? renderOfferSelect('audience_type_id', text('offerLinkedAudienceType', 'Audience Type'), audienceTypeOptions) : null,
+                hasDescriptionOnly ? h('label', { className: 'smark-dashboard-offer__field-wide' },
+                    h('span', null, isOffer ? text('offerOfferDetails', 'Description') : isAudienceType ? text('offerAudienceDetails', 'Description') : text('offerStrategyDetails', 'Description')),
+                    h('textarea', {
+                        rows: 3,
+                        value: isOffer ? (form.offer_details || '') : isAudienceType ? (form.audience_details || '') : (form.strategy_details || ''),
+                        onChange: function(event) { props.onFormChange(isOffer ? 'offer_details' : isAudienceType ? 'audience_details' : 'strategy_details', event.target.value); },
+                    })
+                ) : h('label', null,
                     h('span', null, text('offerProductPrice', 'Price')),
                     h('input', {
                         type: 'text',
@@ -283,7 +320,7 @@
                         onChange: function(event) { props.onFormChange('price', event.target.value); },
                     })
                 ),
-                h('label', null,
+                hasDescriptionOnly ? null : h('label', null,
                     h('span', null, text('offerProductUrl', 'Product URL')),
                     h('input', {
                         type: 'url',
@@ -291,7 +328,7 @@
                         onChange: function(event) { props.onFormChange('url', event.target.value); },
                     })
                 ),
-                h('label', { className: 'smark-dashboard-offer__field-wide' },
+                hasDescriptionOnly ? null : h('label', { className: 'smark-dashboard-offer__field-wide' },
                     h('span', null, text('offerProductNotes', 'Notes')),
                     h('textarea', {
                         rows: 3,
@@ -318,9 +355,12 @@
                         h('thead', null,
                             h('tr', null,
                                 h('th', null, isProduct ? text('offerProductName', 'Product name') : text('offerItemName', 'Title')),
-                                h('th', null, text('offerProductPrice', 'Price')),
-                                h('th', null, text('offerProductUrl', 'Product URL')),
-                                h('th', null, text('offerProductNotes', 'Notes')),
+                                isOffer ? h('th', null, text('offerLinkedProduct', 'Product')) : null,
+                                isOffer ? h('th', null, text('offerLinkedStrategy', 'Strategy')) : null,
+                                isOffer ? h('th', null, text('offerLinkedAudienceType', 'Audience Type')) : null,
+                                hasDescriptionOnly ? h('th', null, isOffer ? text('offerOfferDetails', 'Description') : isAudienceType ? text('offerAudienceDetails', 'Description') : text('offerStrategyDetails', 'Description')) : h('th', null, text('offerProductPrice', 'Price')),
+                                hasDescriptionOnly ? null : h('th', null, text('offerProductUrl', 'Product URL')),
+                                hasDescriptionOnly ? null : h('th', null, text('offerProductNotes', 'Notes')),
                                 h('th', null, '')
                             )
                         ),
@@ -328,9 +368,12 @@
                             products.map(function(product) {
                                 return h('tr', { key: product.id || product.name },
                                     h('td', null, product.name || ''),
-                                    h('td', null, product.price || ''),
-                                    h('td', null, product.url ? h('a', { href: product.url, target: '_blank', rel: 'noreferrer' }, product.url) : ''),
-                                    h('td', null, product.notes || ''),
+                                    isOffer ? h('td', null, getLinkedName(productOptions, product.product_id)) : null,
+                                    isOffer ? h('td', null, getLinkedName(strategyOptions, product.strategy_id)) : null,
+                                    isOffer ? h('td', null, getLinkedName(audienceTypeOptions, product.audience_type_id)) : null,
+                                    hasDescriptionOnly ? h('td', null, isOffer ? (product.offer_details || '') : isAudienceType ? (product.audience_details || '') : (product.strategy_details || '')) : h('td', null, product.price || ''),
+                                    hasDescriptionOnly ? null : h('td', null, product.url ? h('a', { href: product.url, target: '_blank', rel: 'noreferrer' }, product.url) : ''),
+                                    hasDescriptionOnly ? null : h('td', null, product.notes || ''),
                                     h('td', null,
                                         h('div', { className: 'smark-dashboard-offer__row-actions' },
                                             h('button', {
@@ -459,7 +502,7 @@
         const [language, setLanguage] = useState(config.lang === 'en' ? 'en' : 'fa');
         const [moduleVisibility, setModuleVisibility] = useState(config.moduleVisibility || {});
         const [markBalance, setMarkBalance] = useState(config.markBalance || {});
-        const emptyOfferProductForm = { name: '', price: '', url: '', notes: '' };
+        const emptyOfferProductForm = { name: '', price: '', url: '', audience_details: '', strategy_details: '', offer_details: '', product_id: '', strategy_id: '', audience_type_id: '', notes: '' };
         const offerSections = [
             { id: 'product', title: text('offerProductsTitle', 'Products'), description: text('offerProductsDescription', 'Define the products available for your campaigns.') },
             { id: 'audience_type', title: text('offerAudienceTypeTitle', 'Audience Types'), description: text('offerAudienceTypeDescription', 'Define audience groups by needs and motivation.') },
@@ -616,11 +659,35 @@
             setOfferProductNotice('');
         };
 
+        const refreshOfferSections = function() {
+            const body = new window.URLSearchParams();
+            body.append('action', 'smark_dashboard_offer_sections_get');
+            body.append('nonce', config.offerProductsNonce || '');
+
+            window.fetch(config.ajaxUrl || window.ajaxurl || '', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                },
+                body: body.toString(),
+            }).then(function(response) {
+                return response.json();
+            }).then(function(response) {
+                if (response && response.success && response.data && response.data.sections && typeof response.data.sections === 'object') {
+                    setOfferItemsBySection(response.data.sections);
+                }
+            }).catch(function() {});
+        };
+
         const changeOfferSection = function(sectionId) {
             setOfferActiveSection(sectionId);
             setOfferProductForm(emptyOfferProductForm);
             setOfferProductEditingId('');
             setOfferProductNotice('');
+            if (sectionId === 'offer') {
+                refreshOfferSections();
+            }
         };
 
         const submitOfferProduct = function() {
@@ -634,9 +701,15 @@
             const product = {
                 id: offerProductEditingId || ('product-' + Date.now()),
                 name: name,
-                price: (offerProductForm.price || '').trim(),
-                url: (offerProductForm.url || '').trim(),
-                notes: (offerProductForm.notes || '').trim(),
+                price: offerActiveSection === 'product' ? (offerProductForm.price || '').trim() : '',
+                url: offerActiveSection === 'product' ? (offerProductForm.url || '').trim() : '',
+                audience_details: offerActiveSection === 'audience_type' ? (offerProductForm.audience_details || '').trim() : '',
+                strategy_details: offerActiveSection === 'strategy' ? (offerProductForm.strategy_details || '').trim() : '',
+                offer_details: offerActiveSection === 'offer' ? (offerProductForm.offer_details || '').trim() : '',
+                product_id: offerActiveSection === 'offer' ? (offerProductForm.product_id || '').trim() : '',
+                strategy_id: offerActiveSection === 'offer' ? (offerProductForm.strategy_id || '').trim() : '',
+                audience_type_id: offerActiveSection === 'offer' ? (offerProductForm.audience_type_id || '').trim() : '',
+                notes: offerActiveSection === 'product' ? (offerProductForm.notes || '').trim() : '',
             };
             const currentItems = Array.isArray(offerItemsBySection[offerActiveSection]) ? offerItemsBySection[offerActiveSection] : [];
             const nextProducts = offerProductEditingId
@@ -658,6 +731,12 @@
                 name: product.name || '',
                 price: product.price || '',
                 url: product.url || '',
+                audience_details: product.audience_details || '',
+                strategy_details: product.strategy_details || '',
+                offer_details: product.offer_details || '',
+                product_id: product.product_id || '',
+                strategy_id: product.strategy_id || '',
+                audience_type_id: product.audience_type_id || '',
                 notes: product.notes || '',
             });
             setOfferProductNotice('');
