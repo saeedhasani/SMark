@@ -99,7 +99,7 @@
         const title = language === 'fa' ? (card.titleFa || card.title) : (card.titleEn || card.title);
         const description = language === 'fa' ? (card.descriptionFa || card.description) : (card.descriptionEn || card.description);
         const completed = !!card.completed;
-        const smartActionEnabled = card.smartActionEnabled !== false;
+        const smartActionEnabled = card.smartActionEnabled !== false || card.key === 'email_contacts_daily';
         const agentMarkCost = parseInt(card.agentMarkCost || 0, 10);
 
         return h('article', { className: 'smark-dashboard-daily-card' + (completed ? ' is-complete' : '') },
@@ -130,6 +130,13 @@
                     'data-smark-daily-guide-smart': completed || !smartActionEnabled ? undefined : '1',
                     'data-smark-daily-guide-key': completed || !smartActionEnabled ? undefined : (card.key || ''),
                     disabled: completed || !smartActionEnabled,
+                    onClick: completed || !smartActionEnabled ? undefined : function(event) {
+                        if (card.key === 'email_contacts_daily' && typeof props.onSmartAction === 'function') {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            props.onSmartAction(card);
+                        }
+                    },
                 }, [
                     h('span', { key: 'label', className: 'smark-dashboard-daily-card__button-label' }, textForLanguage(language, 'smartAction', 'Agent do')),
                     agentMarkCost > 0 ? h('span', {
@@ -168,6 +175,7 @@
                     card: card,
                     language: language,
                     onOpenEmailView: props.onOpenEmailView,
+                    onSmartAction: props.onSmartAction,
                 });
             })
         );
@@ -346,6 +354,87 @@
         );
     }
 
+    function getSignalHireFields() {
+        return [
+            { key: 'profile_name', label: text('signalhireProfileName', 'Profile name'), section: 'profile' },
+            { key: 'profile_location', label: text('signalhireProfileLocation', 'Profile location'), section: 'profile' },
+            { key: 'job_title', label: text('signalhireJobTitle', 'Job title'), section: 'profile' },
+            { key: 'department', label: text('signalhireDepartment', 'Department'), section: 'profile' },
+            { key: 'seniority_level', label: text('signalhireSeniorityLevel', 'Seniority level'), section: 'profile' },
+            { key: 'years_experience', label: text('signalhireYearsExperience', 'Years of experience'), section: 'profile' },
+            { key: 'education', label: text('signalhireEducation', 'Education'), section: 'profile' },
+            { key: 'keywords', label: text('signalhireKeywords', 'Keywords'), section: 'profile' },
+            { key: 'company_name', label: text('signalhireCompanyName', 'Company name'), section: 'company' },
+            { key: 'company_location', label: text('signalhireCompanyLocation', 'Company location'), section: 'company' },
+            { key: 'industry', label: text('signalhireIndustry', 'Industry'), section: 'company' },
+            { key: 'company_size', label: text('signalhireCompanySize', 'Company size'), section: 'company' },
+        ];
+    }
+
+    function SignalHireSettingsPanel(props) {
+        const fields = getSignalHireFields();
+        const form = props.form || {};
+        const sections = [
+            { id: 'profile', title: text('signalhireProfileSection', 'Profile') },
+            { id: 'company', title: text('signalhireCompanySection', 'Company') },
+        ];
+
+        return h('section', { className: 'smark-dashboard-signalhire-panel smark-dashboard-view', 'aria-label': text('signalhireTitle', 'Contact Search Settings') },
+            h('header', { className: 'smark-dashboard-signalhire-panel__header' },
+                h('div', null,
+                    h('h2', null, text('signalhireTitle', 'Contact Search Settings')),
+                    h('p', null, text('signalhireIntro', 'Fill at least one field to save future contact search settings.'))
+                ),
+                h('button', {
+                    type: 'button',
+                    className: 'smark-dashboard-signalhire-panel__close',
+                    'aria-label': text('close', 'Close'),
+                    onClick: props.onClose,
+                }, 'x')
+            ),
+            h('form', {
+                className: 'smark-dashboard-signalhire-panel__body',
+                onSubmit: function(event) {
+                    event.preventDefault();
+                    if (typeof props.onSubmit === 'function') {
+                        props.onSubmit();
+                    }
+                },
+            },
+                h('div', { className: 'smark-dashboard-signalhire-panel__notice' }, text('signalhireInactive', 'Search execution is inactive for now; only settings are saved.')),
+                sections.map(function(section) {
+                    return h('section', { key: section.id, className: 'smark-dashboard-signalhire-panel__section' },
+                        h('h3', null, section.title),
+                        h('div', { className: 'smark-dashboard-signalhire-panel__grid' },
+                            fields.filter(function(field) {
+                                return field.section === section.id;
+                            }).map(function(field) {
+                                return h('label', { key: field.key },
+                                    h('span', null, field.label),
+                                    h('input', {
+                                        type: 'text',
+                                        value: form[field.key] || '',
+                                        onChange: function(event) {
+                                            props.onChange(field.key, event.target.value);
+                                        },
+                                    })
+                                );
+                            })
+                        )
+                    );
+                }),
+                props.message ? h('div', { className: 'smark-dashboard-signalhire-panel__message ' + (props.messageType === 'error' ? 'is-error' : 'is-success') }, props.message) : null,
+                h('div', { className: 'smark-dashboard-signalhire-panel__actions' },
+                    h('button', {
+                        type: 'submit',
+                        className: 'smark-dashboard-offer__button smark-dashboard-offer__button--primary',
+                        disabled: props.saving,
+                    }, props.saving ? text('smartRunning', 'Agent is working...') : text('signalhireSave', 'Run agent'))
+                )
+            )
+        );
+    }
+
     function DashboardApp() {
         const [active, setActive] = useState('smark');
         const [emailSubView, setEmailSubView] = useState('workflow');
@@ -391,6 +480,10 @@
         const [offerProductSaving, setOfferProductSaving] = useState(false);
         const [offerProductNotice, setOfferProductNotice] = useState('');
         const [offerProductNoticeType, setOfferProductNoticeType] = useState('success');
+        const [signalhireForm, setSignalhireForm] = useState(config.signalhireContactSearchSettings || {});
+        const [signalhireSaving, setSignalhireSaving] = useState(false);
+        const [signalhireMessage, setSignalhireMessage] = useState('');
+        const [signalhireMessageType, setSignalhireMessageType] = useState('success');
 
         useEffect(function() {
             if (emailSubView === 'contacts' && !emailContactsHtml) {
@@ -629,12 +722,17 @@
         };
 
         const openEmailSubView = function(view, params) {
-            if (view !== 'contacts' && view !== 'campaign-message' && view !== 'email-accounts' && view !== 'performance-review') {
+            if (view !== 'contacts' && view !== 'campaign-message' && view !== 'email-accounts' && view !== 'performance-review' && view !== 'signalhire-contact-search') {
                 setEmailSubView('workflow');
                 return;
             }
 
             setEmailSubView(view);
+
+            if (view === 'signalhire-contact-search') {
+                setSignalhireMessage('');
+                return;
+            }
 
             if (view === 'contacts') {
                 setEmailContactsError('');
@@ -713,6 +811,111 @@
             openEmailSubView(view, params);
         };
 
+        const openDailyGuideSmartAction = function(card) {
+            const key = card && card.key ? String(card.key) : '';
+            if (!key) {
+                return;
+            }
+
+            if (key === 'email_contacts_daily') {
+                setActive('email');
+                setLanguageOpen(false);
+                setMarkOpen(false);
+                setSettingsOpen(false);
+                openEmailSubView('signalhire-contact-search');
+                setSignalhireMessage('');
+                return;
+            }
+
+            document.dispatchEvent(new window.CustomEvent('smark:daily-guide-smart-action', {
+                detail: {
+                    key: key,
+                },
+            }));
+        };
+
+        useEffect(function() {
+            const openSignalHirePanel = function() {
+                openDailyGuideSmartAction({ key: 'email_contacts_daily' });
+            };
+
+            const handleSignalHireSmartClick = function(event) {
+                const target = event.target && typeof event.target.closest === 'function'
+                    ? event.target.closest('[data-smark-daily-guide-key="email_contacts_daily"]')
+                    : null;
+
+                if (!target || target.disabled || target.getAttribute('aria-disabled') === 'true') {
+                    return;
+                }
+
+                event.preventDefault();
+                event.stopPropagation();
+                if (typeof event.stopImmediatePropagation === 'function') {
+                    event.stopImmediatePropagation();
+                }
+                openSignalHirePanel();
+            };
+
+            document.addEventListener('smark:open-signalhire-contact-search', openSignalHirePanel);
+            document.addEventListener('click', handleSignalHireSmartClick, true);
+            return function() {
+                document.removeEventListener('smark:open-signalhire-contact-search', openSignalHirePanel);
+                document.removeEventListener('click', handleSignalHireSmartClick, true);
+            };
+        }, []);
+
+        const updateSignalhireForm = function(key, value) {
+            setSignalhireForm(Object.assign({}, signalhireForm, { [key]: value }));
+            setSignalhireMessage('');
+        };
+
+        const saveSignalhireSettings = function() {
+            const nextSettings = Object.assign({}, signalhireForm);
+            const hasValue = Object.keys(nextSettings).some(function(key) {
+                return String(nextSettings[key] || '').trim() !== '';
+            });
+
+            if (!hasValue) {
+                setSignalhireMessageType('error');
+                setSignalhireMessage(text('signalhireValidation', 'Fill at least one field.'));
+                return;
+            }
+
+            setSignalhireSaving(true);
+            setSignalhireMessage('');
+
+            const body = new window.URLSearchParams();
+            body.append('action', 'smark_save_signalhire_contact_search_settings');
+            body.append('nonce', config.signalhireSettingsNonce || '');
+            body.append('settings', JSON.stringify(nextSettings));
+
+            window.fetch(config.ajaxUrl || window.ajaxurl || '', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                },
+                body: body.toString(),
+            }).then(function(response) {
+                return response.json();
+            }).then(function(response) {
+                if (response && response.success && response.data && response.data.settings) {
+                    setSignalhireForm(response.data.settings);
+                    setSignalhireMessageType('success');
+                    setSignalhireMessage(text('signalhireSaved', 'Search settings saved.'));
+                    return;
+                }
+
+                setSignalhireMessageType('error');
+                setSignalhireMessage((response && response.data && response.data.message) || text('smartError', 'Agent action failed. Please try again.'));
+            }).catch(function() {
+                setSignalhireMessageType('error');
+                setSignalhireMessage(text('smartError', 'Agent action failed. Please try again.'));
+            }).finally(function() {
+                setSignalhireSaving(false);
+            });
+        };
+
         useEffect(function() {
             const params = new window.URLSearchParams(window.location.search || '');
             const initialEmailView = params.get('smark_email_view') || '';
@@ -772,7 +975,7 @@
         return h('main', { className: 'smark-dashboard-app-canvas smark-dashboard-app-canvas--' + (language === 'fa' ? 'rtl' : 'ltr'), 'aria-label': text('workspace', 'SMark dashboard workspace') },
             active === 'smark' ? h('div', { className: 'smark-dashboard-workspace-content' },
                 h('div', { key: 'smark', className: 'smark-dashboard-view' },
-                    h(DailyGuideGrid, { language: language, moduleVisibility: moduleVisibility, onOpenEmailView: openEmailSubViewFromDashboard })
+                    h(DailyGuideGrid, { language: language, moduleVisibility: moduleVisibility, onOpenEmailView: openEmailSubViewFromDashboard, onSmartAction: openDailyGuideSmartAction })
                 )
             ) : null,
             active === 'email' ? h('div', { className: 'smark-dashboard-workspace-content' },
@@ -800,6 +1003,21 @@
                         emailPerformanceError ? h('div', { className: 'smark-dashboard-embedded-view__state smark-dashboard-embedded-view__state--error' }, emailPerformanceError) : null,
                         emailPerformanceHtml ? h('div', { className: 'smark-dashboard-embedded-view__content', dangerouslySetInnerHTML: { __html: emailPerformanceHtml } }) : null
                     )
+                    : emailSubView === 'signalhire-contact-search'
+                    ? h(SignalHireSettingsPanel, {
+                        key: 'signalhire-contact-search',
+                        form: signalhireForm,
+                        saving: signalhireSaving,
+                        message: signalhireMessage,
+                        messageType: signalhireMessageType,
+                        onChange: updateSignalhireForm,
+                        onSubmit: saveSignalhireSettings,
+                        onClose: function() {
+                            setActive('smark');
+                            setEmailSubView('workflow');
+                            setSignalhireMessage('');
+                        },
+                    })
                     : h(EmailWorkflowPanel, { key: 'email', language: language, onOpenView: openEmailSubView })
             ) : null,
             active === 'offer' ? h('div', { className: 'smark-dashboard-workspace-content' },

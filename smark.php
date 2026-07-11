@@ -1832,6 +1832,7 @@ class SMarkPlugin {
         add_action('admin_head', array($this, 'output_admin_menu_icon_css'));
         add_action('wp_ajax_smark_save_language', array($this, 'ajax_save_language'));
         add_action('wp_ajax_smark_daily_guide_smart_action', array($this, 'ajax_daily_guide_smart_action'));
+        add_action('wp_ajax_smark_save_signalhire_contact_search_settings', array($this, 'ajax_save_signalhire_contact_search_settings'));
         add_action('wp_ajax_smark_dashboard_offer_products_save', array($this, 'ajax_dashboard_offer_products_save'));
         add_action('init', array($this, 'check_database_schema'));
         add_action('rest_api_init', array($this, 'register_rest_routes'));
@@ -2580,7 +2581,7 @@ class SMarkPlugin {
                 'url' => '#',
                 'email_view' => 'contacts',
                 'agent_mark_cost' => 100,
-                'smart_action' => false,
+                'smart_action' => true,
             ),
             'email_campaign_daily' => array(
                 'title_en' => 'Send Email Campaign',
@@ -3234,6 +3235,8 @@ class SMarkPlugin {
         wp_localize_script('smark-admin', 'SMarkAdmin', array(
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce'   => wp_create_nonce('smark_daily_guide_smart_action'),
+            'signalhireSettingsNonce' => wp_create_nonce('smark_signalhire_contact_search_settings'),
+            'signalhireContactSearchSettings' => $this->get_signalhire_contact_search_settings(),
             'lang'    => $lang,
             'strings' => array(
                 'smartTitle'    => ($lang === 'fa') ? 'انجام با ایجنت' : 'Agent do',
@@ -3246,6 +3249,28 @@ class SMarkPlugin {
                 'smartRunning'  => ($lang === 'fa') ? 'ایجنت در حال انجام کار است…' : 'Agent is working…',
                 'smartDone'     => ($lang === 'fa') ? 'برای «{keyword}» یک آیتم محتوا ساخته شد و پیش‌نویس بلاگ ایجاد شد.' : 'Created a content item and a blog draft for “{keyword}”.',
                 'smartError'    => ($lang === 'fa') ? 'اکشن ایجنت ناموفق بود. لطفاً دوباره امتحان کنید.' : 'Agent action failed. Please try again.',
+                'signalhireTitle' => ($lang === 'fa') ? 'تنظیمات جست‌وجوی مخاطب' : 'Contact Search Settings',
+                'signalhireIntro' => ($lang === 'fa') ? 'این زیرساخت فعلا غیرفعال است. حداقل یکی از فیلدها را پر کنید تا تنظیمات جست‌وجوی آینده ذخیره شود.' : 'This infrastructure is currently inactive. Fill at least one field to save future contact search settings.',
+                'signalhireProfileSection' => ($lang === 'fa') ? 'پروفایل' : 'Profile',
+                'signalhireCompanySection' => ($lang === 'fa') ? 'شرکت' : 'Company',
+                'signalhireProfileName' => ($lang === 'fa') ? 'نام پروفایل' : 'Profile name',
+                'signalhireProfileLocation' => ($lang === 'fa') ? 'لوکیشن پروفایل' : 'Profile location',
+                'signalhireJobTitle' => ($lang === 'fa') ? 'عنوان شغلی' : 'Job title',
+                'signalhireDepartment' => ($lang === 'fa') ? 'دپارتمان' : 'Department',
+                'signalhireSeniorityLevel' => ($lang === 'fa') ? 'سطح ارشدیت' : 'Seniority level',
+                'signalhireYearsExperience' => ($lang === 'fa') ? 'سال‌های تجربه' : 'Years of experience',
+                'signalhireEducation' => ($lang === 'fa') ? 'تحصیلات' : 'Education',
+                'signalhireKeywords' => ($lang === 'fa') ? 'کلمات کلیدی' : 'Keywords',
+                'signalhireCompanyName' => ($lang === 'fa') ? 'نام شرکت' : 'Company name',
+                'signalhireCompanyLocation' => ($lang === 'fa') ? 'لوکیشن شرکت' : 'Company location',
+                'signalhireIndustry' => ($lang === 'fa') ? 'صنعت' : 'Industry',
+                'signalhireCompanySize' => ($lang === 'fa') ? 'اندازه شرکت' : 'Company size',
+                'signalhireSave' => ($lang === 'fa') ? 'اجرای ایجنت' : 'Run agent',
+                'signalhireSaved' => ($lang === 'fa') ? 'تنظیمات جست‌وجو ذخیره شد.' : 'Search settings saved.',
+                'signalhireValidation' => ($lang === 'fa') ? 'حداقل یکی از فیلدها را پر کنید.' : 'Fill at least one field.',
+                'signalhireInactive' => ($lang === 'fa') ? 'اجرای جست‌وجو فعلا غیرفعال است؛ فقط تنظیمات ذخیره می‌شود.' : 'Search execution is inactive for now; only settings are saved.',
+                'backToDashboard' => ($lang === 'fa') ? 'بازگشت' : 'Back',
+                'close' => ($lang === 'fa') ? 'بستن' : 'Close',
             ),
         ));
 
@@ -3277,6 +3302,8 @@ class SMarkPlugin {
             'offerProducts' => $this->get_dashboard_offer_products(),
             'offerSections' => $this->get_dashboard_offer_sections(),
             'offerProductsNonce' => wp_create_nonce('smark_dashboard_offer_products'),
+            'signalhireSettingsNonce' => wp_create_nonce('smark_signalhire_contact_search_settings'),
+            'signalhireContactSearchSettings' => $this->get_signalhire_contact_search_settings(),
             'emailContactsViewNonce' => wp_create_nonce('smark_email_contacts_page_ajax'),
             'emailAccountsViewNonce' => wp_create_nonce('smark_email_accounts_ajax'),
             'emailCampaignMessageViewNonce' => wp_create_nonce('smark_email_campaign_message_ajax'),
@@ -3349,6 +3376,28 @@ class SMarkPlugin {
                 'offerProductSaveError' => ($lang === 'fa') ? 'ذخیره آیتم‌ها انجام نشد.' : __('Items could not be saved.', 'smark'),
                 'offerProductNameRequired' => ($lang === 'fa') ? 'نام محصول را وارد کنید.' : __('Enter a product name.', 'smark'),
                 'offerItemNameRequired' => ($lang === 'fa') ? 'عنوان را وارد کنید.' : __('Enter a title.', 'smark'),
+                'signalhireTitle' => ($lang === 'fa') ? 'تنظیمات جست‌وجوی مخاطب' : __('Contact Search Settings', 'smark'),
+                'signalhireIntro' => ($lang === 'fa') ? 'این زیرساخت فعلا غیرفعال است. حداقل یکی از فیلدها را پر کنید تا تنظیمات جست‌وجوی آینده ذخیره شود.' : __('This infrastructure is currently inactive. Fill at least one field to save future contact search settings.', 'smark'),
+                'signalhireProfileSection' => ($lang === 'fa') ? 'پروفایل' : __('Profile', 'smark'),
+                'signalhireCompanySection' => ($lang === 'fa') ? 'شرکت' : __('Company', 'smark'),
+                'signalhireProfileName' => ($lang === 'fa') ? 'نام پروفایل' : __('Profile name', 'smark'),
+                'signalhireProfileLocation' => ($lang === 'fa') ? 'لوکیشن پروفایل' : __('Profile location', 'smark'),
+                'signalhireJobTitle' => ($lang === 'fa') ? 'عنوان شغلی' : __('Job title', 'smark'),
+                'signalhireDepartment' => ($lang === 'fa') ? 'دپارتمان' : __('Department', 'smark'),
+                'signalhireSeniorityLevel' => ($lang === 'fa') ? 'سطح ارشدیت' : __('Seniority level', 'smark'),
+                'signalhireYearsExperience' => ($lang === 'fa') ? 'سال‌های تجربه' : __('Years of experience', 'smark'),
+                'signalhireEducation' => ($lang === 'fa') ? 'تحصیلات' : __('Education', 'smark'),
+                'signalhireKeywords' => ($lang === 'fa') ? 'کلمات کلیدی' : __('Keywords', 'smark'),
+                'signalhireCompanyName' => ($lang === 'fa') ? 'نام شرکت' : __('Company name', 'smark'),
+                'signalhireCompanyLocation' => ($lang === 'fa') ? 'لوکیشن شرکت' : __('Company location', 'smark'),
+                'signalhireIndustry' => ($lang === 'fa') ? 'صنعت' : __('Industry', 'smark'),
+                'signalhireCompanySize' => ($lang === 'fa') ? 'اندازه شرکت' : __('Company size', 'smark'),
+                'signalhireSave' => ($lang === 'fa') ? 'اجرای ایجنت' : __('Run agent', 'smark'),
+                'signalhireSaved' => ($lang === 'fa') ? 'تنظیمات جست‌وجو ذخیره شد.' : __('Search settings saved.', 'smark'),
+                'signalhireValidation' => ($lang === 'fa') ? 'حداقل یکی از فیلدها را پر کنید.' : __('Fill at least one field.', 'smark'),
+                'signalhireInactive' => ($lang === 'fa') ? 'اجرای جست‌وجو فعلا غیرفعال است؛ فقط تنظیمات ذخیره می‌شود.' : __('Search execution is inactive for now; only settings are saved.', 'smark'),
+                'backToDashboard' => ($lang === 'fa') ? 'بازگشت' : __('Back', 'smark'),
+                'close' => ($lang === 'fa') ? 'بستن' : __('Close', 'smark'),
                 'markCredit'     => ($lang === 'fa') ? 'مارک' : __('Mark', 'smark'),
                 'markCreditBalance' => ($lang === 'fa') ? 'اعتبار مارک' : __('Mark Credit Balance', 'smark'),
                 'language'       => __('Language', 'smark'),
@@ -4048,6 +4097,73 @@ class SMarkPlugin {
     private function get_dashboard_offer_products() {
         $sections = $this->get_dashboard_offer_sections();
         return isset($sections['product']) && is_array($sections['product']) ? $sections['product'] : array();
+    }
+
+    private function get_signalhire_contact_search_fields() {
+        return array(
+            'profile_name',
+            'profile_location',
+            'job_title',
+            'department',
+            'seniority_level',
+            'years_experience',
+            'education',
+            'keywords',
+            'company_name',
+            'company_location',
+            'industry',
+            'company_size',
+        );
+    }
+
+    private function sanitize_signalhire_contact_search_settings($settings) {
+        $settings = is_array($settings) ? $settings : array();
+        $clean = array();
+
+        foreach ($this->get_signalhire_contact_search_fields() as $field) {
+            $clean[$field] = isset($settings[$field]) ? sanitize_text_field((string) $settings[$field]) : '';
+        }
+
+        return $clean;
+    }
+
+    private function get_signalhire_contact_search_settings() {
+        $settings = get_option('smark_signalhire_contact_search_settings', array());
+        return $this->sanitize_signalhire_contact_search_settings($settings);
+    }
+
+    public function ajax_save_signalhire_contact_search_settings() {
+        check_ajax_referer('smark_signalhire_contact_search_settings', 'nonce');
+
+        if (!current_user_can(self::CAP_ACCESS)) {
+            wp_send_json_error(array('message' => __('Permission denied', 'smark')), 403);
+        }
+
+        $raw_settings = isset($_POST['settings']) ? wp_unslash($_POST['settings']) : '{}';
+        $decoded = json_decode((string) $raw_settings, true);
+        if (!is_array($decoded)) {
+            wp_send_json_error(array('message' => __('Invalid settings payload', 'smark')), 400);
+        }
+
+        $settings = $this->sanitize_signalhire_contact_search_settings($decoded);
+        $has_value = false;
+        foreach ($settings as $value) {
+            if (trim((string) $value) !== '') {
+                $has_value = true;
+                break;
+            }
+        }
+
+        if (!$has_value) {
+            wp_send_json_error(array('message' => __('Fill at least one field.', 'smark')), 400);
+        }
+
+        update_option('smark_signalhire_contact_search_settings', $settings, false);
+
+        wp_send_json_success(array(
+            'settings' => $settings,
+            'message' => __('Search settings saved.', 'smark'),
+        ));
     }
 
     private function get_dashboard_offer_sections() {

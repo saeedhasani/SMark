@@ -180,6 +180,142 @@
             $overlay.show();
         }
 
+        function getSignalHireFields(strings) {
+            return [
+                { key: 'profile_name', label: strings.signalhireProfileName || 'Profile name', section: 'profile' },
+                { key: 'profile_location', label: strings.signalhireProfileLocation || 'Profile location', section: 'profile' },
+                { key: 'job_title', label: strings.signalhireJobTitle || 'Job title', section: 'profile' },
+                { key: 'department', label: strings.signalhireDepartment || 'Department', section: 'profile' },
+                { key: 'seniority_level', label: strings.signalhireSeniorityLevel || 'Seniority level', section: 'profile' },
+                { key: 'years_experience', label: strings.signalhireYearsExperience || 'Years of experience', section: 'profile' },
+                { key: 'education', label: strings.signalhireEducation || 'Education', section: 'profile' },
+                { key: 'keywords', label: strings.signalhireKeywords || 'Keywords', section: 'profile' },
+                { key: 'company_name', label: strings.signalhireCompanyName || 'Company name', section: 'company' },
+                { key: 'company_location', label: strings.signalhireCompanyLocation || 'Company location', section: 'company' },
+                { key: 'industry', label: strings.signalhireIndustry || 'Industry', section: 'company' },
+                { key: 'company_size', label: strings.signalhireCompanySize || 'Company size', section: 'company' }
+            ];
+        }
+
+        function openSignalHireContactSearchSettings() {
+            ensureSmartModal();
+
+            var cfg = window.SMarkAdmin || {};
+            var strings = cfg.strings || {};
+            var savedSettings = cfg.signalhireContactSearchSettings || {};
+            var fields = getSignalHireFields(strings);
+            var $overlay = $('#smark-smart-modal-overlay');
+            var $title = $overlay.find('.smark-smart-modal__title');
+            var $body = $overlay.find('.smark-smart-modal__body');
+
+            $title.text(strings.signalhireTitle || 'SignalHire Contact Search Settings');
+            $body.empty();
+
+            var $wrap = $('<div/>', { class: 'smark-signalhire-settings' });
+            $wrap.append($('<p/>', { class: 'smark-signalhire-settings__intro' }).text(strings.signalhireIntro || 'Fill at least one field to save future contact search settings.'));
+            $wrap.append($('<div/>', { class: 'smark-signalhire-settings__notice' }).text(strings.signalhireInactive || 'Search execution is inactive for now; only settings are saved.'));
+
+            var $form = $('<form/>', { class: 'smark-signalhire-settings__form' });
+            var sections = [
+                { id: 'profile', title: strings.signalhireProfileSection || 'Profile' },
+                { id: 'company', title: strings.signalhireCompanySection || 'Company' }
+            ];
+
+            sections.forEach(function(section) {
+                var $section = $('<section/>', { class: 'smark-signalhire-settings__section' });
+                $section.append($('<h3/>').text(section.title));
+
+                var $grid = $('<div/>', { class: 'smark-signalhire-settings__grid' });
+                fields.filter(function(field) {
+                    return field.section === section.id;
+                }).forEach(function(field) {
+                    var value = savedSettings[field.key] || '';
+                    var $label = $('<label/>');
+                    $label.append($('<span/>').text(field.label));
+                    $label.append($('<input/>', {
+                        type: 'text',
+                        name: field.key,
+                        value: value,
+                        autocomplete: 'off'
+                    }));
+                    $grid.append($label);
+                });
+
+                $section.append($grid);
+                $form.append($section);
+            });
+
+            var $message = $('<div/>', { class: 'smark-signalhire-settings__message', hidden: true });
+            var $actions = $('<div/>', { class: 'smark-signalhire-settings__actions' });
+            var $save = $('<button/>', { type: 'submit', class: 'button button-primary' }).text(strings.signalhireSave || 'Save settings');
+            $actions.append($save);
+            $form.append($message, $actions);
+            $wrap.append($form);
+            $body.append($wrap);
+
+            $form.on('submit', function(event) {
+                event.preventDefault();
+
+                var settings = {};
+                var hasValue = false;
+                fields.forEach(function(field) {
+                    var value = String($form.find('[name="' + field.key + '"]').val() || '').trim();
+                    settings[field.key] = value;
+                    if (value) {
+                        hasValue = true;
+                    }
+                });
+
+                if (!hasValue) {
+                    $message.removeAttr('hidden').removeClass('is-success').addClass('is-error').text(strings.signalhireValidation || 'Fill at least one field.');
+                    return;
+                }
+
+                $save.prop('disabled', true).text(strings.saving || 'Saving...');
+                $message.attr('hidden', true).removeClass('is-success is-error').text('');
+
+                $.post(cfg.ajaxUrl || window.ajaxurl || '', {
+                    action: 'smark_save_signalhire_contact_search_settings',
+                    nonce: cfg.signalhireSettingsNonce || '',
+                    settings: JSON.stringify(settings)
+                })
+                    .done(function(response) {
+                        if (response && response.success) {
+                            cfg.signalhireContactSearchSettings = response.data && response.data.settings ? response.data.settings : settings;
+                            window.SMarkAdmin = cfg;
+                            $message.removeAttr('hidden').removeClass('is-error').addClass('is-success').text(strings.signalhireSaved || 'Search settings saved.');
+                            return;
+                        }
+
+                        $message.removeAttr('hidden').removeClass('is-success').addClass('is-error').text((response && response.data && response.data.message) || (strings.smartError || 'Save failed.'));
+                    })
+                    .fail(function(xhr) {
+                        var msg = strings.smartError || 'Save failed.';
+                        if (xhr && xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {
+                            msg = xhr.responseJSON.data.message;
+                        }
+                        $message.removeAttr('hidden').removeClass('is-success').addClass('is-error').text(msg);
+                    })
+                    .always(function() {
+                        $save.prop('disabled', false).text(strings.signalhireSave || 'Save settings');
+                    });
+            });
+
+            $overlay.show();
+        }
+
+        function requestSignalHireContactSearchPanel() {
+            document.dispatchEvent(new window.CustomEvent('smark:open-signalhire-contact-search'));
+        }
+
+        document.addEventListener('smark:daily-guide-smart-action', function(event) {
+            var detail = event.detail || {};
+            var key = String(detail.key || '');
+            if (key === 'email_contacts_daily') {
+                requestSignalHireContactSearchPanel();
+            }
+        });
+
         // Daily Guide "Smart action" buttons (dashboard)
         $(document).on('click', '.daily-guide-btn--smart', function(e) {
             e.preventDefault();
@@ -201,6 +337,11 @@
                     '',
                     []
                 );
+                return;
+            }
+
+            if (key === 'email_contacts_daily') {
+                requestSignalHireContactSearchPanel();
                 return;
             }
 

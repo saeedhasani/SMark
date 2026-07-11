@@ -240,6 +240,9 @@
 
 .smark-smart-modal {
     width: min(920px, 100%);
+    max-height: calc(100vh - 36px);
+    display: flex;
+    flex-direction: column;
     background: rgba(255, 255, 255, 0.98);
     border-radius: 18px;
     box-shadow: 0 30px 70px rgba(0, 0, 0, 0.25);
@@ -281,6 +284,7 @@
 
 .smark-smart-modal__body {
     padding: 16px;
+    overflow: auto;
 }
 
 .smark-smart-modal__loading {
@@ -375,4 +379,110 @@
     font-weight: 700;
     color: #334155;
     margin: 10px 0;
+}
+
+.smark-signalhire-settings__intro {
+    margin: 0 0 12px;
+    color: #334155;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.7;
+}
+
+.smark-signalhire-settings__notice {
+    margin-bottom: 16px;
+    padding: 10px 12px;
+    border: 1px solid rgba(245, 158, 11, 0.24);
+    border-radius: 12px;
+    color: #92400e;
+    background: rgba(255, 251, 235, 0.86);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.6;
+}
+
+.smark-signalhire-settings__section {
+    margin: 0 0 16px;
+    padding: 14px;
+    border: 1px solid rgba(102, 126, 234, 0.16);
+    border-radius: 14px;
+    background: rgba(248, 250, 252, 0.88);
+}
+
+.smark-signalhire-settings__section h3 {
+    margin: 0 0 12px;
+    color: #1f2937;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.4;
+}
+
+.smark-signalhire-settings__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.smark-signalhire-settings__grid label {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin: 0;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.4;
+}
+
+.smark-signalhire-settings__grid input {
+    width: 100%;
+    min-height: 40px;
+    box-sizing: border-box;
+    border: 1px solid rgba(102, 126, 234, 0.28);
+    border-radius: 12px;
+    color: #111827;
+    font-size: 13px;
+    font-family: inherit;
+    background: #fff;
+    box-shadow: none;
+}
+
+.smark-signalhire-settings__grid input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
+    outline: none;
+}
+
+.smark-signalhire-settings__message {
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.5;
+}
+
+.smark-signalhire-settings__message.is-success {
+    border: 1px solid rgba(22, 163, 74, 0.22);
+    color: #117e3c;
+    background: rgba(226, 255, 238, 0.7);
+}
+
+.smark-signalhire-settings__message.is-error {
+    border: 1px solid rgba(180, 35, 24, 0.22);
+    color: #b42318;
+    background: rgba(255, 245, 245, 0.76);
+}
+
+.smark-signalhire-settings__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+@media (max-width: 640px) {
+    .smark-signalhire-settings__grid {
+        grid-template-columns: 1fr;
+    }
 }
