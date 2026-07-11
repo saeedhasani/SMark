@@ -1832,6 +1832,7 @@ class SMarkPlugin {
         add_action('admin_head', array($this, 'output_admin_menu_icon_css'));
         add_action('wp_ajax_smark_save_language', array($this, 'ajax_save_language'));
         add_action('wp_ajax_smark_daily_guide_smart_action', array($this, 'ajax_daily_guide_smart_action'));
+        add_action('wp_ajax_smark_dashboard_offer_products_save', array($this, 'ajax_dashboard_offer_products_save'));
         add_action('init', array($this, 'check_database_schema'));
         add_action('rest_api_init', array($this, 'register_rest_routes'));
         add_filter('map_meta_cap', array($this, 'map_meta_cap'), 10, 4);
@@ -2571,6 +2572,25 @@ class SMarkPlugin {
         }
 
         $meta = array(
+            'email_contacts_daily' => array(
+                'title_en' => 'Add Contacts',
+                'title_fa' => 'افزودن مخاطب',
+                'category' => 'email',
+                'translation_key' => 'daily_guide_task_email_contacts_daily',
+                'url' => '#',
+                'email_view' => 'contacts',
+                'agent_mark_cost' => 100,
+                'smart_action' => false,
+            ),
+            'email_campaign_daily' => array(
+                'title_en' => 'Send Email Campaign',
+                'title_fa' => 'ارسال کمپین ایمیلی',
+                'category' => 'email',
+                'translation_key' => 'daily_guide_task_email_campaign_daily',
+                'url' => '#',
+                'email_view' => 'campaign-message',
+                'smart_action' => false,
+            ),
             'gap_transfer' => array(
                 'title_en' => 'Transfer Competitor Keyword',
                 'title_fa' => 'انتقال کلمه رقبا',
@@ -2607,23 +2627,29 @@ class SMarkPlugin {
                 'url' => admin_url('admin.php?page=smark-content-management'),
             ),
             'backlink_acquired' => array(
-                'title_en' => 'Acquire Today’s Backlink',
-                'title_fa' => 'ثبت بک‌لینک امروز',
+                'title_en' => 'Acquire Backlink',
+                'title_fa' => 'ثبت بک‌لینک',
                 'category' => 'seo',
                 'translation_key' => 'daily_guide_task_backlink_acquired',
                 'url' => admin_url('admin.php?page=smark-backlinks-management'),
             ),
             'publish' => array(
-                'title_en' => 'Publish Today’s Content',
-                'title_fa' => 'انتشار محتوای امروز',
+                'title_en' => 'Publish Content',
+                'title_fa' => 'انتشار محتوا',
                 'category' => 'seo',
                 'translation_key' => 'daily_guide_task_publish',
                 'url' => admin_url('admin.php?page=smark-keyword-research'),
             ),
         );
 
+        $module_visibility = $this->get_dashboard_module_visibility();
         $cards = array();
         foreach ($meta as $key => $card_meta) {
+            $category = isset($card_meta['category']) ? sanitize_key((string) $card_meta['category']) : '';
+            if ($category !== '' && array_key_exists($category, $module_visibility) && !$module_visibility[$category]) {
+                continue;
+            }
+
             $item = isset($active_items[$key]) && is_array($active_items[$key]) ? $active_items[$key] : array();
             $translation_key = isset($card_meta['translation_key']) ? (string) $card_meta['translation_key'] : '';
             $description_en = $translation_key !== '' ? $this->get_dashboard_translation($translation_key, 'en') : (isset($item['text']) ? (string) $item['text'] : '');
@@ -2639,6 +2665,9 @@ class SMarkPlugin {
                 'descriptionFa' => $description_fa,
                 'url' => isset($item['url']) ? esc_url_raw((string) $item['url']) : esc_url_raw((string) $card_meta['url']),
                 'completed' => !isset($active_items[$key]),
+                'smartActionEnabled' => !isset($card_meta['smart_action']) || $card_meta['smart_action'] !== false,
+                'agentMarkCost' => isset($card_meta['agent_mark_cost']) ? max(0, (int) $card_meta['agent_mark_cost']) : 0,
+                'emailView' => isset($item['email_view']) ? sanitize_key((string) $item['email_view']) : (isset($card_meta['email_view']) ? sanitize_key((string) $card_meta['email_view']) : ''),
             );
         }
 
@@ -2655,7 +2684,6 @@ class SMarkPlugin {
                         'icon' => 'dashicons-groups',
                         'title' => 'Contacts',
                         'description' => 'Prepare contact lists and tags based on each campaign goal.',
-                        'url' => admin_url('admin.php?page=smark-email-contacts'),
                         'view' => 'contacts',
                     ),
                     array(
@@ -2689,7 +2717,6 @@ class SMarkPlugin {
                         'icon' => 'dashicons-groups',
                         'title' => 'مخاطبین',
                         'description' => 'لیست‌ها و برچسب‌های مخاطبان را بر اساس هدف کمپین آماده کنید.',
-                        'url' => admin_url('admin.php?page=smark-email-contacts'),
                         'view' => 'contacts',
                     ),
                     array(
@@ -2730,6 +2757,42 @@ class SMarkPlugin {
             'email' => array_key_exists('email', $saved) ? (bool) $saved['email'] : true,
             'seo' => array_key_exists('seo', $saved) ? (bool) $saved['seo'] : true,
             'social' => array_key_exists('social', $saved) ? (bool) $saved['social'] : true,
+            'ads' => array_key_exists('ads', $saved) ? (bool) $saved['ads'] : true,
+            'offer' => array_key_exists('offer', $saved) ? (bool) $saved['offer'] : true,
+        );
+    }
+
+    private function get_dashboard_mark_balance() {
+        $project_id = $this->resolve_current_project_id();
+        $mark = null;
+
+        if ($project_id > 0) {
+            $cache = get_option('smark_project_mark_cache', array());
+            $cache = is_array($cache) ? $cache : array();
+            $row = isset($cache[(string) $project_id]) ? $cache[(string) $project_id] : null;
+            if (is_array($row) && isset($row['mark'])) {
+                $mark = max(0, (int) $row['mark']);
+            } elseif (is_numeric($row)) {
+                $mark = max(0, (int) $row);
+            }
+
+            if ($mark === null) {
+                global $wpdb;
+                $projects_table = $this->resolve_projects_table();
+                $projects_table_sql = $this->escape_db_identifier($projects_table);
+                if ($projects_table !== '' && $projects_table_sql !== '' && $this->table_has_column($projects_table, 'mark')) {
+                    // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared -- Identifier validated via escape_db_identifier().
+                    $local_mark = $wpdb->get_var($wpdb->prepare('SELECT mark FROM ' . $projects_table_sql . ' WHERE id = %d LIMIT 1', $project_id));
+                    if ($local_mark !== null && is_numeric($local_mark)) {
+                        $mark = max(0, (int) $local_mark);
+                    }
+                }
+            }
+        }
+
+        return array(
+            'value' => $mark,
+            'label' => $mark === null ? '—' : number_format_i18n((int) $mark),
         );
     }
 
@@ -2810,14 +2873,16 @@ class SMarkPlugin {
                 'daily_guide_subtitle' => 'A quick checklist of today’s essential actions',
                 'daily_guide_all_good' => 'All set for today. Great job!',
                 'daily_guide_open' => 'Open',
-                'daily_guide_smart_action' => 'Smart action',
+                'daily_guide_smart_action' => 'Agent do',
                 'daily_guide_task_gap_transfer' => 'Transfer at least one competitor keyword to Keyword Research today.',
                 'daily_guide_task_keyword_red' => 'Some keyword rankings are stale or not updated. Review Keyword Research updates.',
                 'daily_guide_task_keyword_no_page' => 'Some keywords still don’t have a linked page. Create/publish their pages and connect them from Keyword Research.',
                 'daily_guide_task_rankmath_missing' => 'Some website keywords still have not been added to Keyword Research. Add one today.',
                 'daily_guide_task_content_red' => 'Some content items are stale. Review updates in Content Management.',
                 'daily_guide_task_publish' => 'No content published today. Publish at least one item.',
-                'daily_guide_task_backlink_acquired' => 'Acquire at least one backlink in Backlinks Management today.'
+                'daily_guide_task_backlink_acquired' => 'Acquire at least one backlink in Backlinks Management today.',
+                'daily_guide_task_email_contacts_daily' => 'Add 100 new email contacts today to keep campaign audiences growing.',
+                'daily_guide_task_email_campaign_daily' => 'Send one email campaign today to keep your audience engaged.'
             ),
             'fa' => array(
                 'smark_plugin_dashboard' => 'داشبورد پلاگین اسمارک',
@@ -2852,13 +2917,15 @@ class SMarkPlugin {
                 'daily_guide_subtitle' => 'چک‌لیست سریع کارهای ضروری امروز',
                 'daily_guide_all_good' => 'همه چیز برای امروز اوکی است.',
                 'daily_guide_open' => 'باز کردن',
-                'daily_guide_smart_action' => 'انجام هوشمند',
+                'daily_guide_smart_action' => 'انجام با ایجنت',
                 'daily_guide_task_gap_transfer' => 'امروز حداقل یک کلمه کلیدی از تحلیل رقبا به تحقیق کلمات کلیدی پروژه منتقل کنید.',
                 'daily_guide_task_keyword_red' => 'برخی کلمات کلیدی در تحقیق کلمات کلیدی نیاز به بروزرسانی دارند (قرمز/انجام‌نشده).',
                 'daily_guide_task_keyword_no_page' => 'برخی کلمات کلیدی هنوز لینک صفحه ندارند؛ یعنی برایشان صفحه/محتوا ساخته نشده یا به تحقیق کلمات کلیدی وصل نشده است. لطفاً بررسی کنید و صفحه‌شان را بسازید.',
                 'daily_guide_task_rankmath_missing' => 'برخی کلمات کلیدی وبسایت هنوز به جدول تحقیق کلمات کلیدی اضافه نشده‌اند. امروز یک مورد را اضافه کنید.',
                 'daily_guide_task_content_red' => 'برخی آیتم‌ها در مدیریت محتوا نیاز به بروزرسانی دارند (قرمز).',
-                'daily_guide_task_publish' => 'امروز هیچ محتوایی منتشر نشده است. حداقل یک محتوا منتشر کنید.'
+                'daily_guide_task_publish' => 'امروز هیچ محتوایی منتشر نشده است. حداقل یک محتوا منتشر کنید.',
+                'daily_guide_task_email_contacts_daily' => 'امروز ۱۰۰ مخاطب جدید به سیستم ایمیل مارکتینگ اضافه کنید تا لیست کمپین‌ها رشد کند.',
+                'daily_guide_task_email_campaign_daily' => 'امروز یک کمپین ایمیلی ارسال کنید تا ارتباط با مخاطبان فعال بماند.'
             )
         );
 
@@ -2906,6 +2973,52 @@ class SMarkPlugin {
         }
         $today = current_time('Y-m-d');
         $suggestions = array();
+
+        // Email Marketing: add 100 new contacts each day.
+        $contacts = get_option('smark_email_marketing_contacts', array());
+        $contacts = is_array($contacts) ? $contacts : array();
+        $contacts_added_today = 0;
+        foreach ($contacts as $contact) {
+            if (!is_array($contact)) {
+                continue;
+            }
+            $created_at = isset($contact['created_at']) ? (string) $contact['created_at'] : '';
+            if ($created_at !== '' && substr($created_at, 0, 10) === $today) {
+                $contacts_added_today++;
+            }
+        }
+
+        if ($contacts_added_today < 100) {
+            $suggestions[] = array(
+                'key'  => 'email_contacts_daily',
+                'text' => $this->get_dashboard_translation('daily_guide_task_email_contacts_daily', $lang),
+                'url'  => '#',
+                'email_view' => 'contacts',
+            );
+        }
+
+        $campaign_messages = get_option('smark_email_marketing_campaign_messages', array());
+        $campaign_messages = is_array($campaign_messages) ? $campaign_messages : array();
+        $campaign_sent_today = false;
+        foreach ($campaign_messages as $campaign_message) {
+            if (!is_array($campaign_message)) {
+                continue;
+            }
+            $sent_at = isset($campaign_message['sent_at']) ? (string) $campaign_message['sent_at'] : '';
+            if ($sent_at !== '' && substr($sent_at, 0, 10) === $today) {
+                $campaign_sent_today = true;
+                break;
+            }
+        }
+
+        if (!$campaign_sent_today) {
+            $suggestions[] = array(
+                'key'  => 'email_campaign_daily',
+                'text' => $this->get_dashboard_translation('daily_guide_task_email_campaign_daily', $lang),
+                'url'  => '#',
+                'email_view' => 'campaign-message',
+            );
+        }
 
         // 1) Keyword Gap -> Keyword Research transfer happened today?
         $transfer_opt = 'smark_daily_guide_keyword_gap_transfer_' . (string) (int) $project_id;
@@ -3123,16 +3236,16 @@ class SMarkPlugin {
             'nonce'   => wp_create_nonce('smark_daily_guide_smart_action'),
             'lang'    => $lang,
             'strings' => array(
-                'smartTitle'    => ($lang === 'fa') ? 'انجام هوشمند' : 'Smart action',
-                'smartTitleDone'=> ($lang === 'fa') ? 'نتیجه انجام هوشمند' : 'Smart action result',
+                'smartTitle'    => ($lang === 'fa') ? 'انجام با ایجنت' : 'Agent do',
+                'smartTitleDone'=> ($lang === 'fa') ? 'نتیجه ایجنت' : 'Agent result',
                 'copy'          => ($lang === 'fa') ? 'کپی' : 'Copy',
                 'result'        => ($lang === 'fa') ? 'نتیجه' : 'Result',
                 'prompt'        => ($lang === 'fa') ? 'پرامپت' : 'Prompt',
                 'sources'       => ($lang === 'fa') ? 'منابع' : 'Sources',
-                'smartNotReady' => ($lang === 'fa') ? 'این «انجام هوشمند» هنوز برای این آیتم آماده نیست.' : 'Smart action is not implemented for this item yet.',
-                'smartRunning'  => ($lang === 'fa') ? 'در حال انجام عملیات هوشمند…' : 'Running smart action…',
+                'smartNotReady' => ($lang === 'fa') ? 'این اکشن ایجنت هنوز برای این آیتم آماده نیست.' : 'Agent action is not implemented for this item yet.',
+                'smartRunning'  => ($lang === 'fa') ? 'ایجنت در حال انجام کار است…' : 'Agent is working…',
                 'smartDone'     => ($lang === 'fa') ? 'برای «{keyword}» یک آیتم محتوا ساخته شد و پیش‌نویس بلاگ ایجاد شد.' : 'Created a content item and a blog draft for “{keyword}”.',
-                'smartError'    => ($lang === 'fa') ? 'عملیات هوشمند ناموفق بود. لطفاً دوباره امتحان کنید.' : 'Smart action failed. Please try again.',
+                'smartError'    => ($lang === 'fa') ? 'اکشن ایجنت ناموفق بود. لطفاً دوباره امتحان کنید.' : 'Agent action failed. Please try again.',
             ),
         ));
 
@@ -3160,6 +3273,10 @@ class SMarkPlugin {
             'dailyGuideCards' => $this->get_dashboard_daily_guide_cards($lang),
             'emailWorkflow' => $this->get_dashboard_email_workflow(),
             'moduleVisibility' => $this->get_dashboard_module_visibility(),
+            'markBalance' => $this->get_dashboard_mark_balance(),
+            'offerProducts' => $this->get_dashboard_offer_products(),
+            'offerSections' => $this->get_dashboard_offer_sections(),
+            'offerProductsNonce' => wp_create_nonce('smark_dashboard_offer_products'),
             'emailContactsViewNonce' => wp_create_nonce('smark_email_contacts_page_ajax'),
             'emailAccountsViewNonce' => wp_create_nonce('smark_email_accounts_ajax'),
             'emailCampaignMessageViewNonce' => wp_create_nonce('smark_email_campaign_message_ajax'),
@@ -3171,10 +3288,10 @@ class SMarkPlugin {
                     'dailyGuideAllGood' => $this->get_dashboard_translation('daily_guide_all_good', 'en'),
                     'open' => $this->get_dashboard_translation('daily_guide_open', 'en'),
                     'smartAction' => $this->get_dashboard_translation('daily_guide_smart_action', 'en'),
-                    'smartNotReady' => 'Smart action is not implemented for this item yet.',
-                    'smartRunning' => 'Running smart action...',
-                    'smartDone' => 'Smart action completed.',
-                    'smartError' => 'Smart action failed. Please try again.',
+                    'smartNotReady' => 'Agent action is not implemented for this item yet.',
+                    'smartRunning' => 'Agent is working...',
+                    'smartDone' => 'Agent action completed.',
+                    'smartError' => 'Agent action failed. Please try again.',
                     'projectSettings' => $this->get_dashboard_translation('project_settings', 'en'),
                     'googleDocsConverter' => $this->get_dashboard_translation('google_docs_converter', 'en'),
                     'headlineAnalyzer' => $this->get_dashboard_translation('headline_analyzer', 'en'),
@@ -3185,10 +3302,10 @@ class SMarkPlugin {
                     'dailyGuideAllGood' => $this->get_dashboard_translation('daily_guide_all_good', 'fa'),
                     'open' => $this->get_dashboard_translation('daily_guide_open', 'fa'),
                     'smartAction' => $this->get_dashboard_translation('daily_guide_smart_action', 'fa'),
-                    'smartNotReady' => 'این «انجام هوشمند» هنوز برای این آیتم آماده نیست.',
-                    'smartRunning' => 'در حال انجام عملیات هوشمند...',
-                    'smartDone' => 'عملیات هوشمند انجام شد.',
-                    'smartError' => 'عملیات هوشمند ناموفق بود. لطفاً دوباره امتحان کنید.',
+                    'smartNotReady' => 'این اکشن ایجنت هنوز برای این آیتم آماده نیست.',
+                    'smartRunning' => 'ایجنت در حال انجام کار است...',
+                    'smartDone' => 'اکشن ایجنت انجام شد.',
+                    'smartError' => 'اکشن ایجنت ناموفق بود. لطفاً دوباره امتحان کنید.',
                     'projectSettings' => $this->get_dashboard_translation('project_settings', 'fa'),
                     'googleDocsConverter' => $this->get_dashboard_translation('google_docs_converter', 'fa'),
                     'headlineAnalyzer' => $this->get_dashboard_translation('headline_analyzer', 'fa'),
@@ -3202,6 +3319,38 @@ class SMarkPlugin {
                 'social'         => __('Social Media', 'smark'),
                 'seo'            => __('SEO', 'smark'),
                 'emailMarketing' => __('Email Marketing', 'smark'),
+                'ads'            => ($lang === 'fa') ? 'ادز' : __('Ads', 'smark'),
+                'offer'          => ($lang === 'fa') ? 'آفر' : __('Offer', 'smark'),
+                'offerManagementTitle' => ($lang === 'fa') ? 'مدیریت آفریینگ' : __('Offering Management', 'smark'),
+                'offerManagementDescription' => ($lang === 'fa') ? 'محصولات، مخاطبان، استراتژی‌ها و آفرهای کمپین را در یک فضای منظم تعریف کنید.' : __('Define campaign products, audiences, strategies, and offers in one organized workspace.', 'smark'),
+                'offerProductsTitle' => ($lang === 'fa') ? 'محصولات' : __('Products', 'smark'),
+                'offerAudienceTypeTitle' => ($lang === 'fa') ? 'انواع مخاطب' : __('Audience Types', 'smark'),
+                'offerStrategyTitle' => ($lang === 'fa') ? 'استراتژی‌ها' : __('Strategies', 'smark'),
+                'offerOfferTitle' => ($lang === 'fa') ? 'آفرها' : __('Offers', 'smark'),
+                'offerProductsDescription' => ($lang === 'fa') ? 'محصولات قابل ارائه در کمپین‌ها را تعریف و آماده کنید.' : __('Define the products available for your campaigns.', 'smark'),
+                'offerAudienceTypeDescription' => ($lang === 'fa') ? 'گروه‌های مخاطب هدف را با نیاز و انگیزه مشخص کنید.' : __('Define audience groups by needs and motivation.', 'smark'),
+                'offerStrategyDescription' => ($lang === 'fa') ? 'مسیر ارائه، پیام اصلی و منطق فروش را مشخص کنید.' : __('Define positioning, core message, and sales logic.', 'smark'),
+                'offerOfferDescription' => ($lang === 'fa') ? 'پیشنهادها، مزیت‌ها و محرک‌های خرید را آماده کنید.' : __('Define incentives, benefits, and purchase triggers.', 'smark'),
+                'offerProductName' => ($lang === 'fa') ? 'نام محصول' : __('Product name', 'smark'),
+                'offerItemName' => ($lang === 'fa') ? 'عنوان' : __('Title', 'smark'),
+                'offerProductPrice' => ($lang === 'fa') ? 'قیمت' : __('Price', 'smark'),
+                'offerProductUrl' => ($lang === 'fa') ? 'لینک محصول' : __('Product URL', 'smark'),
+                'offerProductNotes' => ($lang === 'fa') ? 'توضیحات' : __('Notes', 'smark'),
+                'offerProductAdd' => ($lang === 'fa') ? 'افزودن محصول' : __('Add product', 'smark'),
+                'offerItemAdd' => ($lang === 'fa') ? 'افزودن آیتم' : __('Add item', 'smark'),
+                'offerProductUpdate' => ($lang === 'fa') ? 'به‌روزرسانی محصول' : __('Update product', 'smark'),
+                'offerItemUpdate' => ($lang === 'fa') ? 'به‌روزرسانی آیتم' : __('Update item', 'smark'),
+                'offerProductCancel' => ($lang === 'fa') ? 'انصراف' : __('Cancel', 'smark'),
+                'offerProductEdit' => ($lang === 'fa') ? 'ویرایش' : __('Edit', 'smark'),
+                'offerProductDelete' => ($lang === 'fa') ? 'حذف' : __('Delete', 'smark'),
+                'offerProductEmpty' => ($lang === 'fa') ? 'هنوز محصولی اضافه نشده است.' : __('No products have been added yet.', 'smark'),
+                'offerSectionEmpty' => ($lang === 'fa') ? 'هنوز آیتمی در این بخش اضافه نشده است.' : __('No items have been added to this section yet.', 'smark'),
+                'offerProductSaved' => ($lang === 'fa') ? 'آیتم‌ها ذخیره شدند.' : __('Items saved.', 'smark'),
+                'offerProductSaveError' => ($lang === 'fa') ? 'ذخیره آیتم‌ها انجام نشد.' : __('Items could not be saved.', 'smark'),
+                'offerProductNameRequired' => ($lang === 'fa') ? 'نام محصول را وارد کنید.' : __('Enter a product name.', 'smark'),
+                'offerItemNameRequired' => ($lang === 'fa') ? 'عنوان را وارد کنید.' : __('Enter a title.', 'smark'),
+                'markCredit'     => ($lang === 'fa') ? 'مارک' : __('Mark', 'smark'),
+                'markCreditBalance' => ($lang === 'fa') ? 'اعتبار مارک' : __('Mark Credit Balance', 'smark'),
                 'language'       => __('Language', 'smark'),
                 'settings'       => __('Settings', 'smark'),
                 'chooseLanguage' => __('Choose language', 'smark'),
@@ -3211,10 +3360,10 @@ class SMarkPlugin {
                 'dailyGuideAllGood' => $this->get_dashboard_translation('daily_guide_all_good', $lang),
                 'open'           => $this->get_dashboard_translation('daily_guide_open', $lang),
                 'smartAction'    => $this->get_dashboard_translation('daily_guide_smart_action', $lang),
-                'smartNotReady'  => ($lang === 'fa') ? 'این «انجام هوشمند» هنوز برای این آیتم آماده نیست.' : 'Smart action is not implemented for this item yet.',
-                'smartRunning'   => ($lang === 'fa') ? 'در حال انجام عملیات هوشمند...' : 'Running smart action...',
-                'smartDone'      => ($lang === 'fa') ? 'عملیات هوشمند انجام شد.' : 'Smart action completed.',
-                'smartError'     => ($lang === 'fa') ? 'عملیات هوشمند ناموفق بود. لطفاً دوباره امتحان کنید.' : 'Smart action failed. Please try again.',
+                'smartNotReady'  => ($lang === 'fa') ? 'این اکشن ایجنت هنوز برای این آیتم آماده نیست.' : 'Agent action is not implemented for this item yet.',
+                'smartRunning'   => ($lang === 'fa') ? 'ایجنت در حال انجام کار است...' : 'Agent is working...',
+                'smartDone'      => ($lang === 'fa') ? 'اکشن ایجنت انجام شد.' : 'Agent action completed.',
+                'smartError'     => ($lang === 'fa') ? 'اکشن ایجنت ناموفق بود. لطفاً دوباره امتحان کنید.' : 'Agent action failed. Please try again.',
                 'projectSettings' => $this->get_dashboard_translation('project_settings', $lang),
                 'googleDocsConverter' => $this->get_dashboard_translation('google_docs_converter', $lang),
                 'headlineAnalyzer' => $this->get_dashboard_translation('headline_analyzer', $lang),
@@ -3879,7 +4028,7 @@ class SMarkPlugin {
         } catch (Throwable $e) {
             $msg = ($lang === 'fa')
                 ? 'Ø¹Ù…Ù„ÛŒØ§Øª Ù‡ÙˆØ´Ù…Ù†Ø¯ Ø¨Ø§ Ø®Ø·Ø§ Ù…ØªÙˆÙ‚Ù Ø´Ø¯.'
-                : 'Smart action failed with an exception.';
+                : 'Agent action failed with an exception.';
 
             $payload = array(
                 'message' => $msg,
@@ -3894,6 +4043,89 @@ class SMarkPlugin {
 
             wp_send_json_error($payload, 500);
         }
+    }
+
+    private function get_dashboard_offer_products() {
+        $sections = $this->get_dashboard_offer_sections();
+        return isset($sections['product']) && is_array($sections['product']) ? $sections['product'] : array();
+    }
+
+    private function get_dashboard_offer_sections() {
+        $sections = get_option('smark_dashboard_offer_sections', array());
+        $sections = is_array($sections) ? $sections : array();
+        $legacy_products = get_option('smark_dashboard_offer_products', array());
+
+        if (!isset($sections['product']) && is_array($legacy_products)) {
+            $sections['product'] = $legacy_products;
+        }
+
+        $clean = array();
+        foreach (array('product', 'audience_type', 'strategy', 'offer') as $section_key) {
+            $items = isset($sections[$section_key]) && is_array($sections[$section_key]) ? $sections[$section_key] : array();
+            $clean[$section_key] = $this->sanitize_dashboard_offer_items($items);
+        }
+
+        return $clean;
+    }
+
+    private function sanitize_dashboard_offer_items($items) {
+        $items = is_array($items) ? $items : array();
+        $clean = array();
+
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+
+            $name = isset($item['name']) ? sanitize_text_field((string) $item['name']) : '';
+            if ($name === '') {
+                continue;
+            }
+
+            $clean[] = array(
+                'id' => isset($item['id']) ? sanitize_key((string) $item['id']) : wp_generate_uuid4(),
+                'name' => $name,
+                'price' => isset($item['price']) ? sanitize_text_field((string) $item['price']) : '',
+                'url' => isset($item['url']) ? esc_url_raw((string) $item['url']) : '',
+                'notes' => isset($item['notes']) ? sanitize_textarea_field((string) $item['notes']) : '',
+            );
+        }
+
+        return $clean;
+    }
+
+    public function ajax_dashboard_offer_products_save() {
+        check_ajax_referer('smark_dashboard_offer_products', 'nonce');
+
+        if (!current_user_can(self::CAP_ACCESS)) {
+            wp_send_json_error(array('message' => __('Permission denied', 'smark')), 403);
+        }
+
+        $raw_payload = isset($_POST['sections']) ? wp_unslash($_POST['sections']) : (isset($_POST['products']) ? wp_unslash($_POST['products']) : '[]');
+        $decoded = json_decode((string) $raw_payload, true);
+        if (!is_array($decoded)) {
+            wp_send_json_error(array('message' => __('Invalid products payload', 'smark')), 400);
+        }
+
+        if (isset($_POST['sections'])) {
+            $sections = array();
+            foreach (array('product', 'audience_type', 'strategy', 'offer') as $section_key) {
+                $sections[$section_key] = isset($decoded[$section_key]) && is_array($decoded[$section_key])
+                    ? $this->sanitize_dashboard_offer_items($decoded[$section_key])
+                    : array();
+            }
+        } else {
+            $sections = $this->get_dashboard_offer_sections();
+            $sections['product'] = $this->sanitize_dashboard_offer_items($decoded);
+        }
+
+        update_option('smark_dashboard_offer_sections', $sections, false);
+        update_option('smark_dashboard_offer_products', $sections['product'], false);
+
+        wp_send_json_success(array(
+            'products' => $sections['product'],
+            'sections' => $sections,
+        ));
     }
 
     /**

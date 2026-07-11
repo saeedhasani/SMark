@@ -187,6 +187,8 @@ class SMarkProjectSettings {
                 'module_email' => 'Email Marketing',
                 'module_seo' => 'SEO',
                 'module_social' => 'Social Media',
+                'module_ads' => 'Ads',
+                'module_offer' => 'Offer',
                 'module_on' => 'On',
                 'module_off' => 'Off',
             ),
@@ -229,6 +231,8 @@ class SMarkProjectSettings {
                 'module_email' => 'ایمیل مارکتینگ',
                 'module_seo' => 'سئو',
                 'module_social' => 'سوشال مدیا',
+                'module_ads' => 'ادز',
+                'module_offer' => 'آفر',
                 'module_on' => 'روشن',
                 'module_off' => 'خاموش',
             ),
@@ -242,6 +246,8 @@ class SMarkProjectSettings {
             'email' => true,
             'seo' => true,
             'social' => true,
+            'ads' => true,
+            'offer' => true,
         );
     }
 
@@ -2337,6 +2343,8 @@ class SMarkProjectSettings {
             'email' => $strings['module_email'],
             'seo' => $strings['module_seo'],
             'social' => $strings['module_social'],
+            'ads' => $strings['module_ads'],
+            'offer' => $strings['module_offer'],
         );
    
         ?>

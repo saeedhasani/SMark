@@ -75,15 +75,6 @@ class SMarkEmailMarketing {
 
         add_submenu_page(
             null,
-            __('Contacts', 'smark'),
-            __('Contacts', 'smark'),
-            'smark_access',
-            'smark-email-contacts',
-            array($this, 'render_contacts_page')
-        );
-
-        add_submenu_page(
-            null,
             __('Campaign Message', 'smark'),
             __('Campaign Message', 'smark'),
             'smark_access',
@@ -102,7 +93,7 @@ class SMarkEmailMarketing {
     }
 
     public function enqueue_assets($hook) {
-        if (!in_array($hook, array('toplevel_page_smark-dashboard', 'smark_page_smark-dashboard-page', 'admin_page_smark-email-accounts', 'admin_page_smark-email-contacts', 'admin_page_smark-email-campaign-message', 'admin_page_smark-email-performance'), true)) {
+        if (!in_array($hook, array('toplevel_page_smark-dashboard', 'smark_page_smark-dashboard-page', 'admin_page_smark-email-accounts', 'admin_page_smark-email-campaign-message', 'admin_page_smark-email-performance'), true)) {
             return;
         }
 
@@ -562,6 +553,12 @@ class SMarkEmailMarketing {
             wp_send_json_error(array(
                 'message' => esc_html__('You do not have sufficient permissions to access this page.', 'smark'),
             ), 403);
+        }
+
+        foreach (array('smark_message', 'import_token') as $key) {
+            if (isset($_POST[$key])) {
+                $_GET[$key] = sanitize_text_field(wp_unslash($_POST[$key]));
+            }
         }
 
         ob_start();
@@ -2831,7 +2828,8 @@ class SMarkEmailMarketing {
 
         wp_safe_redirect(add_query_arg(
             array(
-                'page' => 'smark-email-contacts',
+                'page' => 'smark-dashboard-page',
+                'smark_email_view' => 'contacts',
                 'import_token' => sanitize_key($preview['token']),
             ),
             admin_url('admin.php')
@@ -7733,8 +7731,9 @@ JS;
             array_merge(
                 $extra_args,
                 array(
-                'page' => 'smark-email-contacts',
-                'smark_message' => sanitize_key($message),
+                    'page' => 'smark-dashboard-page',
+                    'smark_email_view' => 'contacts',
+                    'smark_message' => sanitize_key($message),
                 )
             ),
             admin_url('admin.php')
@@ -8721,7 +8720,7 @@ JS;
                     'icon' => 'dashicons-groups',
                     'title' => 'مخاطبین',
                     'description' => 'لیست‌ها و برچسب‌های مخاطبان را بر اساس هدف کمپین آماده کنید.',
-                    'url' => admin_url('admin.php?page=smark-email-contacts'),
+                    'url' => add_query_arg(array('page' => 'smark-dashboard-page', 'smark_email_view' => 'contacts'), admin_url('admin.php')),
                 ),
                 array(
                     'icon' => 'dashicons-email-alt',
@@ -8749,7 +8748,7 @@ JS;
                 'icon' => 'dashicons-groups',
                 'title' => 'Contacts',
                 'description' => 'Prepare contact lists and tags based on each campaign goal.',
-                'url' => admin_url('admin.php?page=smark-email-contacts'),
+                'url' => add_query_arg(array('page' => 'smark-dashboard-page', 'smark_email_view' => 'contacts'), admin_url('admin.php')),
             ),
             array(
                 'icon' => 'dashicons-email-alt',

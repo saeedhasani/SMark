@@ -325,8 +325,18 @@
         const lang = String(cfg.currentLang || "en") === "fa" ? "fa-IR" : "en-US";
         const formatted = new Intl.NumberFormat(lang).format(effective);
         $field.val(formatted);
+        document.dispatchEvent(
+          new window.CustomEvent("smark:dashboard-mark-balance-updated", {
+            detail: { markBalance: { value: effective, label: formatted } },
+          })
+        );
       } catch (e) {
         $field.val(String(effective));
+        document.dispatchEvent(
+          new window.CustomEvent("smark:dashboard-mark-balance-updated", {
+            detail: { markBalance: { value: effective, label: String(effective) } },
+          })
+        );
       }
     });
   }

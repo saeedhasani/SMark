@@ -100,7 +100,7 @@ body.toplevel_page_smark-dashboard #wpbody-content > .error {
   gap: 18px;
 }
 .smark-dashboard-daily-grid--empty {
-  grid-template-columns: minmax(260px, 420px);
+  grid-template-columns: 1fr;
 }
 
 .smark-dashboard-daily-card {
@@ -215,6 +215,7 @@ body.toplevel_page_smark-dashboard #wpbody-content > .error {
   padding-top: 22px;
 }
 .smark-dashboard-daily-card__button {
+  position: relative;
   box-sizing: border-box;
   appearance: none;
   -webkit-appearance: none;
@@ -240,6 +241,34 @@ body.toplevel_page_smark-dashboard #wpbody-content > .error {
   box-shadow: none;
   cursor: pointer;
   transition: color 160ms ease, background 160ms ease, border-color 160ms ease;
+}
+.smark-dashboard-daily-card__button-label {
+  display: inline-block;
+}
+.smark-dashboard-daily-card__mark-cost {
+  position: absolute;
+  top: -10px;
+  left: -7px;
+  min-width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  color: #111827;
+  background: #f59e0b;
+  box-shadow: 0 8px 14px rgba(0, 0, 0, 0.12);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
+}
+.smark-dashboard-app-canvas--rtl .smark-dashboard-daily-card__mark-cost {
+  right: -7px;
+  left: auto;
 }
 .smark-dashboard-daily-card__button:visited {
   color: var(--purple-900);
@@ -412,6 +441,239 @@ body.toplevel_page_smark-dashboard #wpbody-content > .error {
   line-height: 1.6;
 }
 
+.smark-dashboard-offer {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 24px;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+}
+.smark-dashboard-offer__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 22px;
+  text-align: left;
+}
+.smark-dashboard-offer__header h2 {
+  margin: 0 0 6px;
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: 0;
+}
+.smark-dashboard-offer__header p {
+  margin: 0;
+  color: #35506f;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.7;
+}
+.smark-dashboard-offer__notice {
+  flex: 0 0 auto;
+  max-width: 280px;
+  padding: 9px 12px;
+  border: 1px solid rgba(22, 163, 74, 0.2);
+  border-radius: 12px;
+  color: #117e3c;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
+  background: rgba(226, 255, 238, 0.66);
+}
+.smark-dashboard-offer__notice.is-error {
+  border-color: rgba(180, 35, 24, 0.22);
+  color: #b42318;
+  background: rgba(255, 245, 245, 0.72);
+}
+.smark-dashboard-offer__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 18px;
+  padding: 6px;
+  border: 1px solid rgba(123, 44, 255, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.34);
+}
+.smark-dashboard-offer__tab {
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  font-family: inherit;
+  line-height: 1.2;
+  background: transparent;
+  cursor: pointer;
+}
+.smark-dashboard-offer__tab:hover,
+.smark-dashboard-offer__tab:focus-visible,
+.smark-dashboard-offer__tab.is-active {
+  color: var(--purple-900);
+  border-color: rgba(123, 44, 255, 0.16);
+  background: rgba(255, 255, 255, 0.62);
+  outline: none;
+}
+.smark-dashboard-offer__section-heading {
+  margin: 0 0 14px;
+}
+.smark-dashboard-offer__section-heading h3 {
+  margin: 0 0 4px;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+.smark-dashboard-offer__section-heading p {
+  margin: 0;
+  color: #35506f;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.7;
+}
+.smark-dashboard-offer__form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 18px;
+  border: 1px solid rgba(123, 44, 255, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.34);
+}
+.smark-dashboard-offer__form label {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 0;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+.smark-dashboard-offer__form input,
+.smark-dashboard-offer__form textarea {
+  width: 100%;
+  min-height: 40px;
+  box-sizing: border-box;
+  margin: 0;
+  border: 1px solid rgba(123, 44, 255, 0.18);
+  border-radius: 12px;
+  color: var(--ink);
+  font-size: 13px;
+  font-family: inherit;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: none;
+}
+.smark-dashboard-offer__form textarea {
+  min-height: 82px;
+  resize: vertical;
+}
+.smark-dashboard-offer__field-wide,
+.smark-dashboard-offer__actions {
+  grid-column: 1 / -1;
+}
+.smark-dashboard-offer__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.smark-dashboard-offer__button {
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid rgba(123, 44, 255, 0.18);
+  border-radius: 14px;
+  color: var(--purple-900);
+  font-size: 12px;
+  font-weight: 800;
+  font-family: inherit;
+  background: rgba(255, 255, 255, 0.52);
+  cursor: pointer;
+}
+.smark-dashboard-offer__button--primary {
+  color: #fff;
+  border-color: var(--purple-900);
+  background: var(--purple-900);
+}
+.smark-dashboard-offer__button:disabled {
+  opacity: .62;
+  cursor: default;
+}
+.smark-dashboard-offer__list {
+  overflow-x: auto;
+  border: 1px solid rgba(123, 44, 255, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.34);
+}
+.smark-dashboard-offer__table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+.smark-dashboard-offer__table th,
+.smark-dashboard-offer__table td {
+  padding: 14px;
+  border-bottom: 1px solid rgba(123, 44, 255, 0.12);
+  color: #35506f;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
+  text-align: left;
+  vertical-align: top;
+}
+.smark-dashboard-offer__table th {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.42);
+}
+.smark-dashboard-offer__table tr:last-child td {
+  border-bottom: 0;
+}
+.smark-dashboard-offer__table a {
+  color: var(--purple-900);
+  overflow-wrap: anywhere;
+}
+.smark-dashboard-offer__row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.smark-dashboard-offer__link-button {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--purple-900);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  background: transparent;
+  cursor: pointer;
+}
+.smark-dashboard-offer__link-button.is-danger {
+  color: #b42318;
+}
+.smark-dashboard-offer__empty {
+  padding: 22px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.7;
+}
+
 .smark-dashboard-embedded-view {
   width: 100%;
 }
@@ -473,6 +735,17 @@ body.toplevel_page_smark-dashboard #wpbody-content > .error {
 .smark-dashboard-app-canvas--rtl .smark-dashboard-email-workflow__content {
   flex-direction: row-reverse;
   text-align: right;
+}
+.smark-dashboard-app-canvas--rtl .smark-dashboard-offer__header,
+.smark-dashboard-app-canvas--rtl .smark-dashboard-offer__section-heading,
+.smark-dashboard-app-canvas--rtl .smark-dashboard-offer__table th,
+.smark-dashboard-app-canvas--rtl .smark-dashboard-offer__table td {
+  text-align: right;
+}
+.smark-dashboard-app-canvas--rtl .smark-dashboard-offer__tabs,
+.smark-dashboard-app-canvas--rtl .smark-dashboard-offer__actions,
+.smark-dashboard-app-canvas--rtl .smark-dashboard-offer__row-actions {
+  flex-direction: row-reverse;
 }
 
 .smark-dashboard-glass-menu {
@@ -580,22 +853,23 @@ body.toplevel_page_smark-dashboard #wpbody-content > .error {
   display: block;
   color: currentColor;
 }
-.smark-dashboard-glass-menu__language-wrap, .smark-dashboard-glass-menu__settings-wrap {
+.smark-dashboard-glass-menu__language-wrap, .smark-dashboard-glass-menu__settings-wrap, .smark-dashboard-glass-menu__mark-wrap {
   position: relative;
   z-index: 2;
 }
 .smark-dashboard-glass-menu__language-wrap.is-open .smark-dashboard-glass-menu__language-panel,
 .smark-dashboard-glass-menu__language-wrap.is-open .smark-dashboard-glass-menu__settings-panel, .smark-dashboard-glass-menu__settings-wrap.is-open .smark-dashboard-glass-menu__language-panel,
-.smark-dashboard-glass-menu__settings-wrap.is-open .smark-dashboard-glass-menu__settings-panel {
+.smark-dashboard-glass-menu__settings-wrap.is-open .smark-dashboard-glass-menu__settings-panel,
+.smark-dashboard-glass-menu__mark-wrap.is-open .smark-dashboard-glass-menu__mark-panel {
   opacity: 1;
   pointer-events: auto;
   transform: translate(0, -50%);
 }
-.smark-dashboard-glass-menu__language-wrap.is-open .smark-dashboard-glass-menu__tooltip, .smark-dashboard-glass-menu__settings-wrap.is-open .smark-dashboard-glass-menu__tooltip {
+.smark-dashboard-glass-menu__language-wrap.is-open .smark-dashboard-glass-menu__tooltip, .smark-dashboard-glass-menu__settings-wrap.is-open .smark-dashboard-glass-menu__tooltip, .smark-dashboard-glass-menu__mark-wrap.is-open .smark-dashboard-glass-menu__tooltip {
   opacity: 0;
   pointer-events: none;
 }
-.smark-dashboard-glass-menu__language-panel, .smark-dashboard-glass-menu__settings-panel, .smark-dashboard-glass-menu__tooltip {
+.smark-dashboard-glass-menu__language-panel, .smark-dashboard-glass-menu__settings-panel, .smark-dashboard-glass-menu__mark-panel, .smark-dashboard-glass-menu__tooltip {
   position: absolute;
   top: 50%;
   right: calc(100% + 18px);
@@ -610,7 +884,7 @@ body.toplevel_page_smark-dashboard #wpbody-content > .error {
   transform: translate(8px, -50%);
   transition: opacity 160ms ease, transform 160ms ease;
 }
-.smark-dashboard-glass-menu__language-panel::after, .smark-dashboard-glass-menu__settings-panel::after, .smark-dashboard-glass-menu__tooltip::after {
+.smark-dashboard-glass-menu__language-panel::after, .smark-dashboard-glass-menu__settings-panel::after, .smark-dashboard-glass-menu__mark-panel::after, .smark-dashboard-glass-menu__tooltip::after {
   content: "";
   position: absolute;
   top: 50%;
@@ -642,6 +916,29 @@ body.toplevel_page_smark-dashboard #wpbody-content > .error {
 }
 .smark-dashboard-glass-menu__settings-wrap.is-open .smark-dashboard-glass-menu__settings-panel {
   transform: translate(0, 0);
+}
+.smark-dashboard-glass-menu__mark-panel {
+  min-width: 142px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  text-align: center;
+}
+.smark-dashboard-glass-menu__mark-label {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.smark-dashboard-glass-menu__mark-value {
+  display: block;
+  margin-top: 5px;
+  color: var(--purple-900);
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0;
 }
 .smark-dashboard-glass-menu__language-option {
   position: relative;
@@ -736,6 +1033,9 @@ body.toplevel_page_smark-dashboard #wpbody-content > .error {
   .smark-dashboard-daily-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .smark-dashboard-offer__form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 @media (max-width: 640px) {
   .smark-dashboard-workspace-content {
@@ -743,6 +1043,23 @@ body.toplevel_page_smark-dashboard #wpbody-content > .error {
   }
   .smark-dashboard-daily-grid {
     grid-template-columns: 1fr;
+  }
+  .smark-dashboard-offer {
+    padding: 18px;
+  }
+  .smark-dashboard-offer__header {
+    flex-direction: column;
+  }
+  .smark-dashboard-offer__notice {
+    max-width: none;
+  }
+  .smark-dashboard-offer__form {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+  .smark-dashboard-offer__actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 @media (min-width: 783px) {
