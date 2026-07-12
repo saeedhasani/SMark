@@ -237,6 +237,20 @@ body.smark-plugin-page #wpbody-content {
     max-width: 520px;
 }
 
+.cm-card-header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.cm-card-header-actions .btn {
+    min-height: 40px;
+    white-space: nowrap;
+    text-decoration: none;
+}
+
 .smark-content-management-page.rtl .cm-selected-search {
     direction: rtl;
     text-align: right;

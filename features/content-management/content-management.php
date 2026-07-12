@@ -61,6 +61,7 @@ class SMarkContentManagement {
 
         add_action('wp_ajax_SMARK_cm_forreview_enable', array($this, 'ajax_forreview_enable'));
         add_action('wp_ajax_SMARK_cm_forreview_disable', array($this, 'ajax_forreview_disable'));
+        add_action('wp_ajax_smark_dashboard_content_management_view', array($this, 'ajax_dashboard_view'));
     }
 
     public function register_forreview_rewrite() {
@@ -937,7 +938,7 @@ class SMarkContentManagement {
     }
 
     public function enqueue_assets($hook) {
-        if ($hook !== 'admin_page_smark-content-management') {
+        if ($hook !== 'admin_page_smark-content-management' && $hook !== 'toplevel_page_smark-dashboard' && $hook !== 'smark_page_smark-dashboard-page') {
             return;
         }
 
@@ -1055,6 +1056,7 @@ class SMarkContentManagement {
                 'breadcrumb_seo' => 'SEO Management',
                 'breadcrumb_current' => 'Content Management',
                 'add_content' => 'Add Content',
+                'import_google_docs' => 'Import from Google Docs',
                 'search_placeholder' => 'Search content…',
                 'search_selected_placeholder' => 'Search selected…',
                 'loading' => 'Loading…',
@@ -1087,6 +1089,7 @@ class SMarkContentManagement {
                 'breadcrumb_seo' => 'مدیریت سئو',
                 'breadcrumb_current' => 'مدیریت محتوا',
                 'add_content' => 'افزودن محتوا',
+                'import_google_docs' => 'ایمپورت از گوگل داکس',
                 'search_placeholder' => 'جستجوی محتوا…',
                 'search_selected_placeholder' => 'جستجو در محتواهای پروژه…',
                 'loading' => 'در حال بارگذاری…',
@@ -1968,10 +1971,16 @@ class SMarkContentManagement {
                     <div class="cm-card-header">
                         <h3><?php echo esc_html($strings['page_title']); ?></h3>
                         <input type="text" id="cmSelectedSearch" class="cm-selected-search" placeholder="<?php echo esc_attr($strings['search_selected_placeholder']); ?>" <?php echo $rtl_class ? 'dir="rtl"' : ''; ?>>
-                        <button type="button" class="btn btn-outline cm-open-picker">
-                            <span class="dashicons dashicons-plus-alt2"></span>
-                            <?php echo esc_html($strings['add_content']); ?>
-                        </button>
+                        <div class="cm-card-header-actions">
+                            <a class="btn btn-outline cm-google-docs-import" href="<?php echo esc_url(admin_url('admin.php?page=smark-google-docs-converter')); ?>">
+                                <span class="dashicons dashicons-media-document"></span>
+                                <?php echo esc_html($strings['import_google_docs']); ?>
+                            </a>
+                            <button type="button" class="btn btn-outline cm-open-picker">
+                                <span class="dashicons dashicons-plus-alt2"></span>
+                                <?php echo esc_html($strings['add_content']); ?>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="cm-table-wrapper">
@@ -2133,6 +2142,22 @@ class SMarkContentManagement {
             </div>
         </div>
         <?php
+    }
+
+    public function ajax_dashboard_view() {
+        check_ajax_referer('smark_content_management_dashboard_ajax', 'nonce');
+
+        if (!current_user_can('smark_access')) {
+            wp_send_json_error(array('message' => __('Permission denied', 'smark')), 403);
+        }
+
+        ob_start();
+        $this->render_page();
+        $html = ob_get_clean();
+
+        wp_send_json_success(array(
+            'html' => $html,
+        ));
     }
 
     public function ajax_save_language() {

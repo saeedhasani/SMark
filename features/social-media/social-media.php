@@ -52,6 +52,7 @@ class SMarkSocialMedia {
         add_action('wp_ajax_SMARK_get_visual_text_prompt', array($this, 'ajax_get_visual_text_prompt'));
         add_action('wp_ajax_SMARK_get_caption_prompt', array($this, 'ajax_get_caption_prompt'));
         add_action('wp_ajax_SMARK_sm_get_canva_template', array($this, 'ajax_get_canva_template'));
+        add_action('wp_ajax_smark_dashboard_social_view', array($this, 'ajax_dashboard_view'));
 
         // Check and create table if needed
         $this->maybe_create_table();
@@ -863,7 +864,7 @@ class SMarkSocialMedia {
      */
     public function enqueue_scripts($hook) {
         // Check if we're on the social media page
-        if ($hook !== 'admin_page_smark-social-media') {
+        if ($hook !== 'admin_page_smark-social-media' && $hook !== 'toplevel_page_smark-dashboard' && $hook !== 'smark_page_smark-dashboard-page') {
             return;
         }
 
@@ -2417,6 +2418,8 @@ Requirements:
             'en' => array(
                 'social_media_designer' => 'Social Media Designer',
                 'create_stunning' => 'Create stunning social media graphics and posts.',
+                'competitor_analysis' => 'Competitor Analysis',
+                'track_competitors' => 'Track competitor websites and their new content.',
                 'SMARK_dashboard' => 'SMark Dashboard',
                 'select_or_create_project' => 'Select or Create Project',
                 'choose_existing_project' => 'Choose an existing project or create a new one to get started',
@@ -2503,6 +2506,8 @@ Requirements:
             'fa' => array(
                 'social_media_designer' => 'طراح رسانه‌های اجتماعی',
                 'create_stunning' => 'گرافیک‌ها و پست‌های خیره‌کننده رسانه‌های اجتماعی ایجاد کنید.',
+                'competitor_analysis' => 'تحلیل رقبا',
+                'track_competitors' => 'وبسایت‌های رقیب و محتوای جدید آن‌ها را دنبال کنید.',
                 'SMARK_dashboard' => 'داشبورد اسمارک',
                 'select_or_create_project' => 'انتخاب یا ایجاد پروژه',
                 'choose_existing_project' => 'یک پروژه موجود را انتخاب کنید یا یک پروژه جدید ایجاد کنید',
@@ -2714,6 +2719,18 @@ Requirements:
                         </div>
                     </div>
                 </div>
+                <section class="smark-social-competitor-section" aria-label="<?php echo esc_attr($this->get_translation('competitor_analysis')); ?>">
+                    <div class="smark-social-competitor-section__header">
+                        <h2><?php echo esc_html($this->get_translation('competitor_analysis')); ?></h2>
+                        <p><?php echo esc_html($this->get_translation('track_competitors')); ?></p>
+                    </div>
+                    <iframe
+                        class="smark-social-competitor-section__frame"
+                        src="<?php echo esc_url(add_query_arg(array('page' => 'smark-competitor-analysis', 'smark_embed' => '1'), admin_url('admin.php'))); ?>"
+                        title="<?php echo esc_attr($this->get_translation('competitor_analysis')); ?>"
+                        loading="lazy"
+                    ></iframe>
+                </section>
             </div>
 
             <!-- Add/Edit Item Modal -->
@@ -2887,7 +2904,6 @@ Requirements:
                     <span class="version-number">v<?php echo esc_html(SMARK_VERSION); ?></span>
                 </div>
             </div>
-            </div>
         </div>
 
         <!-- ChatGPT Auto-fill Script -->
@@ -2994,6 +3010,22 @@ Requirements:
         })();
         </script>
         <?php
+    }
+
+    public function ajax_dashboard_view() {
+        check_ajax_referer('smark_social_dashboard_ajax', 'nonce');
+
+        if (!current_user_can('smark_access')) {
+            wp_send_json_error(array('message' => __('Permission denied', 'smark')), 403);
+        }
+
+        ob_start();
+        $this->render_page();
+        $html = ob_get_clean();
+
+        wp_send_json_success(array(
+            'html' => $html,
+        ));
     }
 }
 

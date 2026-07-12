@@ -2593,6 +2593,46 @@ class SMarkPlugin {
                 'email_view' => 'campaign-message',
                 'smart_action' => false,
             ),
+            'offer_product_monthly' => array(
+                'title_en' => 'Add Product',
+                'title_fa' => 'افزودن محصول',
+                'category' => 'offer',
+                'translation_key' => 'daily_guide_task_offer_product_monthly',
+                'url' => '#',
+                'offer_section' => 'product',
+                'always_active' => true,
+                'smart_action' => false,
+            ),
+            'offer_audience_biweekly' => array(
+                'title_en' => 'Define Audience Group',
+                'title_fa' => 'تعریف گروه مخاطب',
+                'category' => 'offer',
+                'translation_key' => 'daily_guide_task_offer_audience_biweekly',
+                'url' => '#',
+                'offer_section' => 'audience_type',
+                'always_active' => true,
+                'smart_action' => false,
+            ),
+            'offer_strategy_weekly' => array(
+                'title_en' => 'Add Strategy',
+                'title_fa' => 'افزودن استراتژی',
+                'category' => 'offer',
+                'translation_key' => 'daily_guide_task_offer_strategy_weekly',
+                'url' => '#',
+                'offer_section' => 'strategy',
+                'always_active' => true,
+                'smart_action' => false,
+            ),
+            'offer_offer_create' => array(
+                'title_en' => 'Create Offer',
+                'title_fa' => 'ایجاد آفر',
+                'category' => 'offer',
+                'translation_key' => 'daily_guide_task_offer_create',
+                'url' => '#',
+                'offer_section' => 'offer',
+                'always_active' => true,
+                'smart_action' => false,
+            ),
             'gap_transfer' => array(
                 'title_en' => 'Transfer Competitor Keyword',
                 'title_fa' => 'انتقال کلمه رقبا',
@@ -2626,7 +2666,8 @@ class SMarkPlugin {
                 'title_fa' => 'بازبینی محتوای قدیمی',
                 'category' => 'seo',
                 'translation_key' => 'daily_guide_task_content_red',
-                'url' => admin_url('admin.php?page=smark-content-management'),
+                'url' => '#',
+                'content_view' => 'content-management',
             ),
             'backlink_acquired' => array(
                 'title_en' => 'Acquire Backlink',
@@ -2666,10 +2707,12 @@ class SMarkPlugin {
                 'descriptionEn' => $description_en,
                 'descriptionFa' => $description_fa,
                 'url' => isset($item['url']) ? esc_url_raw((string) $item['url']) : esc_url_raw((string) $card_meta['url']),
-                'completed' => !isset($active_items[$key]),
+                'completed' => empty($card_meta['always_active']) && !isset($active_items[$key]),
                 'smartActionEnabled' => !isset($card_meta['smart_action']) || $card_meta['smart_action'] !== false,
                 'agentMarkCost' => isset($card_meta['agent_mark_cost']) ? max(0, (int) $card_meta['agent_mark_cost']) : 0,
                 'emailView' => isset($item['email_view']) ? sanitize_key((string) $item['email_view']) : (isset($card_meta['email_view']) ? sanitize_key((string) $card_meta['email_view']) : ''),
+                'offerSection' => isset($card_meta['offer_section']) ? sanitize_key((string) $card_meta['offer_section']) : '',
+                'contentView' => isset($card_meta['content_view']) ? sanitize_key((string) $card_meta['content_view']) : '',
             );
         }
 
@@ -2884,7 +2927,11 @@ class SMarkPlugin {
                 'daily_guide_task_publish' => 'No content published today. Publish at least one item.',
                 'daily_guide_task_backlink_acquired' => 'Acquire at least one backlink in Backlinks Management today.',
                 'daily_guide_task_email_contacts_daily' => 'Add 100 new email contacts today to keep campaign audiences growing.',
-                'daily_guide_task_email_campaign_daily' => 'Send one email campaign today to keep your audience engaged.'
+                'daily_guide_task_email_campaign_daily' => 'Send one email campaign today to keep your audience engaged.',
+                'daily_guide_task_offer_product_monthly' => 'Add one new product to Offering Management so campaigns always have a fresh offer to promote.',
+                'daily_guide_task_offer_audience_biweekly' => 'Add one focused audience group to Offering Management to keep targeting precise.',
+                'daily_guide_task_offer_strategy_weekly' => 'Add one specific strategy to Offering Management to keep your offers moving with a clear angle.',
+                'daily_guide_task_offer_create' => 'Create one clear offer by connecting the product, audience, and strategy into a focused campaign promise.'
             ),
             'fa' => array(
                 'smark_plugin_dashboard' => 'داشبورد پلاگین اسمارک',
@@ -2927,7 +2974,11 @@ class SMarkPlugin {
                 'daily_guide_task_content_red' => 'برخی آیتم‌ها در مدیریت محتوا نیاز به بروزرسانی دارند (قرمز).',
                 'daily_guide_task_publish' => 'امروز هیچ محتوایی منتشر نشده است. حداقل یک محتوا منتشر کنید.',
                 'daily_guide_task_email_contacts_daily' => 'امروز ۱۰۰ مخاطب جدید به سیستم ایمیل مارکتینگ اضافه کنید تا لیست کمپین‌ها رشد کند.',
-                'daily_guide_task_email_campaign_daily' => 'امروز یک کمپین ایمیلی ارسال کنید تا ارتباط با مخاطبان فعال بماند.'
+                'daily_guide_task_email_campaign_daily' => 'امروز یک کمپین ایمیلی ارسال کنید تا ارتباط با مخاطبان فعال بماند.',
+                'daily_guide_task_offer_product_monthly' => 'یک محصول جدید به مدیریت آفریینگ اضافه کنید تا کمپین‌ها همیشه پیشنهاد تازه‌ای برای معرفی داشته باشند.',
+                'daily_guide_task_offer_audience_biweekly' => 'یک گروه مخاطب مشخص به مدیریت آفریینگ اضافه کنید تا هدف‌گیری کمپین‌ها دقیق‌تر شود.',
+                'daily_guide_task_offer_strategy_weekly' => 'یک استراتژی مشخص به مدیریت آفریینگ اضافه کنید تا زاویه فروش پیشنهادها روشن و به‌روز بماند.',
+                'daily_guide_task_offer_create' => 'یک آفر شفاف بسازید و محصول، گروه مخاطب و استراتژی را به یک پیشنهاد متمرکز برای کمپین وصل کنید.'
             )
         );
 
@@ -3310,6 +3361,9 @@ class SMarkPlugin {
             'emailCampaignMessageViewNonce' => wp_create_nonce('smark_email_campaign_message_ajax'),
             'emailPerformanceViewNonce' => wp_create_nonce('smark_email_performance_ajax'),
             'projectSettingsViewNonce' => wp_create_nonce('smark_project_settings_dashboard_ajax'),
+            'seoViewNonce' => wp_create_nonce('smark_seo_dashboard_ajax'),
+            'contentManagementViewNonce' => wp_create_nonce('smark_content_management_dashboard_ajax'),
+            'socialViewNonce' => wp_create_nonce('smark_social_dashboard_ajax'),
             'stringsByLang' => array(
                 'en' => array(
                     'dailyGuideTitle' => $this->get_dashboard_translation('daily_guide_title', 'en'),
@@ -5203,6 +5257,10 @@ if (!function_exists('smark_is_core_active')) {
 $smark_core_active = smark_is_core_active();
 
 new SMarkPlugin();
+// Initialize Google Docs Converter feature globally
+global $smark_google_docs_converter;
+$smark_google_docs_converter = new SMarkGoogleDocsConverter();
+
 // Initialize Social Media feature globally
 global $smark_social_media;
 $smark_social_media = new SMarkSocialMedia();

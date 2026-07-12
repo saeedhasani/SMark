@@ -8,6 +8,7 @@
     let selectedProject = null; // Will store {id: 'PRJ-xxxxx', name: 'ProjectName'}
     let currentItemId = null;
     let isEditMode = false;
+    const isEmbedded = !!(window.SMarkCompetitorAnalysis && SMarkCompetitorAnalysis.isEmbedded);
 
     /**
      * Remove WP Rocket notifications
@@ -74,22 +75,24 @@
         }
     }
 
-    // Run layout fix multiple times to ensure it works
-    fixCompetitorAnalysisLayout();
-
-    // Run again after a short delay
-    setTimeout(fixCompetitorAnalysisLayout, 100);
-    setTimeout(fixCompetitorAnalysisLayout, 500);
-
-    // Run on window resize
-    $(window).on('resize', function() {
+    if (!isEmbedded) {
+        // Run layout fix multiple times to ensure it works
         fixCompetitorAnalysisLayout();
-    });
 
-    // Run when WordPress admin menu is toggled
-    $(document).on('wp-window-resized', function() {
+        // Run again after a short delay
         setTimeout(fixCompetitorAnalysisLayout, 100);
-    });
+        setTimeout(fixCompetitorAnalysisLayout, 500);
+
+        // Run on window resize
+        $(window).on('resize', function() {
+            fixCompetitorAnalysisLayout();
+        });
+
+        // Run when WordPress admin menu is toggled
+        $(document).on('wp-window-resized', function() {
+            setTimeout(fixCompetitorAnalysisLayout, 100);
+        });
+    }
 
     /**
      * Fix undefined text in table
@@ -314,10 +317,56 @@
         }, 100);
     }
 
+    function getEmbeddedDefaultProject() {
+        if (!isEmbedded || !SMarkCompetitorAnalysis.defaultProject) {
+            return null;
+        }
+
+        const defaultProject = SMarkCompetitorAnalysis.defaultProject;
+        const projectId = (defaultProject.project_id || '').toString().trim();
+        const projectName = (defaultProject.project_name || '').toString().trim();
+
+        if (!projectId) {
+            return null;
+        }
+
+        return {
+            id: projectId,
+            name: projectName || projectId
+        };
+    }
+
+    function initializeEmbeddedProject() {
+        const defaultProject = getEmbeddedDefaultProject();
+
+        if (!defaultProject) {
+            const title = SMarkCompetitorAnalysis.currentLang === 'fa'
+                ? 'پروژه‌ای برای نمایش آنالیز رقبا پیدا نشد'
+                : 'No project found for competitor analysis';
+            const description = SMarkCompetitorAnalysis.currentLang === 'fa'
+                ? 'ابتدا پروژه اصلی سایت را در تنظیمات پروژه اسمارک ثبت کنید.'
+                : 'Create or select the main site project in SMark Project Settings first.';
+
+            $('#data_table_card').hide();
+            $('#empty_state .empty-state-content h3').text(title);
+            $('#empty_state .empty-state-content p').text(description);
+            $('#empty_state').show();
+            return;
+        }
+
+        selectedProject = defaultProject;
+        $('.current-project-name').text(defaultProject.name);
+        $('#selected_project_display .project-name').text(defaultProject.name);
+        $('#selected_project_display').hide();
+        $('#project_select').val(defaultProject.id);
+        loadProjectItems(defaultProject.id, defaultProject.name);
+    }
+
     /**
      * Initialize
      */
     loadProjects();
+    initializeEmbeddedProject();
 
     /**
      * Event: Project selection changed

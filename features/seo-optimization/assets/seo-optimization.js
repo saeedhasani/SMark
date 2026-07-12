@@ -9,7 +9,18 @@
             return;
         }
 
+        if ($page.data('smarkSeoInitialized')) {
+            return;
+        }
+
+        $page.data('smarkSeoInitialized', true);
+        const isEmbedded = $page.closest('.smark-dashboard-embedded-view').length > 0;
+
         function fixFooterLayout() {
+            if (isEmbedded) {
+                return;
+            }
+
             const wpBody = document.querySelector('#wpbody');
             const wpBodyContent = document.querySelector('#wpbody-content');
             const wrap = document.querySelector('.wrap.smark-seo-optimization-page');
@@ -109,4 +120,5 @@
     }
 
     $(document).ready(initSeoPage);
+    document.addEventListener('smark:dashboard-seo-view-loaded', initSeoPage);
 })(jQuery);

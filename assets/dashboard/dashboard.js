@@ -86,10 +86,10 @@
             });
         }
 
-        const category = props.category === 'social' || props.category === 'email' ? props.category : 'seo';
+        const category = props.category === 'social' || props.category === 'email' || props.category === 'offer' ? props.category : 'seo';
         return h(SvgIcon, {
             path: icons[category],
-            viewBox: '0 0 504 540',
+            viewBox: category === 'offer' ? '0 0 432 540' : '0 0 504 540',
         });
     }
 
@@ -122,6 +122,12 @@
                     } : card.emailView && typeof props.onOpenEmailView === 'function' ? function(event) {
                         event.preventDefault();
                         props.onOpenEmailView(card.emailView);
+                    } : card.offerSection && typeof props.onOpenOfferSection === 'function' ? function(event) {
+                        event.preventDefault();
+                        props.onOpenOfferSection(card.offerSection);
+                    } : card.contentView === 'content-management' && typeof props.onOpenContentManagementView === 'function' ? function(event) {
+                        event.preventDefault();
+                        props.onOpenContentManagementView();
                     } : undefined,
                 }, textForLanguage(language, 'open', 'Open')),
                 h('button', {
@@ -175,6 +181,8 @@
                     card: card,
                     language: language,
                     onOpenEmailView: props.onOpenEmailView,
+                    onOpenOfferSection: props.onOpenOfferSection,
+                    onOpenContentManagementView: props.onOpenContentManagementView,
                     onSmartAction: props.onSmartAction,
                 });
             })
@@ -496,6 +504,15 @@
         const [projectSettingsHtml, setProjectSettingsHtml] = useState('');
         const [projectSettingsLoading, setProjectSettingsLoading] = useState(false);
         const [projectSettingsError, setProjectSettingsError] = useState('');
+        const [seoHtml, setSeoHtml] = useState('');
+        const [seoLoading, setSeoLoading] = useState(false);
+        const [seoError, setSeoError] = useState('');
+        const [contentManagementHtml, setContentManagementHtml] = useState('');
+        const [contentManagementLoading, setContentManagementLoading] = useState(false);
+        const [contentManagementError, setContentManagementError] = useState('');
+        const [socialHtml, setSocialHtml] = useState('');
+        const [socialLoading, setSocialLoading] = useState(false);
+        const [socialError, setSocialError] = useState('');
         const [languageOpen, setLanguageOpen] = useState(false);
         const [markOpen, setMarkOpen] = useState(false);
         const [settingsOpen, setSettingsOpen] = useState(false);
@@ -601,21 +618,46 @@
                 document.dispatchEvent(new window.CustomEvent('smark:project-settings-view-loaded'));
             }, 0);
         }, [active, projectSettingsHtml]);
+
+        useEffect(function() {
+            if (active !== 'seo' || !seoHtml) {
+                return;
+            }
+
+            window.setTimeout(function() {
+                document.dispatchEvent(new window.CustomEvent('smark:dashboard-seo-view-loaded'));
+            }, 0);
+        }, [active, seoHtml]);
+
+        useEffect(function() {
+            if (active !== 'content-management' || !contentManagementHtml) {
+                return;
+            }
+
+            window.setTimeout(function() {
+                document.dispatchEvent(new window.CustomEvent('smark:dashboard-content-management-view-loaded'));
+            }, 0);
+        }, [active, contentManagementHtml]);
+
+        useEffect(function() {
+            if (active !== 'social' || !socialHtml) {
+                return;
+            }
+
+            window.setTimeout(function() {
+                document.dispatchEvent(new window.CustomEvent('smark:dashboard-social-view-loaded'));
+            }, 0);
+        }, [active, socialHtml]);
+
         const mainItems = [
             { id: 'email', enabled: moduleVisibility.email !== false, label: text('emailMarketing', 'Email Marketing'), icon: h(SvgIcon, { path: icons.email, viewBox: '0 0 504 540' }) },
             { id: 'ads', enabled: moduleVisibility.ads !== false, label: text('ads', 'Ads'), inactive: true, icon: h(SvgIcon, { path: icons.ads, viewBox: '0 0 540 540' }) },
-            { id: 'seo', enabled: moduleVisibility.seo !== false, label: text('seo', 'SEO'), href: urls.seo || '', icon: h(SvgIcon, { path: icons.seo, viewBox: '0 0 504 540' }) },
-            { id: 'social', enabled: moduleVisibility.social !== false, label: text('social', 'Social Media'), href: urls.social || '', icon: h(SvgIcon, { path: icons.social, viewBox: '0 0 504 540' }) },
+            { id: 'seo', enabled: moduleVisibility.seo !== false, label: text('seo', 'SEO'), icon: h(SvgIcon, { path: icons.seo, viewBox: '0 0 504 540' }) },
+            { id: 'social', enabled: moduleVisibility.social !== false, label: text('social', 'Social Media'), icon: h(SvgIcon, { path: icons.social, viewBox: '0 0 504 540' }) },
             { id: 'offer', enabled: moduleVisibility.offer !== false, label: text('offer', 'Offer'), icon: h(SvgIcon, { path: icons.offer, viewBox: '0 0 432 540' }) },
         ].filter(function(item) {
             return item.enabled;
         });
-        const settingsItems = [
-            { id: 'project-settings', label: textForLanguage(language, 'projectSettings', 'Project Settings'), view: 'project-settings' },
-            { id: 'google-docs', label: textForLanguage(language, 'googleDocsConverter', 'Google Docs Converter'), href: urls.googleDocs || '' },
-            { id: 'headline-analyzer', label: textForLanguage(language, 'headlineAnalyzer', 'Headline Analyzer'), href: urls.headlineAnalyzer || '' },
-            { id: 'competitor-analysis', label: textForLanguage(language, 'competitorAnalysis', 'Competitor Analysis'), href: urls.competitorAnalysis || '' },
-        ];
         const markBalanceLabel = markBalance.label || '—';
 
         const saveOfferSections = function(sections) {
@@ -761,6 +803,14 @@
             if (id === 'email') {
                 setEmailSubView('workflow');
             }
+            if (id === 'seo') {
+                openSeoView();
+                return;
+            }
+            if (id === 'social') {
+                openSocialView();
+                return;
+            }
             if (id !== 'project-settings') {
                 setProjectSettingsError('');
             }
@@ -771,6 +821,72 @@
             if (id !== 'settings') {
                 setSettingsOpen(false);
             }
+        };
+
+        const openSeoView = function() {
+            setActive('seo');
+            setLanguageOpen(false);
+            setMarkOpen(false);
+            setSettingsOpen(false);
+            setSeoError('');
+
+            if (seoHtml) {
+                return;
+            }
+
+            setSeoLoading(true);
+
+            loadEmailEmbeddedView('smark_dashboard_seo_view', config.seoViewNonce || '', {}, function(html) {
+                setSeoHtml(html);
+            }, function(message) {
+                setSeoError(message);
+            }, function() {
+                setSeoLoading(false);
+            });
+        };
+
+        const openContentManagementView = function() {
+            setActive('content-management');
+            setLanguageOpen(false);
+            setMarkOpen(false);
+            setSettingsOpen(false);
+            setContentManagementError('');
+
+            if (contentManagementHtml) {
+                return;
+            }
+
+            setContentManagementLoading(true);
+
+            loadEmailEmbeddedView('smark_dashboard_content_management_view', config.contentManagementViewNonce || '', {}, function(html) {
+                setContentManagementHtml(html);
+            }, function(message) {
+                setContentManagementError(message);
+            }, function() {
+                setContentManagementLoading(false);
+            });
+        };
+
+        const openSocialView = function() {
+            setActive('social');
+            setLanguageOpen(false);
+            setMarkOpen(false);
+            setSettingsOpen(false);
+            setSocialError('');
+
+            if (socialHtml) {
+                return;
+            }
+
+            setSocialLoading(true);
+
+            loadEmailEmbeddedView('smark_dashboard_social_view', config.socialViewNonce || '', {}, function(html) {
+                setSocialHtml(html);
+            }, function(message) {
+                setSocialError(message);
+            }, function() {
+                setSocialLoading(false);
+            });
         };
 
         const openSettingsView = function(view) {
@@ -888,6 +1004,16 @@
             setMarkOpen(false);
             setSettingsOpen(false);
             openEmailSubView(view, params);
+        };
+
+        const openOfferSectionFromDashboard = function(sectionId) {
+            const allowedSections = ['product', 'audience_type', 'strategy', 'offer'];
+            const nextSection = allowedSections.indexOf(sectionId) !== -1 ? sectionId : 'product';
+            setActive('offer');
+            setLanguageOpen(false);
+            setMarkOpen(false);
+            setSettingsOpen(false);
+            changeOfferSection(nextSection);
         };
 
         const openDailyGuideSmartAction = function(card) {
@@ -1051,10 +1177,44 @@
             });
         };
 
+        const handleSeoEmbeddedClick = function(event) {
+            const target = event.target && typeof event.target.closest === 'function'
+                ? event.target.closest('a[href*="page=smark-content-management"]')
+                : null;
+
+            if (!target) {
+                return;
+            }
+
+            event.preventDefault();
+            openContentManagementView();
+        };
+
         return h('main', { className: 'smark-dashboard-app-canvas smark-dashboard-app-canvas--' + (language === 'fa' ? 'rtl' : 'ltr'), 'aria-label': text('workspace', 'SMark dashboard workspace') },
             active === 'smark' ? h('div', { className: 'smark-dashboard-workspace-content' },
                 h('div', { key: 'smark', className: 'smark-dashboard-view' },
-                    h(DailyGuideGrid, { language: language, moduleVisibility: moduleVisibility, onOpenEmailView: openEmailSubViewFromDashboard, onSmartAction: openDailyGuideSmartAction })
+                    h(DailyGuideGrid, { language: language, moduleVisibility: moduleVisibility, onOpenEmailView: openEmailSubViewFromDashboard, onOpenOfferSection: openOfferSectionFromDashboard, onOpenContentManagementView: openContentManagementView, onSmartAction: openDailyGuideSmartAction })
+                )
+            ) : null,
+            active === 'seo' ? h('div', { className: 'smark-dashboard-workspace-content' },
+                h('section', { key: 'seo', className: 'smark-dashboard-embedded-view smark-dashboard-view', onClick: handleSeoEmbeddedClick },
+                    seoLoading ? h('div', { className: 'smark-dashboard-embedded-view__state' }, text('loading', 'Loading...')) : null,
+                    seoError ? h('div', { className: 'smark-dashboard-embedded-view__state smark-dashboard-embedded-view__state--error' }, seoError) : null,
+                    seoHtml ? h('div', { className: 'smark-dashboard-embedded-view__content', dangerouslySetInnerHTML: { __html: seoHtml } }) : null
+                )
+            ) : null,
+            active === 'content-management' ? h('div', { className: 'smark-dashboard-workspace-content' },
+                h('section', { key: 'content-management', className: 'smark-dashboard-embedded-view smark-dashboard-view' },
+                    contentManagementLoading ? h('div', { className: 'smark-dashboard-embedded-view__state' }, text('loading', 'Loading...')) : null,
+                    contentManagementError ? h('div', { className: 'smark-dashboard-embedded-view__state smark-dashboard-embedded-view__state--error' }, contentManagementError) : null,
+                    contentManagementHtml ? h('div', { className: 'smark-dashboard-embedded-view__content', dangerouslySetInnerHTML: { __html: contentManagementHtml } }) : null
+                )
+            ) : null,
+            active === 'social' ? h('div', { className: 'smark-dashboard-workspace-content' },
+                h('section', { key: 'social', className: 'smark-dashboard-embedded-view smark-dashboard-view' },
+                    socialLoading ? h('div', { className: 'smark-dashboard-embedded-view__state' }, text('loading', 'Loading...')) : null,
+                    socialError ? h('div', { className: 'smark-dashboard-embedded-view__state smark-dashboard-embedded-view__state--error' }, socialError) : null,
+                    socialHtml ? h('div', { className: 'smark-dashboard-embedded-view__content', dangerouslySetInnerHTML: { __html: socialHtml } }) : null
                 )
             ) : null,
             active === 'email' ? h('div', { className: 'smark-dashboard-workspace-content' },
@@ -1203,41 +1363,14 @@
                             })
                         )
                     ),
-                    h('div', { className: 'smark-dashboard-glass-menu__settings-wrap' + (settingsOpen ? ' is-open' : '') },
+                    h('div', { className: 'smark-dashboard-glass-menu__settings-wrap' },
                         h(MenuItem, {
                             label: text('settings', 'Settings'),
                             active: active === 'project-settings',
-                            expanded: settingsOpen,
                             onClick: function() {
-                                setSettingsOpen(!settingsOpen);
-                                setMarkOpen(false);
-                                setLanguageOpen(false);
+                                openSettingsView('project-settings');
                             },
-                        }, h(SvgIcon, { path: icons.settings, viewBox: '0 0 468 540' })),
-                        h('div', { className: 'smark-dashboard-glass-menu__settings-panel', role: 'menu', 'aria-label': text('settings', 'Settings') },
-                            settingsItems.map(function(option) {
-                                const commonProps = {
-                                    key: option.id,
-                                    className: 'smark-dashboard-glass-menu__language-option',
-                                    role: 'menuitem',
-                                };
-
-                                if (option.view) {
-                                    return h('button', Object.assign({}, commonProps, {
-                                        type: 'button',
-                                        onClick: function(event) {
-                                            event.preventDefault();
-                                            event.stopPropagation();
-                                            openSettingsView(option.view);
-                                        },
-                                    }), option.label);
-                                }
-
-                                return h('a', Object.assign({}, commonProps, {
-                                    href: option.href || '#',
-                                }), option.label);
-                            })
-                        )
+                        }, h(SvgIcon, { path: icons.settings, viewBox: '0 0 468 540' }))
                     )
                 )
             )

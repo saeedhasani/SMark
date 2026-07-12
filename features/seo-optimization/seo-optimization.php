@@ -27,6 +27,7 @@ class SMarkSeoOptimization {
         add_action('wp_ajax_smark_seo_save_notes', array($this, 'ajax_save_notes'));
         add_action('wp_ajax_smark_seo_reset', array($this, 'ajax_reset_process'));
         add_action('wp_ajax_smark_seo_save_language', array($this, 'ajax_save_language'));
+        add_action('wp_ajax_smark_dashboard_seo_view', array($this, 'ajax_dashboard_view'));
     }
 
     /**
@@ -49,7 +50,7 @@ class SMarkSeoOptimization {
      * @param string $hook Current admin hook.
      */
     public function enqueue_assets($hook) {
-        if ($hook !== 'admin_page_smark-seo-optimization') {
+        if ($hook !== 'admin_page_smark-seo-optimization' && $hook !== 'toplevel_page_smark-dashboard' && $hook !== 'smark_page_smark-dashboard-page') {
             return;
         }
 
@@ -211,6 +212,25 @@ class SMarkSeoOptimization {
             </div>
         </div>
         <?php
+    }
+
+    /**
+     * AJAX handler: render the SEO hub inside the SMark dashboard.
+     */
+    public function ajax_dashboard_view() {
+        check_ajax_referer('smark_seo_dashboard_ajax', 'nonce');
+
+        if (!current_user_can('smark_access')) {
+            wp_send_json_error(array('message' => __('Permission denied', 'smark')), 403);
+        }
+
+        ob_start();
+        $this->render_page();
+        $html = ob_get_clean();
+
+        wp_send_json_success(array(
+            'html' => $html,
+        ));
     }
 
     /**

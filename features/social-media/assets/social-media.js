@@ -5,8 +5,9 @@ jQuery(document).ready(function($) {
     // Only run on social media pages - check both class and URL
     const isSocialMediaPage = $('body').hasClass('smark-social-media-page') ||
                              window.location.href.includes('smark-social-media');
+    const isSmarkDashboard = $('#smark-dashboard-root').length > 0 || !!window.SMarkDashboard;
 
-    if (!isSocialMediaPage) {
+    if (!isSocialMediaPage && !isSmarkDashboard) {
         return;
     }
     'use strict';
@@ -58,22 +59,7 @@ jQuery(document).ready(function($) {
         }
     }
 
-    // Run layout fix multiple times to ensure it works
-    fixSocialMediaLayout();
-
-    // Run again after a short delay
-    setTimeout(fixSocialMediaLayout, 100);
-    setTimeout(fixSocialMediaLayout, 500);
-
-    // Run on window resize
-    $(window).on('resize', function() {
-        fixSocialMediaLayout();
-    });
-
-    // Run when WordPress admin menu is toggled
-    $(document).on('wp-window-resized', function() {
-        setTimeout(fixSocialMediaLayout, 100);
-    });
+    let socialLayoutEventsBound = false;
 
     let selectedProjectId = null;
     let selectedProjectName = null;
@@ -2403,17 +2389,50 @@ Provide ONLY the title, nothing else:`;
         }, 500);
     }
 
-    // Initialize everything
-    initEventHandlers();
-    if (!initDefaultProject()) {
-        loadProjectItems('');
+    let socialHandlersBound = false;
+
+    function initSocialMediaPage() {
+        const $page = $('.wrap.smark-social-media-page');
+        if (!$page.length || $page.data('smarkSocialInitialized')) {
+            return;
+        }
+
+        $page.data('smarkSocialInitialized', true);
+
+        if (!socialHandlersBound) {
+            socialHandlersBound = true;
+            initEventHandlers();
+        }
+
+        if (!initDefaultProject()) {
+            loadProjectItems('');
+        }
+
+        const isEmbedded = $page.closest('.smark-dashboard-embedded-view').length > 0;
+        if (!isEmbedded) {
+            fixSocialMediaLayout();
+            setTimeout(fixSocialMediaLayout, 100);
+            setTimeout(fixSocialMediaLayout, 500);
+
+            if (!socialLayoutEventsBound) {
+                socialLayoutEventsBound = true;
+                $(window).on('resize', function() {
+                    fixSocialMediaLayout();
+                });
+
+                $(document).on('wp-window-resized', function() {
+                    setTimeout(fixSocialMediaLayout, 100);
+                });
+            }
+        }
+
+        fixBreadcrumbOrder();
+        ensureBreadcrumbOrder();
     }
 
-    // Fix breadcrumb order immediately
-    fixBreadcrumbOrder();
-
-    // Re-apply after page fully loads
-    ensureBreadcrumbOrder();
+    // Initialize everything
+    initSocialMediaPage();
+    document.addEventListener('smark:dashboard-social-view-loaded', initSocialMediaPage);
 
     // Also fix on window load event
     $(window).on('load', function() {

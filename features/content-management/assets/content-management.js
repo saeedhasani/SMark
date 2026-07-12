@@ -1603,7 +1603,16 @@
     });
   }
 
-  $(function () {
+  let layoutResizeBound = false;
+
+  function initContentManagementPage() {
+    const $page = $(".wrap.smark-content-management-page");
+    if (!$page.length || $page.data("smarkCmInitialized")) {
+      return;
+    }
+
+    $page.data("smarkCmInitialized", true);
+
     ensureWpLinkDialogDetached();
     initPostTypeFilter();
     if (focusKeyword) {
@@ -1612,12 +1621,24 @@
     loadSelected();
     loadCreateItems();
     addCreateItemFromQueryIfAny();
-    fixFooterLayout();
-    setTimeout(fixFooterLayout, 100);
-    setTimeout(fixFooterLayout, 500);
-    window.addEventListener("resize", function () {
+
+    const isEmbedded = $page.closest(".smark-dashboard-embedded-view").length > 0;
+    if (!isEmbedded) {
       fixFooterLayout();
-    });
+      setTimeout(fixFooterLayout, 100);
+      setTimeout(fixFooterLayout, 500);
+      if (!layoutResizeBound) {
+        layoutResizeBound = true;
+        window.addEventListener("resize", function () {
+          fixFooterLayout();
+        });
+      }
+    }
+  }
+
+  $(function () {
+    initContentManagementPage();
+    document.addEventListener("smark:dashboard-content-management-view-loaded", initContentManagementPage);
 
     $(document).on("change", "#SMARK_language_select", function () {
       const language = String($(this).val() || "").trim();

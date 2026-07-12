@@ -859,7 +859,9 @@ body:has(.smark-dashboard-app-page) #wpbody-content > .litespeed_icon {
   color: #b42318;
   background: rgba(255, 245, 245, 0.72);
 }
-.smark-dashboard-embedded-view .wrap.smark-seo-optimization-page {
+.smark-dashboard-embedded-view .wrap.smark-seo-optimization-page,
+.smark-dashboard-embedded-view .wrap.smark-content-management-page,
+.smark-dashboard-embedded-view .wrap.smark-social-media-page {
   margin: 0;
   padding: 0;
   background: transparent;
@@ -879,9 +881,40 @@ body:has(.smark-dashboard-app-page) #wpbody-content > .litespeed_icon {
 .smark-dashboard-embedded-view .seo-grid {
   margin: 0;
 }
+.smark-dashboard-embedded-view .smark-seo-optimization-page:not(.rtl) .seo-step-card--full .seo-step-header {
+  width: 100%;
+  align-self: stretch;
+  justify-content: flex-start;
+  text-align: left;
+}
+.smark-dashboard-embedded-view .smark-seo-optimization-page:not(.rtl) .seo-step-card--full .seo-step-header > div {
+  width: 100%;
+  margin-right: auto;
+  margin-left: 0;
+  text-align: left;
+}
 .smark-dashboard-embedded-view .smark-project-settings-content {
   min-height: 0 !important;
   margin: 0;
+}
+.smark-dashboard-embedded-view .smark-content-management-content {
+  min-height: 0 !important;
+}
+.smark-dashboard-embedded-view .smark-social-media-content {
+  min-height: 0 !important;
+}
+.smark-dashboard-embedded-view .smark-social-competitor-section {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 30px 0 0 !important;
+  box-sizing: border-box !important;
+}
+.smark-dashboard-embedded-view .smark-social-competitor-section__frame {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 980px !important;
+  box-sizing: border-box !important;
 }
 
 .smark-dashboard-app-canvas--rtl {

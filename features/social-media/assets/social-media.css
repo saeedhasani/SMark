@@ -445,6 +445,47 @@ body.smark-plugin-page #wpbody-content {
     flex-direction: column;
 }
 
+.smark-social-competitor-section {
+    margin-top: 30px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    background: #fff;
+    border-radius: 20px;
+    padding: 22px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.smark-social-competitor-section__header {
+    margin-bottom: 16px;
+}
+
+.smark-social-competitor-section__header h2 {
+    margin: 0 0 6px;
+    color: #1e293b;
+    font-size: 1.35em;
+    font-weight: 700;
+}
+
+.smark-social-competitor-section__header p {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.95em;
+}
+
+.smark-social-competitor-section__frame {
+    display: block;
+    width: 100%;
+    min-height: 980px;
+    border: 0;
+    border-radius: 16px;
+    background: #f8fafc;
+}
+
+.smark-social-media-page.rtl .smark-social-competitor-section__header {
+    text-align: right;
+}
+
 /* Content Grid Layout */
 .content-grid {
     display: grid;

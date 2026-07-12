@@ -24,11 +24,12 @@ class SMarkCompetitorAnalysis {
     public function __construct() {
         global $wpdb;
         $this->table_name = $wpdb->prefix . 'SMARK_competitor_items';
-        $this->projects_table = $wpdb->prefix . 'SMARK_projects';
+        $this->projects_table = $this->resolve_projects_table();
         $this->fetched_items_table = $wpdb->prefix . 'SMARK_competitor_fetched';
 
         add_action('admin_menu', array($this, 'add_submenu_page'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_scripts'));
+        add_action('admin_head', array($this, 'print_embed_admin_styles'));
 
         // AJAX actions
         add_action('wp_ajax_SMARK_competitor_get_projects', array($this, 'ajax_get_projects'));
@@ -55,6 +56,47 @@ class SMarkCompetitorAnalysis {
         }
 
         return '`' . str_replace('`', '', esc_sql($identifier)) . '`';
+    }
+
+    private function resolve_projects_table() {
+        global $wpdb;
+
+        $prefix = $wpdb->prefix;
+        $candidates = array($prefix . 'SMARK_projects', $prefix . 'smark_projects');
+        $existing = array();
+
+        foreach ($candidates as $table) {
+            $found = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            if ($found === $table) {
+                $existing[] = $table;
+            }
+        }
+
+        if (count($existing) > 1) {
+            foreach ($existing as $table) {
+                if ($this->table_has_column($table, 'website')) {
+                    return $table;
+                }
+            }
+        }
+
+        if (!empty($existing)) {
+            return $existing[0];
+        }
+
+        return $prefix . 'SMARK_projects';
+    }
+
+    private function table_has_column($table_name, $column) {
+        global $wpdb;
+
+        $table_sql = $this->escape_db_identifier($table_name);
+        if ($table_sql === '') {
+            return false;
+        }
+
+        $found = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM {$table_sql} LIKE %s", (string) $column)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        return !empty($found);
     }
 
     private function log_debug($message, $context = array()) {
@@ -459,6 +501,44 @@ class SMarkCompetitorAnalysis {
         );
 
         return $results;
+    }
+
+    private function get_current_site_project() {
+        global $wpdb;
+
+        $projects_table_sql = $this->escape_db_identifier($this->projects_table);
+        if (empty($projects_table_sql) || !$this->table_has_column($this->projects_table, 'project_id')) {
+            return null;
+        }
+
+        $project_db_id = (int) get_option('smark_current_project_db_id', 0);
+        if ($project_db_id <= 0) {
+            $project_db_id = (int) get_option('SMARK_current_project_db_id', 0);
+        }
+
+        if ($project_db_id > 0) {
+            $row = $wpdb->get_row($wpdb->prepare("SELECT id, project_name, project_id FROM {$projects_table_sql} WHERE id = %d", $project_db_id), ARRAY_A); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+            if (is_array($row) && !empty($row) && !empty($row['project_id'])) {
+                return $row;
+            }
+        }
+
+        $website = rtrim((string) home_url('/'), '/');
+        if ($website !== '' && $this->table_has_column($this->projects_table, 'website')) {
+            $row = $wpdb->get_row($wpdb->prepare("SELECT id, project_name, project_id FROM {$projects_table_sql} WHERE website = %s ORDER BY id DESC LIMIT 1", $website), ARRAY_A); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+            if (is_array($row) && !empty($row) && !empty($row['project_id'])) {
+                update_option('smark_current_project_db_id', (int) $row['id'], false);
+                return $row;
+            }
+        }
+
+        $row = $wpdb->get_row("SELECT id, project_name, project_id FROM {$projects_table_sql} WHERE project_id IS NOT NULL AND project_id != '' ORDER BY id DESC LIMIT 1", ARRAY_A); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        if (is_array($row) && !empty($row) && !empty($row['project_id'])) {
+            update_option('smark_current_project_db_id', (int) $row['id'], false);
+            return $row;
+        }
+
+        return null;
     }
 
     /**
@@ -1580,6 +1660,8 @@ class SMarkCompetitorAnalysis {
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('SMARK_competitor_analysis_nonce'),
             'currentLang' => $current_lang,
+            'isEmbedded' => $this->is_embed_request(),
+            'defaultProject' => $this->get_current_site_project(),
             'strings' => array(
                 'loading' => $this->get_translation('loading'),
                 'selectProject' => $this->get_translation('select_a_project'),
@@ -1612,6 +1694,7 @@ class SMarkCompetitorAnalysis {
                 'competitorProfile' => $this->get_translation('competitor_profile'),
                 'savePages' => $this->get_translation('save_pages'),
                 'updatePages' => $this->get_translation('update_pages'),
+                'no_items_found' => $this->get_translation('no_items_found'),
                 'pagesSavedSuccessfully' => $this->get_translation('pages_saved_successfully'),
                 'noNewPagesToSave' => $this->get_translation('no_new_pages_to_save'),
                 'invalidItemId' => $this->get_translation('invalid_item_id'),
@@ -1619,6 +1702,72 @@ class SMarkCompetitorAnalysis {
                 'not_defined' => $this->get_translation('not_defined')
             )
         ));
+    }
+
+    private function is_embed_request() {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only flag.
+        return isset($_GET['smark_embed']) && sanitize_key(wp_unslash($_GET['smark_embed'])) === '1';
+    }
+
+    public function print_embed_admin_styles() {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only route check.
+        $page = isset($_GET['page']) ? sanitize_key(wp_unslash($_GET['page'])) : '';
+        if ($page !== 'smark-competitor-analysis' || !$this->is_embed_request()) {
+            return;
+        }
+        ?>
+        <style>
+            html.wp-toolbar {
+                padding-top: 0 !important;
+            }
+            #wpadminbar,
+            #adminmenumain,
+            #wpfooter,
+            .smark-competitor-analysis-page .smark-page-header,
+            .smark-competitor-analysis-page .smark-breadcrumb,
+            .smark-competitor-analysis-page .smark-version-footer {
+                display: none !important;
+            }
+            #wpcontent,
+            #wpbody-content {
+                margin-left: 0 !important;
+                padding-left: 0 !important;
+                padding-bottom: 0 !important;
+            }
+            #wpbody {
+                margin: 0 !important;
+                background: transparent !important;
+            }
+            body {
+                background: transparent !important;
+                min-width: 0 !important;
+            }
+            .wrap.smark-competitor-analysis-page {
+                min-height: 0 !important;
+                height: auto !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .smark-competitor-analysis-page .left-column {
+                display: none !important;
+            }
+            .smark-competitor-analysis-page .smark-competitor-analysis-content,
+            .smark-competitor-analysis-page .content-grid,
+            .smark-competitor-analysis-page .right-column {
+                display: block !important;
+                width: 100% !important;
+                max-width: none !important;
+                min-height: 0 !important;
+                overflow: visible !important;
+            }
+            .smark-competitor-analysis-page #data_table_card {
+                width: 100% !important;
+            }
+            .smark-competitor-analysis-page .card {
+                box-shadow: none !important;
+            }
+        </style>
+        <?php
     }
 
     /**

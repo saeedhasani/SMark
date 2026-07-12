@@ -750,7 +750,7 @@ class SMarkGoogleDocsConverter {
      * Enqueue scripts and styles
      */
     public function enqueue_scripts($hook) {
-        if ($hook !== 'SMARK_page_smark-google-docs-converter') {
+        if ($hook !== 'admin_page_smark-google-docs-converter') {
             return;
         }
         
