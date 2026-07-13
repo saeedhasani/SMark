@@ -3837,6 +3837,18 @@ class SMarkPlugin {
 
     private function resolve_current_project_id() {
         $project_id = (int) get_option('smark_current_project_db_id', 0);
+        $projects_table = $this->resolve_projects_table();
+        $site_url = rtrim((string) home_url('/'), '/');
+
+        if ($projects_table !== '' && $site_url !== '' && $this->table_has_column($projects_table, 'website')) {
+            $site_project_id = (int) $this->resolve_project_db_id_for_website($projects_table, $site_url);
+            if ($site_project_id > 0 && $site_project_id !== $project_id) {
+                $project_id = $site_project_id;
+                update_option('smark_current_project_db_id', $project_id, false);
+                update_option('SMARK_current_project_db_id', $project_id, false);
+            }
+        }
+
         if ($project_id <= 0) {
             $legacy = (int) get_option('SMARK_current_project_db_id', 0);
             if ($legacy > 0) {
@@ -3845,13 +3857,12 @@ class SMarkPlugin {
             }
         }
         if ($project_id <= 0) {
-            $projects_table = $this->resolve_projects_table();
-            $site_url = rtrim((string) home_url('/'), '/');
             if ($projects_table !== '' && $site_url !== '' && $this->table_has_column($projects_table, 'website')) {
                 $resolved = (int) $this->resolve_project_db_id_for_website($projects_table, $site_url);
                 if ($resolved > 0) {
                     $project_id = $resolved;
                     update_option('smark_current_project_db_id', $project_id, false);
+                    update_option('SMARK_current_project_db_id', $project_id, false);
                 }
             }
         }

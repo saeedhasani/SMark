@@ -10727,10 +10727,15 @@ JS;
                 min-height: 28px;
                 padding: 4px 10px;
                 border-radius: 999px;
-                background: rgba(22, 163, 74, 0.12);
-                color: #15803d;
+                background: rgba(100, 116, 139, 0.14);
+                color: #475569;
                 font-weight: 700;
                 font-size: 0.85em;
+            }
+
+            .smark-email-status--draft {
+                background: rgba(100, 116, 139, 0.14);
+                color: #475569;
             }
 
             .smark-email-status--lead {
