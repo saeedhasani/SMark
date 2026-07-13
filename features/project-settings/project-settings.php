@@ -1484,6 +1484,21 @@ class SMarkProjectSettings {
             return $existing[0];
         }
 
+        $site_url = function_exists('home_url') ? rtrim((string) home_url('/'), '/') : '';
+        if ($site_url !== '') {
+            foreach ($existing as $table) {
+                $table_sql = self::escape_db_identifier($table);
+                if ($table_sql === '' || !$this->table_has_column($table, 'website')) {
+                    continue;
+                }
+
+                $project_id = (int) $wpdb->get_var($wpdb->prepare("SELECT id FROM {$table_sql} WHERE website = %s ORDER BY id DESC LIMIT 1", $site_url)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+                if ($project_id > 0) {
+                    return $table;
+                }
+            }
+        }
+
         // Prefer the table that already has the website column (best for upserts), otherwise prefer SMARK_projects.
         foreach ($existing as $table) {
             if ($this->table_has_column($table, 'website')) {

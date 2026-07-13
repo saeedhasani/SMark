@@ -2106,20 +2106,41 @@ class SMarkPlugin {
 
     private function resolve_projects_table() {
         global $wpdb;
+        $prefix = isset($wpdb->prefix) ? (string) $wpdb->prefix : '';
         $candidates = array(
-            $wpdb->prefix . 'smark_projects',
-            $wpdb->prefix . 'SMARK_projects',
+            $prefix . 'SMARK_projects',
+            $prefix . 'smark_projects',
         );
 
+        $existing = array();
         foreach ($candidates as $table) {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Table discovery.
             $found = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table));
-            if (!empty($found)) {
+            if ($found === $table) {
+                $existing[] = (string) $table;
+            }
+        }
+
+        if (empty($existing)) {
+            return (string) ($prefix . 'SMARK_projects');
+        }
+
+        $site_url = function_exists('home_url') ? rtrim((string) home_url('/'), '/') : '';
+        if ($site_url !== '') {
+            foreach ($existing as $table) {
+                if ($this->table_has_column($table, 'website') && $this->resolve_project_db_id_for_website($table, $site_url) > 0) {
+                    return (string) $table;
+                }
+            }
+        }
+
+        foreach ($existing as $table) {
+            if ($this->table_has_column($table, 'website')) {
                 return (string) $table;
             }
         }
 
-        return (string) ($wpdb->prefix . 'smark_projects');
+        return (string) $existing[0];
     }
 
     private function table_has_column($table, $column) {
