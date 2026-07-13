@@ -269,6 +269,18 @@ body.smark-plugin-page #wpbody-content {
     transition: all 0.25s ease !important;
 }
 
+.smark-project-settings-page select:not(.language-dropdown) {
+    min-width: 158px;
+    max-width: 100%;
+    padding: 10px 42px 10px 12px !important;
+    background-position: right 14px center !important;
+}
+
+.smark-project-settings-page.rtl select:not(.language-dropdown) {
+    padding: 10px 12px 10px 42px !important;
+    background-position: left 14px center !important;
+}
+
 .smark-project-settings-page input.regular-text:hover,
 .smark-project-settings-page input[type="text"]:hover,
 .smark-project-settings-page input[type="url"]:hover,
