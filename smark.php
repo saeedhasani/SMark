@@ -1820,6 +1820,7 @@ class SMarkPlugin {
     const OPTION_CENTRAL_BASE_URL = 'smark_central_base_url';
     const DEFAULT_CENTRAL_BASE_URL = 'https://saeedhasani.com';
     const CENTRAL_SERPER_SEARCH_PATH = '/wp-json/smark-core/v1/tools/serper/search';
+    const CENTRAL_OFFER_GENERATE_PATH = '/wp-json/smark-core/v1/offers/generate';
 
     /**
      * Constructor
@@ -1833,6 +1834,7 @@ class SMarkPlugin {
         add_action('wp_ajax_smark_save_language', array($this, 'ajax_save_language'));
         add_action('wp_ajax_smark_daily_guide_smart_action', array($this, 'ajax_daily_guide_smart_action'));
         add_action('wp_ajax_smark_save_signalhire_contact_search_settings', array($this, 'ajax_save_signalhire_contact_search_settings'));
+        add_action('wp_ajax_smark_dashboard_offer_agent_create', array($this, 'ajax_dashboard_offer_agent_create'));
         add_action('wp_ajax_smark_dashboard_offer_products_save', array($this, 'ajax_dashboard_offer_products_save'));
         add_action('wp_ajax_smark_dashboard_offer_sections_get', array($this, 'ajax_dashboard_offer_sections_get'));
         add_action('init', array($this, 'check_database_schema'));
@@ -2631,7 +2633,7 @@ class SMarkPlugin {
                 'url' => '#',
                 'offer_section' => 'offer',
                 'always_active' => true,
-                'smart_action' => false,
+                'smart_action' => true,
             ),
             'gap_transfer' => array(
                 'title_en' => 'Transfer Competitor Keyword',
@@ -3354,6 +3356,7 @@ class SMarkPlugin {
             'offerProducts' => $this->get_dashboard_offer_products(),
             'offerSections' => $this->get_dashboard_offer_sections(),
             'offerProductsNonce' => wp_create_nonce('smark_dashboard_offer_products'),
+            'offerAgentNonce' => wp_create_nonce('smark_dashboard_offer_agent'),
             'signalhireSettingsNonce' => wp_create_nonce('smark_signalhire_contact_search_settings'),
             'signalhireContactSearchSettings' => $this->get_signalhire_contact_search_settings(),
             'emailContactsViewNonce' => wp_create_nonce('smark_email_contacts_page_ajax'),
@@ -3438,6 +3441,8 @@ class SMarkPlugin {
                 'offerProductSaveError' => ($lang === 'fa') ? 'ذخیره آیتم‌ها انجام نشد.' : __('Items could not be saved.', 'smark'),
                 'offerProductNameRequired' => ($lang === 'fa') ? 'نام محصول را وارد کنید.' : __('Enter a product name.', 'smark'),
                 'offerItemNameRequired' => ($lang === 'fa') ? 'عنوان را وارد کنید.' : __('Enter a title.', 'smark'),
+                'offerAgentCreated' => ($lang === 'fa') ? 'آفر با ایجنت ساخته شد و در ردیف اول آفرها قرار گرفت.' : __('Agent created the offer and placed it first in Offers.', 'smark'),
+                'offerAgentMissingInputs' => ($lang === 'fa') ? 'برای ساخت آفر، حداقل یک محصول، یک نوع مخاطب و یک استراتژی اضافه کنید.' : __('Add at least one product, one audience type, and one strategy before creating an offer.', 'smark'),
                 'signalhireTitle' => ($lang === 'fa') ? 'تنظیمات جست‌وجوی مخاطب' : __('Contact Search Settings', 'smark'),
                 'signalhireIntro' => ($lang === 'fa') ? 'این زیرساخت فعلا غیرفعال است. حداقل یکی از فیلدها را پر کنید تا تنظیمات جست‌وجوی آینده ذخیره شود.' : __('This infrastructure is currently inactive. Fill at least one field to save future contact search settings.', 'smark'),
                 'signalhireProfileSection' => ($lang === 'fa') ? 'پروفایل' : __('Profile', 'smark'),
@@ -4192,6 +4197,189 @@ class SMarkPlugin {
     private function get_signalhire_contact_search_settings() {
         $settings = get_option('smark_signalhire_contact_search_settings', array());
         return $this->sanitize_signalhire_contact_search_settings($settings);
+    }
+
+    private function get_offer_agent_settings() {
+        $settings = get_option('smark_offer_agent_settings', array());
+        $settings = is_array($settings) ? $settings : array();
+        $clean = array();
+
+        foreach (array('product_id', 'audience_type_id', 'strategy_id') as $key) {
+            $value = isset($settings[$key]) ? sanitize_key((string) $settings[$key]) : 'random';
+            $clean[$key] = $value !== '' ? $value : 'random';
+        }
+
+        return $clean;
+    }
+
+    private function resolve_offer_agent_section_item($items, $selected_id) {
+        $items = is_array($items) ? array_values($items) : array();
+        $available = array();
+
+        foreach ($items as $item) {
+            if (!is_array($item) || empty($item['name'])) {
+                continue;
+            }
+            $available[] = $item;
+        }
+
+        if (empty($available)) {
+            return array();
+        }
+
+        $selected_id = sanitize_key((string) $selected_id);
+        if ($selected_id === '' || $selected_id === 'random') {
+            return $available[array_rand($available)];
+        }
+
+        foreach ($available as $item) {
+            $id = isset($item['id']) ? sanitize_key((string) $item['id']) : '';
+            if ($id !== '' && $id === $selected_id) {
+                return $item;
+            }
+        }
+
+        return array();
+    }
+
+    private function get_offer_agent_context_item($item, $type) {
+        $item = is_array($item) ? $item : array();
+        $out = array(
+            'id' => isset($item['id']) ? sanitize_key((string) $item['id']) : '',
+            'name' => isset($item['name']) ? sanitize_text_field((string) $item['name']) : '',
+        );
+
+        if ($type === 'product') {
+            $out['price'] = isset($item['price']) ? sanitize_text_field((string) $item['price']) : '';
+            $out['url'] = isset($item['url']) ? esc_url_raw((string) $item['url']) : '';
+            $out['notes'] = isset($item['notes']) ? sanitize_textarea_field((string) $item['notes']) : '';
+        } elseif ($type === 'audience') {
+            $out['details'] = isset($item['audience_details']) ? sanitize_textarea_field((string) $item['audience_details']) : '';
+        } elseif ($type === 'strategy') {
+            $out['details'] = isset($item['strategy_details']) ? sanitize_textarea_field((string) $item['strategy_details']) : '';
+        }
+
+        return $out;
+    }
+
+    public function ajax_dashboard_offer_agent_create() {
+        check_ajax_referer('smark_dashboard_offer_agent', 'nonce');
+
+        if (!current_user_can(self::CAP_ACCESS)) {
+            wp_send_json_error(array('message' => __('Permission denied', 'smark')), 403);
+        }
+
+        $lang = get_option('smark_panel_language', 'en');
+        $lang = ($lang === 'fa') ? 'fa' : 'en';
+        $sections = $this->get_dashboard_offer_sections();
+        $agent_settings = $this->get_offer_agent_settings();
+
+        $product = $this->resolve_offer_agent_section_item(
+            isset($sections['product']) ? $sections['product'] : array(),
+            isset($agent_settings['product_id']) ? $agent_settings['product_id'] : 'random'
+        );
+        $audience = $this->resolve_offer_agent_section_item(
+            isset($sections['audience_type']) ? $sections['audience_type'] : array(),
+            isset($agent_settings['audience_type_id']) ? $agent_settings['audience_type_id'] : 'random'
+        );
+        $strategy = $this->resolve_offer_agent_section_item(
+            isset($sections['strategy']) ? $sections['strategy'] : array(),
+            isset($agent_settings['strategy_id']) ? $agent_settings['strategy_id'] : 'random'
+        );
+
+        if (empty($product) || empty($audience) || empty($strategy)) {
+            $msg = ($lang === 'fa')
+                ? 'تنظیمات ایجنت آفر با آیتم‌های فعلی هم‌خوان نیست. محصول، مخاطب و استراتژی انتخاب‌شده را در تنظیمات ایجنت بررسی کنید.'
+                : 'Offer Agent settings do not match the current items. Check the selected product, audience, and strategy in Agent Settings.';
+            wp_send_json_error(array('message' => $msg), 400);
+        }
+
+        $payload = array(
+            'language' => ($lang === 'fa') ? 'Persian' : 'English',
+            'site_url' => rtrim((string) home_url('/'), '/'),
+            'project_id' => (int) $this->resolve_current_project_id(),
+            'agent_settings' => $agent_settings,
+            'product' => $this->get_offer_agent_context_item($product, 'product'),
+            'audience' => $this->get_offer_agent_context_item($audience, 'audience'),
+            'strategy' => $this->get_offer_agent_context_item($strategy, 'strategy'),
+        );
+
+        $headers = array(
+            'Content-Type' => 'application/json; charset=utf-8',
+        );
+        $token = $this->get_central_sync_token();
+        if ($token !== '') {
+            $headers['x-smark-sync-token'] = $token;
+        }
+
+        $resp = wp_remote_post($this->get_central_endpoint(self::CENTRAL_OFFER_GENERATE_PATH), array(
+            'timeout' => 60,
+            'redirection' => 3,
+            'headers' => $headers,
+            'body' => wp_json_encode($payload, JSON_UNESCAPED_UNICODE),
+            'user-agent' => 'SMark/' . (defined('SMARK_VERSION') ? (string) SMARK_VERSION : '1.0.0') . ' (offer-agent)',
+        ));
+
+        if (is_wp_error($resp)) {
+            wp_send_json_error(array('message' => $resp->get_error_message()), 500);
+        }
+
+        $code = (int) wp_remote_retrieve_response_code($resp);
+        $body = (string) wp_remote_retrieve_body($resp);
+        $data = json_decode($body, true);
+        if ($code < 200 || $code >= 300 || !is_array($data)) {
+            $msg = is_array($data) && isset($data['message']) ? sanitize_text_field((string) $data['message']) : __('Offer generation failed.', 'smark');
+            wp_send_json_error(array('message' => $msg), 500);
+        }
+
+        if (isset($data['success']) && $data['success'] === false) {
+            $msg = isset($data['message']) ? sanitize_text_field((string) $data['message']) : __('Offer generation failed.', 'smark');
+            wp_send_json_error(array('message' => $msg), $code);
+        }
+
+        $offer = isset($data['offer']) && is_array($data['offer']) ? $data['offer'] : array();
+        if (empty($offer) && isset($data['data']['offer']) && is_array($data['data']['offer'])) {
+            $offer = $data['data']['offer'];
+        }
+
+        $name = isset($offer['name']) ? sanitize_text_field((string) $offer['name']) : '';
+        $details = isset($offer['offer_details']) ? sanitize_textarea_field((string) $offer['offer_details']) : '';
+        if ($name === '') {
+            $name = ($lang === 'fa') ? 'آفر پیشنهادی هوش مصنوعی' : 'AI suggested offer';
+        }
+        if ($details === '') {
+            $details = isset($data['response']) ? sanitize_textarea_field((string) $data['response']) : '';
+        }
+
+        $new_offer = array(
+            'id' => 'offer-agent-' . (string) time(),
+            'name' => $name,
+            'price' => '',
+            'url' => '',
+            'audience_details' => '',
+            'strategy_details' => '',
+            'offer_details' => $details,
+            'product_id' => isset($product['id']) ? sanitize_key((string) $product['id']) : '',
+            'strategy_id' => isset($strategy['id']) ? sanitize_key((string) $strategy['id']) : '',
+            'audience_type_id' => isset($audience['id']) ? sanitize_key((string) $audience['id']) : '',
+            'notes' => '',
+        );
+
+        $offers = isset($sections['offer']) && is_array($sections['offer']) ? $sections['offer'] : array();
+        array_unshift($offers, $new_offer);
+        $sections['offer'] = $this->sanitize_dashboard_offer_items($offers);
+
+        update_option('smark_dashboard_offer_sections', $sections, false);
+        update_option('smark_dashboard_offer_products', $sections['product'], false);
+
+        wp_send_json_success(array(
+            'offer' => $new_offer,
+            'sections' => $sections,
+            'message' => ($lang === 'fa')
+                ? 'آفر با ایجنت ساخته شد و در ردیف اول آفرها قرار گرفت.'
+                : 'Agent created the offer and placed it first in Offers.',
+            'prompt' => isset($data['prompt']) ? (string) $data['prompt'] : '',
+        ));
     }
 
     public function ajax_save_signalhire_contact_search_settings() {

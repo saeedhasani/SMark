@@ -141,6 +141,10 @@
                             event.preventDefault();
                             event.stopPropagation();
                             props.onSmartAction(card);
+                        } else if (card.key === 'offer_offer_create' && typeof props.onSmartAction === 'function') {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            props.onSmartAction(card);
                         }
                     },
                 }, [
@@ -696,6 +700,49 @@
             });
         };
 
+        const createOfferWithAgent = function() {
+            setActive('offer');
+            setLanguageOpen(false);
+            setMarkOpen(false);
+            setSettingsOpen(false);
+            setOfferActiveSection('offer');
+            setOfferProductSaving(true);
+            setOfferProductNoticeType('success');
+            setOfferProductNotice(text('smartRunning', 'Agent is working...'));
+
+            const body = new window.URLSearchParams();
+            body.append('action', 'smark_dashboard_offer_agent_create');
+            body.append('nonce', config.offerAgentNonce || '');
+
+            window.fetch(config.ajaxUrl || window.ajaxurl || '', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                },
+                body: body.toString(),
+            }).then(function(response) {
+                return response.json();
+            }).then(function(response) {
+                if (response && response.success && response.data && response.data.sections && typeof response.data.sections === 'object') {
+                    setOfferItemsBySection(response.data.sections);
+                    setOfferProductForm(emptyOfferProductForm);
+                    setOfferProductEditingId('');
+                    setOfferProductNoticeType('success');
+                    setOfferProductNotice(response.data.message || text('offerAgentCreated', 'Agent created the offer and placed it first in Offers.'));
+                    return;
+                }
+
+                setOfferProductNoticeType('error');
+                setOfferProductNotice((response && response.data && response.data.message) || text('smartError', 'Agent action failed. Please try again.'));
+            }).catch(function() {
+                setOfferProductNoticeType('error');
+                setOfferProductNotice(text('smartError', 'Agent action failed. Please try again.'));
+            }).finally(function() {
+                setOfferProductSaving(false);
+            });
+        };
+
         const updateOfferProductForm = function(key, value) {
             setOfferProductForm(Object.assign({}, offerProductForm, { [key]: value }));
             setOfferProductNotice('');
@@ -1029,6 +1076,11 @@
                 setSettingsOpen(false);
                 openEmailSubView('signalhire-contact-search');
                 setSignalhireMessage('');
+                return;
+            }
+
+            if (key === 'offer_offer_create') {
+                createOfferWithAgent();
                 return;
             }
 
