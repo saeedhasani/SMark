@@ -294,6 +294,17 @@ body.toplevel_page_smark-dashboard #wpbody-content > .error {
 
     &.is-loading {
       cursor: wait;
+
+      .smark-dashboard-daily-card__button-label,
+      .smark-dashboard-daily-card__mark-cost {
+        visibility: hidden;
+      }
+
+      .smark-dashboard-daily-card__button-spinner {
+        position: absolute;
+        inset: 0;
+        margin: auto;
+      }
     }
 
     &:visited {

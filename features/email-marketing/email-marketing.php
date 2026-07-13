@@ -952,6 +952,11 @@ class SMarkEmailMarketing {
                 </thead>
                 <tbody>
                     <?php foreach ($messages as $campaign_message) : ?>
+                        <?php
+                        $message_status = isset($campaign_message['message_status']) ? sanitize_key((string) $campaign_message['message_status']) : 'draft';
+                        $message_sent_at = isset($campaign_message['sent_at']) ? trim((string) $campaign_message['sent_at']) : '';
+                        $campaign_was_sent = ($message_status === 'sent' || $message_sent_at !== '');
+                        ?>
                         <tr>
                             <td>
                                 <strong><?php echo esc_html($campaign_message['campaign_name']); ?></strong>
@@ -964,7 +969,7 @@ class SMarkEmailMarketing {
                                 <?php endif; ?>
                             </td>
                             <td><?php echo esc_html($this->format_campaign_audience_summary($campaign_message, $strings)); ?></td>
-                            <td><span class="smark-email-status smark-email-status--<?php echo esc_attr($campaign_message['message_status']); ?>"><?php echo esc_html($this->get_campaign_status_label($campaign_message['message_status'], $strings)); ?></span></td>
+                            <td><span class="smark-email-status smark-email-status--<?php echo esc_attr($message_status); ?>"><?php echo esc_html($this->get_campaign_status_label($message_status, $strings)); ?></span></td>
                             <td>
                                 <div class="smark-email-action-row smark-email-campaign-action-row">
                                     <button type="button" class="button smark-email-edit-button" data-open-smark-campaign-edit="<?php echo esc_attr($campaign_message['id']); ?>">
@@ -973,12 +978,14 @@ class SMarkEmailMarketing {
                                     <button type="button" class="button smark-email-performance-button" data-open-smark-campaign-performance="<?php echo esc_attr($campaign_message['id']); ?>">
                                         <?php echo esc_html($strings['performance_button']); ?>
                                     </button>
-                                    <form class="smark-email-inline-action smark-email-campaign-send-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                                        <?php wp_nonce_field('smark_email_campaign_message_send', 'smark_email_campaign_message_nonce'); ?>
-                                        <input type="hidden" name="action" value="smark_email_campaign_message_send">
-                                        <input type="hidden" name="message_id" value="<?php echo esc_attr($campaign_message['id']); ?>">
-                                        <button type="submit" class="button smark-email-send-button"><?php echo esc_html($strings['send_button']); ?></button>
-                                    </form>
+                                    <?php if (!$campaign_was_sent) : ?>
+                                        <form class="smark-email-inline-action smark-email-campaign-send-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                                            <?php wp_nonce_field('smark_email_campaign_message_send', 'smark_email_campaign_message_nonce'); ?>
+                                            <input type="hidden" name="action" value="smark_email_campaign_message_send">
+                                            <input type="hidden" name="message_id" value="<?php echo esc_attr($campaign_message['id']); ?>">
+                                            <button type="submit" class="button smark-email-send-button"><?php echo esc_html($strings['send_button']); ?></button>
+                                        </form>
+                                    <?php endif; ?>
                                     <form class="smark-email-inline-action" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" onsubmit="return confirm('<?php echo esc_js($strings['delete_confirm']); ?>');">
                                         <?php wp_nonce_field('smark_email_campaign_message_delete', 'smark_email_campaign_message_nonce'); ?>
                                         <input type="hidden" name="action" value="smark_email_campaign_message_delete">

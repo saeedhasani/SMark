@@ -585,18 +585,97 @@
     offerAgentSaveTimer = window.setTimeout(saveOfferAgentSettings, 450);
   }
 
-  function toggleOfferAgentPanel($trigger) {
-    const $panel = $("#smark_offer_agent_settings_panel");
+  let emailCampaignAgentSaveTimer = null;
+
+  function setEmailCampaignAgentStatus(message, type) {
+    const $status = $("[data-email-campaign-agent-save-state]").first();
+    if (!$status.length) {
+      return;
+    }
+
+    $status
+      .removeClass("is-error")
+      .toggleClass("is-error", type === "error")
+      .text(message || "");
+  }
+
+  function collectEmailCampaignAgentSettings() {
+    const settings = {
+      offer_id: "random",
+    };
+
+    $("[data-email-campaign-agent-setting]").each(function () {
+      const name = String($(this).attr("name") || "").trim();
+      if (!name) {
+        return;
+      }
+      settings[name] = String($(this).val() || "random").trim() || "random";
+    });
+
+    return settings;
+  }
+
+  function saveEmailCampaignAgentSettings() {
+    const cfg = window.SMarkProjectSettings || {};
+    if (!cfg.ajaxUrl || !cfg.emailCampaignAgentNonce) {
+      return;
+    }
+
+    const settings = collectEmailCampaignAgentSettings();
+    const strings = cfg.strings || {};
+
+    setEmailCampaignAgentStatus(strings.offerAgentSaving || "Saving...");
+
+    $.post(cfg.ajaxUrl, {
+      action: "smark_project_settings_save_email_campaign_agent",
+      nonce: cfg.emailCampaignAgentNonce,
+      offer_id: settings.offer_id,
+    })
+      .done(function (resp) {
+        if (resp && resp.success) {
+          setEmailCampaignAgentStatus((resp.data && resp.data.message) || strings.emailCampaignAgentSaved || "Saved");
+          return;
+        }
+
+        setEmailCampaignAgentStatus((resp && resp.data && resp.data.message) || strings.emailCampaignAgentSaveError || "Unable to save.", "error");
+      })
+      .fail(function (xhr) {
+        const message =
+          xhr &&
+          xhr.responseJSON &&
+          xhr.responseJSON.data &&
+          xhr.responseJSON.data.message
+            ? xhr.responseJSON.data.message
+            : strings.emailCampaignAgentSaveError || "Unable to save.";
+        setEmailCampaignAgentStatus(message, "error");
+      });
+  }
+
+  function scheduleEmailCampaignAgentSave() {
+    window.clearTimeout(emailCampaignAgentSaveTimer);
+    emailCampaignAgentSaveTimer = window.setTimeout(saveEmailCampaignAgentSettings, 450);
+  }
+
+  function toggleAgentPanel($trigger) {
+    const agent = String($trigger.attr("data-smark-agent-panel-trigger") || "").trim();
+    const panelId = agent === "email_campaign" ? "smark_email_campaign_agent_settings_panel" : "smark_offer_agent_settings_panel";
+    const $panel = $("#" + panelId);
     if (!$panel.length) {
       return;
     }
 
     const isHidden = $panel.prop("hidden");
+    $(".smark-agent-config-window").not($panel).prop("hidden", true);
+    $('[data-smark-agent-panel-trigger]').not($trigger).attr("aria-expanded", "false");
     $panel.prop("hidden", !isHidden);
     $trigger.attr("aria-expanded", isHidden ? "true" : "false");
 
     if (isHidden) {
-      setOfferAgentStatus("");
+      if (agent === "email_campaign") {
+        setEmailCampaignAgentStatus("");
+      } else {
+        setOfferAgentStatus("");
+      }
       const firstSelect = $panel.find("select").first().get(0);
       if (firstSelect) {
         window.setTimeout(function () {
@@ -642,13 +721,17 @@
       saveEmbeddedProjectSettings($(this));
     });
 
-    $(document).on("click", '[data-smark-agent-panel-trigger="offer"]', function (e) {
+    $(document).on("click", "[data-smark-agent-panel-trigger]", function (e) {
       e.preventDefault();
-      toggleOfferAgentPanel($(this));
+      toggleAgentPanel($(this));
     });
 
     $(document).on("change", "[data-offer-agent-setting]", function () {
       scheduleOfferAgentSave();
+    });
+
+    $(document).on("change", "[data-email-campaign-agent-setting]", function () {
+      scheduleEmailCampaignAgentSave();
     });
 
     maybeHandleBrokerClaim();

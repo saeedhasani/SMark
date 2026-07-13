@@ -1827,6 +1827,7 @@ class SMarkPlugin {
     const DEFAULT_CENTRAL_BASE_URL = 'https://saeedhasani.com';
     const CENTRAL_SERPER_SEARCH_PATH = '/wp-json/smark-core/v1/tools/serper/search';
     const CENTRAL_OFFER_GENERATE_PATH = '/wp-json/smark-core/v1/offers/generate';
+    const CENTRAL_EMAIL_CAMPAIGN_GENERATE_PATH = '/wp-json/smark-core/v1/email-campaigns/generate';
 
     /**
      * Constructor
@@ -1841,6 +1842,7 @@ class SMarkPlugin {
         add_action('wp_ajax_smark_daily_guide_smart_action', array($this, 'ajax_daily_guide_smart_action'));
         add_action('wp_ajax_smark_save_signalhire_contact_search_settings', array($this, 'ajax_save_signalhire_contact_search_settings'));
         add_action('wp_ajax_smark_dashboard_offer_agent_create', array($this, 'ajax_dashboard_offer_agent_create'));
+        add_action('wp_ajax_smark_dashboard_email_campaign_agent_create', array($this, 'ajax_dashboard_email_campaign_agent_create'));
         add_action('wp_ajax_smark_dashboard_offer_products_save', array($this, 'ajax_dashboard_offer_products_save'));
         add_action('wp_ajax_smark_dashboard_offer_sections_get', array($this, 'ajax_dashboard_offer_sections_get'));
         add_action('init', array($this, 'check_database_schema'));
@@ -2599,7 +2601,7 @@ class SMarkPlugin {
                 'translation_key' => 'daily_guide_task_email_campaign_daily',
                 'url' => '#',
                 'email_view' => 'campaign-message',
-                'smart_action' => false,
+                'smart_action' => true,
             ),
             'offer_product_monthly' => array(
                 'title_en' => 'Add Product',
@@ -2608,7 +2610,6 @@ class SMarkPlugin {
                 'translation_key' => 'daily_guide_task_offer_product_monthly',
                 'url' => '#',
                 'offer_section' => 'product',
-                'always_active' => true,
                 'smart_action' => false,
             ),
             'offer_audience_biweekly' => array(
@@ -2618,7 +2619,6 @@ class SMarkPlugin {
                 'translation_key' => 'daily_guide_task_offer_audience_biweekly',
                 'url' => '#',
                 'offer_section' => 'audience_type',
-                'always_active' => true,
                 'smart_action' => false,
             ),
             'offer_strategy_weekly' => array(
@@ -2628,7 +2628,6 @@ class SMarkPlugin {
                 'translation_key' => 'daily_guide_task_offer_strategy_weekly',
                 'url' => '#',
                 'offer_section' => 'strategy',
-                'always_active' => true,
                 'smart_action' => false,
             ),
             'offer_offer_create' => array(
@@ -2638,7 +2637,6 @@ class SMarkPlugin {
                 'translation_key' => 'daily_guide_task_offer_create',
                 'url' => '#',
                 'offer_section' => 'offer',
-                'always_active' => true,
                 'smart_action' => true,
             ),
             'gap_transfer' => array(
@@ -3081,6 +3079,39 @@ class SMarkPlugin {
             );
         }
 
+        $offer_sections = $this->get_dashboard_offer_sections();
+        if (!$this->dashboard_offer_section_has_recent_item(isset($offer_sections['product']) ? $offer_sections['product'] : array(), 30)) {
+            $suggestions[] = array(
+                'key'  => 'offer_product_monthly',
+                'text' => $this->get_dashboard_translation('daily_guide_task_offer_product_monthly', $lang),
+                'url'  => '#',
+            );
+        }
+
+        if (!$this->dashboard_offer_section_has_recent_item(isset($offer_sections['audience_type']) ? $offer_sections['audience_type'] : array(), 14)) {
+            $suggestions[] = array(
+                'key'  => 'offer_audience_biweekly',
+                'text' => $this->get_dashboard_translation('daily_guide_task_offer_audience_biweekly', $lang),
+                'url'  => '#',
+            );
+        }
+
+        if (!$this->dashboard_offer_section_has_recent_item(isset($offer_sections['strategy']) ? $offer_sections['strategy'] : array(), 7)) {
+            $suggestions[] = array(
+                'key'  => 'offer_strategy_weekly',
+                'text' => $this->get_dashboard_translation('daily_guide_task_offer_strategy_weekly', $lang),
+                'url'  => '#',
+            );
+        }
+
+        if (!$this->dashboard_offer_section_has_item_today(isset($offer_sections['offer']) ? $offer_sections['offer'] : array())) {
+            $suggestions[] = array(
+                'key'  => 'offer_offer_create',
+                'text' => $this->get_dashboard_translation('daily_guide_task_offer_create', $lang),
+                'url'  => '#',
+            );
+        }
+
         // 1) Keyword Gap -> Keyword Research transfer happened today?
         $transfer_opt = 'smark_daily_guide_keyword_gap_transfer_' . (string) (int) $project_id;
         $last_transfer_day = (string) get_option($transfer_opt, '');
@@ -3363,6 +3394,7 @@ class SMarkPlugin {
             'offerSections' => $this->get_dashboard_offer_sections(),
             'offerProductsNonce' => wp_create_nonce('smark_dashboard_offer_products'),
             'offerAgentNonce' => wp_create_nonce('smark_dashboard_offer_agent'),
+            'emailCampaignAgentNonce' => wp_create_nonce('smark_dashboard_email_campaign_agent'),
             'signalhireSettingsNonce' => wp_create_nonce('smark_signalhire_contact_search_settings'),
             'signalhireContactSearchSettings' => $this->get_signalhire_contact_search_settings(),
             'emailContactsViewNonce' => wp_create_nonce('smark_email_contacts_page_ajax'),
@@ -3826,6 +3858,88 @@ class SMarkPlugin {
         return (int) $project_id;
     }
 
+    private function get_prompt_language_name($language) {
+        $language = is_scalar($language) ? sanitize_text_field((string) $language) : '';
+        $language = trim($language);
+        if ($language === '') {
+            return 'English';
+        }
+
+        $normalized = strtolower(str_replace('_', '-', $language));
+        $map = array(
+            'en' => 'English',
+            'en-us' => 'English',
+            'en-gb' => 'English',
+            'fa' => 'Persian',
+            'fa-ir' => 'Persian',
+            'persian' => 'Persian',
+            'farsi' => 'Persian',
+            'ar' => 'Arabic',
+            'tr' => 'Turkish',
+            'de' => 'German',
+            'fr' => 'French',
+            'es' => 'Spanish',
+            'it' => 'Italian',
+            'pt' => 'Portuguese',
+            'pt-br' => 'Portuguese',
+            'ru' => 'Russian',
+            'zh' => 'Chinese',
+            'zh-cn' => 'Chinese',
+            'ja' => 'Japanese',
+            'ko' => 'Korean',
+            'hi' => 'Hindi',
+            'ur' => 'Urdu',
+        );
+
+        if (isset($map[$normalized])) {
+            return $map[$normalized];
+        }
+
+        return $language;
+    }
+
+    private function get_current_project_brand_language($project_id = 0) {
+        global $wpdb;
+
+        $fallback_code = get_option('smark_panel_language', 'en');
+        $fallback_code = is_scalar($fallback_code) ? sanitize_key((string) $fallback_code) : 'en';
+        $fallback_code = $fallback_code !== '' ? $fallback_code : 'en';
+
+        $project_id = (int) $project_id;
+        if ($project_id <= 0) {
+            $project_id = $this->resolve_current_project_id();
+        }
+
+        $language_code = '';
+        $projects_table = $this->resolve_projects_table();
+        $projects_table_sql = $this->escape_db_identifier($projects_table);
+
+        if ($project_id > 0 && $projects_table_sql !== '') {
+            $language_column = '';
+            if ($this->table_has_column($projects_table, 'brand_language')) {
+                $language_column = 'brand_language';
+            } elseif ($this->table_has_column($projects_table, 'language')) {
+                $language_column = 'language';
+            }
+
+            if ($language_column !== '') {
+                $language_column_sql = $this->escape_db_identifier($language_column);
+                if ($language_column_sql !== '') {
+                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared -- Identifier validated via escape_db_identifier().
+                    $language_code = $wpdb->get_var($wpdb->prepare("SELECT {$language_column_sql} FROM {$projects_table_sql} WHERE id = %d LIMIT 1", $project_id));
+                    $language_code = is_scalar($language_code) ? sanitize_text_field((string) $language_code) : '';
+                }
+            }
+        }
+
+        $language_code = trim($language_code) !== '' ? trim($language_code) : $fallback_code;
+
+        return array(
+            'code' => $language_code,
+            'name' => $this->get_prompt_language_name($language_code),
+        );
+    }
+
     public function ajax_daily_guide_smart_action() {
         check_ajax_referer('smark_daily_guide_smart_action', 'nonce');
 
@@ -4172,6 +4286,83 @@ class SMarkPlugin {
         return isset($sections['product']) && is_array($sections['product']) ? $sections['product'] : array();
     }
 
+    private function get_dashboard_offer_item_timestamp($item) {
+        $item = is_array($item) ? $item : array();
+        foreach (array('createdAt', 'created_at', 'updatedAt', 'updated_at') as $key) {
+            if (empty($item[$key]) || !is_scalar($item[$key])) {
+                continue;
+            }
+
+            $raw = trim((string) $item[$key]);
+            if ($raw === '') {
+                continue;
+            }
+
+            if (is_numeric($raw)) {
+                $timestamp = (int) $raw;
+                if ($timestamp > 9999999999) {
+                    $timestamp = (int) floor($timestamp / 1000);
+                }
+                if ($timestamp > 0) {
+                    return $timestamp;
+                }
+            }
+
+            $timestamp = strtotime($raw);
+            if ($timestamp > 0) {
+                return (int) $timestamp;
+            }
+
+            $timestamp = (int) mysql2date('U', $raw, false);
+            if ($timestamp > 0) {
+                return $timestamp;
+            }
+        }
+
+        $id = isset($item['id']) && is_scalar($item['id']) ? (string) $item['id'] : '';
+        if ($id !== '' && preg_match('/(?:^|[-_])(\d{10,13})$/', $id, $matches)) {
+            $timestamp = (int) $matches[1];
+            if ($timestamp > 9999999999) {
+                $timestamp = (int) floor($timestamp / 1000);
+            }
+            if ($timestamp > 0) {
+                return $timestamp;
+            }
+        }
+
+        return 0;
+    }
+
+    private function dashboard_offer_section_has_recent_item($items, $days) {
+        $items = is_array($items) ? $items : array();
+        $days = max(1, (int) $days);
+        $threshold = (int) current_time('timestamp') - ($days * DAY_IN_SECONDS);
+
+        foreach ($items as $item) {
+            $timestamp = $this->get_dashboard_offer_item_timestamp($item);
+            if ($timestamp > 0 && $timestamp >= $threshold) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function dashboard_offer_section_has_item_today($items) {
+        $items = is_array($items) ? $items : array();
+        $today_start = strtotime(current_time('Y-m-d') . ' 00:00:00');
+        $today_start = $today_start > 0 ? (int) $today_start : ((int) current_time('timestamp') - DAY_IN_SECONDS);
+
+        foreach ($items as $item) {
+            $timestamp = $this->get_dashboard_offer_item_timestamp($item);
+            if ($timestamp > 0 && $timestamp >= $today_start) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function get_signalhire_contact_search_fields() {
         return array(
             'profile_name',
@@ -4216,6 +4407,16 @@ class SMarkPlugin {
         }
 
         return $clean;
+    }
+
+    private function get_email_campaign_agent_settings() {
+        $settings = get_option('smark_email_campaign_agent_settings', array());
+        $settings = is_array($settings) ? $settings : array();
+        $offer_id = isset($settings['offer_id']) ? sanitize_key((string) $settings['offer_id']) : 'random';
+
+        return array(
+            'offer_id' => $offer_id !== '' ? $offer_id : 'random',
+        );
     }
 
     private function resolve_offer_agent_section_item($items, $selected_id) {
@@ -4263,6 +4464,11 @@ class SMarkPlugin {
             $out['details'] = isset($item['audience_details']) ? sanitize_textarea_field((string) $item['audience_details']) : '';
         } elseif ($type === 'strategy') {
             $out['details'] = isset($item['strategy_details']) ? sanitize_textarea_field((string) $item['strategy_details']) : '';
+        } elseif ($type === 'offer') {
+            $out['offer_details'] = isset($item['offer_details']) ? sanitize_textarea_field((string) $item['offer_details']) : '';
+            $out['product_id'] = isset($item['product_id']) ? sanitize_key((string) $item['product_id']) : '';
+            $out['strategy_id'] = isset($item['strategy_id']) ? sanitize_key((string) $item['strategy_id']) : '';
+            $out['audience_type_id'] = isset($item['audience_type_id']) ? sanitize_key((string) $item['audience_type_id']) : '';
         }
 
         return $out;
@@ -4275,8 +4481,10 @@ class SMarkPlugin {
             wp_send_json_error(array('message' => __('Permission denied', 'smark')), 403);
         }
 
-        $lang = get_option('smark_panel_language', 'en');
-        $lang = ($lang === 'fa') ? 'fa' : 'en';
+        $panel_lang = get_option('smark_panel_language', 'en');
+        $panel_lang = ($panel_lang === 'fa') ? 'fa' : 'en';
+        $project_id = (int) $this->resolve_current_project_id();
+        $brand_language = $this->get_current_project_brand_language($project_id);
         $sections = $this->get_dashboard_offer_sections();
         $agent_settings = $this->get_offer_agent_settings();
 
@@ -4294,16 +4502,17 @@ class SMarkPlugin {
         );
 
         if (empty($product) || empty($audience) || empty($strategy)) {
-            $msg = ($lang === 'fa')
+            $msg = ($panel_lang === 'fa')
                 ? 'تنظیمات ایجنت آفر با آیتم‌های فعلی هم‌خوان نیست. محصول، مخاطب و استراتژی انتخاب‌شده را در تنظیمات ایجنت بررسی کنید.'
                 : 'Offer Agent settings do not match the current items. Check the selected product, audience, and strategy in Agent Settings.';
             wp_send_json_error(array('message' => $msg), 400);
         }
 
         $payload = array(
-            'language' => ($lang === 'fa') ? 'Persian' : 'English',
+            'language' => isset($brand_language['name']) ? (string) $brand_language['name'] : 'English',
+            'brand_language' => isset($brand_language['code']) ? (string) $brand_language['code'] : 'en',
             'site_url' => rtrim((string) home_url('/'), '/'),
-            'project_id' => (int) $this->resolve_current_project_id(),
+            'project_id' => $project_id,
             'agent_settings' => $agent_settings,
             'product' => $this->get_offer_agent_context_item($product, 'product'),
             'audience' => $this->get_offer_agent_context_item($audience, 'audience'),
@@ -4351,7 +4560,7 @@ class SMarkPlugin {
         $name = isset($offer['name']) ? sanitize_text_field((string) $offer['name']) : '';
         $details = isset($offer['offer_details']) ? sanitize_textarea_field((string) $offer['offer_details']) : '';
         if ($name === '') {
-            $name = ($lang === 'fa') ? 'آفر پیشنهادی هوش مصنوعی' : 'AI suggested offer';
+            $name = ($panel_lang === 'fa') ? 'آفر پیشنهادی هوش مصنوعی' : 'AI suggested offer';
         }
         if ($details === '') {
             $details = isset($data['response']) ? sanitize_textarea_field((string) $data['response']) : '';
@@ -4369,6 +4578,8 @@ class SMarkPlugin {
             'strategy_id' => isset($strategy['id']) ? sanitize_key((string) $strategy['id']) : '',
             'audience_type_id' => isset($audience['id']) ? sanitize_key((string) $audience['id']) : '',
             'notes' => '',
+            'createdAt' => current_time('mysql'),
+            'updatedAt' => current_time('mysql'),
         );
 
         $offers = isset($sections['offer']) && is_array($sections['offer']) ? $sections['offer'] : array();
@@ -4381,9 +4592,136 @@ class SMarkPlugin {
         wp_send_json_success(array(
             'offer' => $new_offer,
             'sections' => $sections,
-            'message' => ($lang === 'fa')
+            'message' => ($panel_lang === 'fa')
                 ? 'آفر با ایجنت ساخته شد و در ردیف اول آفرها قرار گرفت.'
                 : 'Agent created the offer and placed it first in Offers.',
+            'prompt' => isset($data['prompt']) ? (string) $data['prompt'] : '',
+        ));
+    }
+
+    public function ajax_dashboard_email_campaign_agent_create() {
+        check_ajax_referer('smark_dashboard_email_campaign_agent', 'nonce');
+
+        if (!current_user_can(self::CAP_ACCESS)) {
+            wp_send_json_error(array('message' => __('Permission denied', 'smark')), 403);
+        }
+
+        $panel_lang = get_option('smark_panel_language', 'en');
+        $panel_lang = ($panel_lang === 'fa') ? 'fa' : 'en';
+        $project_id = (int) $this->resolve_current_project_id();
+        $brand_language = $this->get_current_project_brand_language($project_id);
+        $sections = $this->get_dashboard_offer_sections();
+        $agent_settings = $this->get_email_campaign_agent_settings();
+
+        $offer = $this->resolve_offer_agent_section_item(
+            isset($sections['offer']) ? $sections['offer'] : array(),
+            isset($agent_settings['offer_id']) ? $agent_settings['offer_id'] : 'random'
+        );
+
+        if (empty($offer)) {
+            $msg = ($panel_lang === 'fa')
+                ? 'تنظیمات ایجنت کمپین ایمیل با آفرهای فعلی هم‌خوان نیست. آفر انتخاب‌شده را در تنظیمات ایجنت بررسی کنید.'
+                : 'Email Campaign Agent settings do not match the current offers. Check the selected offer in Agent Settings.';
+            wp_send_json_error(array('message' => $msg), 400);
+        }
+
+        $payload = array(
+            'language' => isset($brand_language['name']) ? (string) $brand_language['name'] : 'English',
+            'brand_language' => isset($brand_language['code']) ? (string) $brand_language['code'] : 'en',
+            'site_url' => rtrim((string) home_url('/'), '/'),
+            'project_id' => $project_id,
+            'agent_settings' => $agent_settings,
+            'offer' => $this->get_offer_agent_context_item($offer, 'offer'),
+        );
+
+        $headers = array(
+            'Content-Type' => 'application/json; charset=utf-8',
+        );
+        $token = $this->get_central_sync_token();
+        if ($token !== '') {
+            $headers['x-smark-sync-token'] = $token;
+        }
+
+        $resp = wp_remote_post($this->get_central_endpoint(self::CENTRAL_EMAIL_CAMPAIGN_GENERATE_PATH), array(
+            'timeout' => 60,
+            'redirection' => 3,
+            'headers' => $headers,
+            'body' => wp_json_encode($payload, JSON_UNESCAPED_UNICODE),
+            'user-agent' => 'SMark/' . (defined('SMARK_VERSION') ? (string) SMARK_VERSION : '1.0.0') . ' (email-campaign-agent)',
+        ));
+
+        if (is_wp_error($resp)) {
+            wp_send_json_error(array('message' => $resp->get_error_message()), 500);
+        }
+
+        $code = (int) wp_remote_retrieve_response_code($resp);
+        $body = (string) wp_remote_retrieve_body($resp);
+        $data = json_decode($body, true);
+        if ($code < 200 || $code >= 300 || !is_array($data)) {
+            $msg = is_array($data) && isset($data['message']) ? sanitize_text_field((string) $data['message']) : __('Email campaign generation failed.', 'smark');
+            wp_send_json_error(array('message' => $msg), 500);
+        }
+
+        if (isset($data['success']) && $data['success'] === false) {
+            $msg = isset($data['message']) ? sanitize_text_field((string) $data['message']) : __('Email campaign generation failed.', 'smark');
+            wp_send_json_error(array('message' => $msg), $code);
+        }
+
+        $campaign = isset($data['campaign']) && is_array($data['campaign']) ? $data['campaign'] : array();
+        if (empty($campaign) && isset($data['data']['campaign']) && is_array($data['data']['campaign'])) {
+            $campaign = $data['data']['campaign'];
+        }
+
+        $campaign_name = isset($campaign['campaign_name']) ? sanitize_text_field((string) $campaign['campaign_name']) : '';
+        $subject_line = isset($campaign['subject_line']) ? sanitize_text_field((string) $campaign['subject_line']) : '';
+        $preview_text = isset($campaign['preview_text']) ? sanitize_text_field((string) $campaign['preview_text']) : '';
+        $email_body = isset($campaign['email_body']) ? wp_kses_post((string) $campaign['email_body']) : '';
+        $internal_notes = isset($campaign['internal_notes']) ? sanitize_textarea_field((string) $campaign['internal_notes']) : '';
+
+        if ($campaign_name === '') {
+            $campaign_name = isset($offer['name']) ? sanitize_text_field((string) $offer['name']) : (($panel_lang === 'fa') ? 'کمپین پیشنهادی ایجنت' : 'Agent suggested campaign');
+        }
+        if ($subject_line === '') {
+            $subject_line = $campaign_name;
+        }
+        if (trim(wp_strip_all_tags($email_body)) === '') {
+            $email_body = isset($data['response']) ? wp_kses_post((string) $data['response']) : '';
+        }
+        if (trim(wp_strip_all_tags($email_body)) === '') {
+            $email_body = ($panel_lang === 'fa') ? 'متن کمپین پیشنهادی بر اساس آفر انتخاب‌شده.' : 'Suggested campaign copy based on the selected offer.';
+        }
+
+        $now = current_time('mysql');
+        $new_campaign = array(
+            'id' => 'email-agent-' . (string) time(),
+            'campaign_name' => $campaign_name,
+            'sender_account_id' => '',
+            'sender_account_ids' => array(),
+            'subject_line' => $subject_line,
+            'preview_text' => $preview_text,
+            'reply_to' => '',
+            'message_status' => 'ready',
+            'target_segments' => array(),
+            'target_contacts' => array(),
+            'target_includes' => array('all:all'),
+            'target_excludes' => array(),
+            'email_body' => $email_body,
+            'internal_notes' => $internal_notes,
+            'created_at' => $now,
+            'updated_at' => $now,
+            'agent_offer_id' => isset($offer['id']) ? sanitize_key((string) $offer['id']) : '',
+        );
+
+        $messages = get_option('smark_email_marketing_campaign_messages', array());
+        $messages = is_array($messages) ? $messages : array();
+        array_unshift($messages, $new_campaign);
+        update_option('smark_email_marketing_campaign_messages', $messages, false);
+
+        wp_send_json_success(array(
+            'campaign' => $new_campaign,
+            'message' => ($panel_lang === 'fa')
+                ? 'کمپین ایمیل با ایجنت ساخته شد و در ردیف اول پیام‌های ذخیره‌شده قرار گرفت.'
+                : 'Agent created the email campaign and placed it first in Saved Messages.',
             'prompt' => isset($data['prompt']) ? (string) $data['prompt'] : '',
         ));
     }
@@ -4466,6 +4804,8 @@ class SMarkPlugin {
                 'strategy_id' => isset($item['strategy_id']) ? sanitize_key((string) $item['strategy_id']) : '',
                 'audience_type_id' => isset($item['audience_type_id']) ? sanitize_key((string) $item['audience_type_id']) : '',
                 'notes' => isset($item['notes']) ? sanitize_textarea_field((string) $item['notes']) : '',
+                'createdAt' => isset($item['createdAt']) ? sanitize_text_field((string) $item['createdAt']) : (isset($item['created_at']) ? sanitize_text_field((string) $item['created_at']) : ''),
+                'updatedAt' => isset($item['updatedAt']) ? sanitize_text_field((string) $item['updatedAt']) : (isset($item['updated_at']) ? sanitize_text_field((string) $item['updated_at']) : ''),
             );
         }
 

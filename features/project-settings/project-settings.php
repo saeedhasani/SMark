@@ -20,6 +20,7 @@ class SMarkProjectSettings {
     const OPTION_CENTRAL_BASE_URL = 'smark_central_base_url';
     const OPTION_MODULE_VISIBILITY = 'smark_dashboard_module_visibility';
     const OPTION_OFFER_AGENT_SETTINGS = 'smark_offer_agent_settings';
+    const OPTION_EMAIL_CAMPAIGN_AGENT_SETTINGS = 'smark_email_campaign_agent_settings';
     const CENTRAL_SYNC_TOKEN_HEADER = 'x-smark-sync-token';
     const DEFAULT_CENTRAL_BASE_URL = 'https://saeedhasani.com';
     const CENTRAL_SYNC_PATH = '/wp-json/smark-core/v1/projects/sync';
@@ -48,6 +49,7 @@ class SMarkProjectSettings {
         add_action('wp_ajax_smark_dashboard_project_settings_view', array($this, 'ajax_dashboard_project_settings_view'));
         add_action('wp_ajax_smark_dashboard_project_settings_save', array($this, 'ajax_dashboard_project_settings_save'));
         add_action('wp_ajax_smark_project_settings_save_offer_agent', array($this, 'ajax_save_offer_agent_settings'));
+        add_action('wp_ajax_smark_project_settings_save_email_campaign_agent', array($this, 'ajax_save_email_campaign_agent_settings'));
         add_action('rest_api_init', array($this, 'register_sc_oauth_broker_routes'));
     }
 
@@ -217,6 +219,11 @@ class SMarkProjectSettings {
                 'offer_agent_saved' => 'Offer Agent settings saved.',
                 'offer_agent_saving' => 'Saving...',
                 'offer_agent_save_error' => 'Offer Agent settings could not be saved.',
+                'email_campaign_agent_title' => 'Email Campaign Agent',
+                'email_campaign_agent_help' => 'Choose which offer the Email Campaign Agent should use when it creates a saved campaign message.',
+                'email_campaign_agent_offer' => 'For which offer?',
+                'email_campaign_agent_saved' => 'Email Campaign Agent settings saved.',
+                'email_campaign_agent_save_error' => 'Email Campaign Agent settings could not be saved.',
             ),
             'fa' => array(
                 'menu' => 'تنظیمات پروژه',
@@ -285,6 +292,11 @@ class SMarkProjectSettings {
                 'offer_agent_saved' => 'تنظیمات ایجنت آفر ذخیره شد.',
                 'offer_agent_saving' => 'در حال ذخیره...',
                 'offer_agent_save_error' => 'ذخیره تنظیمات ایجنت آفر انجام نشد.',
+                'email_campaign_agent_title' => 'ایجنت کمپین ایمیلی',
+                'email_campaign_agent_help' => 'مشخص کنید ایجنت کمپین ایمیلی هنگام ساخت پیام ذخیره‌شده از کدام آفر استفاده کند.',
+                'email_campaign_agent_offer' => 'برای کدام آفر؟',
+                'email_campaign_agent_saved' => 'تنظیمات ایجنت کمپین ایمیلی ذخیره شد.',
+                'email_campaign_agent_save_error' => 'ذخیره تنظیمات ایجنت کمپین ایمیلی انجام نشد.',
             ),
         );
 
@@ -354,6 +366,19 @@ class SMarkProjectSettings {
         return $this->sanitize_offer_agent_settings(get_option(self::OPTION_OFFER_AGENT_SETTINGS, array()));
     }
 
+    private function sanitize_email_campaign_agent_settings($settings) {
+        $settings = is_array($settings) ? $settings : array();
+        $offer_id = isset($settings['offer_id']) ? sanitize_key((string) $settings['offer_id']) : 'random';
+
+        return array(
+            'offer_id' => $offer_id !== '' ? $offer_id : 'random',
+        );
+    }
+
+    private function get_email_campaign_agent_settings() {
+        return $this->sanitize_email_campaign_agent_settings(get_option(self::OPTION_EMAIL_CAMPAIGN_AGENT_SETTINGS, array()));
+    }
+
     private function get_offer_agent_options() {
         $sections = get_option('smark_dashboard_offer_sections', array());
         $sections = is_array($sections) ? $sections : array();
@@ -364,7 +389,7 @@ class SMarkProjectSettings {
         }
 
         $options = array();
-        foreach (array('product', 'audience_type', 'strategy') as $section_key) {
+        foreach (array('product', 'audience_type', 'strategy', 'offer') as $section_key) {
             $items = isset($sections[$section_key]) && is_array($sections[$section_key]) ? $sections[$section_key] : array();
             $options[$section_key] = array();
 
@@ -1660,6 +1685,7 @@ class SMarkProjectSettings {
             'pmNonce' => wp_create_nonce('SMARK_project_management_nonce'),
             'languageNonce' => wp_create_nonce('SMARK_project_settings_language_nonce'),
             'offerAgentNonce' => wp_create_nonce('smark_offer_agent_settings'),
+            'emailCampaignAgentNonce' => wp_create_nonce('smark_email_campaign_agent_settings'),
             'currentLang' => $this->get_panel_language(),
             'projectId' => $project_id,
             'projectPublicId' => $project_public_id,
@@ -1682,6 +1708,8 @@ class SMarkProjectSettings {
                 'offerAgentSaved' => $strings['offer_agent_saved'],
                 'offerAgentSaving' => $strings['offer_agent_saving'],
                 'offerAgentSaveError' => $strings['offer_agent_save_error'],
+                'emailCampaignAgentSaved' => $strings['email_campaign_agent_saved'],
+                'emailCampaignAgentSaveError' => $strings['email_campaign_agent_save_error'],
             ),
         ));
     }
@@ -2463,10 +2491,11 @@ class SMarkProjectSettings {
             'offer' => $strings['module_offer'],
         );
         $offer_agent_settings = $this->get_offer_agent_settings();
+        $email_campaign_agent_settings = $this->get_email_campaign_agent_settings();
         $offer_agent_options = $this->get_offer_agent_options();
         $agent_cards = array(
             array('label' => $strings['agent_add_contacts'], 'category' => 'email'),
-            array('label' => $strings['agent_send_campaign'], 'category' => 'email'),
+            array('label' => $strings['agent_send_campaign'], 'category' => 'email', 'agent' => 'email_campaign'),
             array('label' => $strings['agent_add_product'], 'category' => 'offer'),
             array('label' => $strings['agent_define_audience'], 'category' => 'offer'),
             array('label' => $strings['agent_add_strategy'], 'category' => 'offer'),
@@ -2625,17 +2654,19 @@ class SMarkProjectSettings {
                             <?php
                             $agent_category = isset($agent_card['category']) ? (string) $agent_card['category'] : 'seo';
                             $agent_view_box = $agent_category === 'offer' ? '0 0 432 540' : '0 0 504 540';
-                            $is_offer_agent = isset($agent_card['agent']) && $agent_card['agent'] === 'offer';
-                            $agent_tag = $is_offer_agent ? 'button' : 'div';
+                            $agent_key = isset($agent_card['agent']) ? sanitize_key((string) $agent_card['agent']) : '';
+                            $is_configurable_agent = in_array($agent_key, array('offer', 'email_campaign'), true);
+                            $agent_tag = $is_configurable_agent ? 'button' : 'div';
+                            $agent_panel_id = $agent_key === 'email_campaign' ? 'smark_email_campaign_agent_settings_panel' : 'smark_offer_agent_settings_panel';
                             ?>
                             <<?php echo esc_html($agent_tag); ?>
-                                <?php if ($is_offer_agent) : ?>
+                                <?php if ($is_configurable_agent) : ?>
                                     type="button"
-                                    data-smark-agent-panel-trigger="offer"
-                                    aria-controls="smark_offer_agent_settings_panel"
+                                    data-smark-agent-panel-trigger="<?php echo esc_attr($agent_key); ?>"
+                                    aria-controls="<?php echo esc_attr($agent_panel_id); ?>"
                                     aria-expanded="false"
                                 <?php endif; ?>
-                                class="smark-agent-card smark-agent-card--<?php echo esc_attr($agent_category); ?><?php echo $is_offer_agent ? ' is-configurable' : ''; ?>"
+                                class="smark-agent-card smark-agent-card--<?php echo esc_attr($agent_category); ?><?php echo $is_configurable_agent ? ' is-configurable' : ''; ?>"
                             >
                                 <span class="smark-agent-card__icon" aria-hidden="true">
                                     <svg viewBox="<?php echo esc_attr($agent_view_box); ?>" focusable="false">
@@ -2679,6 +2710,26 @@ class SMarkProjectSettings {
                                     <option value="random" <?php selected($offer_agent_settings['strategy_id'], 'random'); ?>><?php echo esc_html($strings['offer_agent_random']); ?></option>
                                     <?php foreach ($offer_agent_options['strategy'] as $option) : ?>
                                         <option value="<?php echo esc_attr($option['id']); ?>" <?php selected($offer_agent_settings['strategy_id'], $option['id']); ?>><?php echo esc_html($option['name']); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+                    <div id="smark_email_campaign_agent_settings_panel" class="smark-agent-config-window" data-agent-panel="email_campaign" hidden>
+                        <div class="smark-agent-config-window__header">
+                            <div>
+                                <h3><?php echo esc_html($strings['email_campaign_agent_title']); ?></h3>
+                                <p><?php echo esc_html($strings['email_campaign_agent_help']); ?></p>
+                            </div>
+                            <span class="smark-agent-config-window__status" data-email-campaign-agent-save-state></span>
+                        </div>
+                        <div class="smark-agent-config-window__fields">
+                            <label>
+                                <span><?php echo esc_html($strings['email_campaign_agent_offer']); ?></span>
+                                <select name="offer_id" data-email-campaign-agent-setting>
+                                    <option value="random" <?php selected($email_campaign_agent_settings['offer_id'], 'random'); ?>><?php echo esc_html($strings['offer_agent_random']); ?></option>
+                                    <?php foreach ($offer_agent_options['offer'] as $option) : ?>
+                                        <option value="<?php echo esc_attr($option['id']); ?>" <?php selected($email_campaign_agent_settings['offer_id'], $option['id']); ?>><?php echo esc_html($option['name']); ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </label>
@@ -2759,6 +2810,28 @@ class SMarkProjectSettings {
         $strings = $this->get_strings();
         wp_send_json_success(array(
             'message' => $strings['offer_agent_saved'],
+            'settings' => $settings,
+        ));
+    }
+
+    public function ajax_save_email_campaign_agent_settings() {
+        check_ajax_referer('smark_email_campaign_agent_settings', 'nonce');
+
+        if (!current_user_can('smark_access')) {
+            wp_send_json_error(array(
+                'message' => esc_html__('You do not have sufficient permissions to perform this action.', 'smark'),
+            ), 403);
+        }
+
+        $settings = $this->sanitize_email_campaign_agent_settings(array(
+            'offer_id' => isset($_POST['offer_id']) ? wp_unslash($_POST['offer_id']) : 'random',
+        ));
+
+        update_option(self::OPTION_EMAIL_CAMPAIGN_AGENT_SETTINGS, $settings, false);
+
+        $strings = $this->get_strings();
+        wp_send_json_success(array(
+            'message' => $strings['email_campaign_agent_saved'],
             'settings' => $settings,
         ));
     }

@@ -139,7 +139,7 @@
                     'data-smark-daily-guide-key': completed || !smartActionEnabled || smartActionRunning ? undefined : (card.key || ''),
                     disabled: completed || !smartActionEnabled || smartActionRunning,
                     onClick: completed || !smartActionEnabled || smartActionRunning ? undefined : function(event) {
-                        if (card.key === 'email_contacts_daily' && typeof props.onSmartAction === 'function') {
+                        if ((card.key === 'email_contacts_daily' || card.key === 'email_campaign_daily') && typeof props.onSmartAction === 'function') {
                             event.preventDefault();
                             event.stopPropagation();
                             props.onSmartAction(card);
@@ -168,7 +168,8 @@
     function DailyGuideGrid(props) {
         const language = props.language === 'fa' ? 'fa' : 'en';
         const moduleVisibility = props.moduleVisibility || {};
-        const visibleCards = dailyGuideCards.filter(function(card) {
+        const cards = Array.isArray(props.cards) ? props.cards : dailyGuideCards;
+        const visibleCards = cards.filter(function(card) {
             const category = card && card.category ? card.category : '';
             return !category || moduleVisibility[category] !== false;
         });
@@ -554,6 +555,85 @@
         const [signalhireMessage, setSignalhireMessage] = useState('');
         const [signalhireMessageType, setSignalhireMessageType] = useState('success');
 
+        const getOfferItemTimestamp = function(item) {
+            item = item && typeof item === 'object' ? item : {};
+            const keys = ['createdAt', 'created_at', 'updatedAt', 'updated_at'];
+            for (let i = 0; i < keys.length; i++) {
+                const raw = item[keys[i]];
+                if (raw === undefined || raw === null || raw === '') {
+                    continue;
+                }
+
+                if (typeof raw === 'number' || /^[0-9]+$/.test(String(raw))) {
+                    let timestamp = parseInt(raw, 10);
+                    if (timestamp > 9999999999) {
+                        timestamp = Math.floor(timestamp / 1000);
+                    }
+                    if (timestamp > 0) {
+                        return timestamp * 1000;
+                    }
+                }
+
+                const parsed = Date.parse(String(raw).replace(' ', 'T'));
+                if (!isNaN(parsed)) {
+                    return parsed;
+                }
+            }
+
+            const id = item.id ? String(item.id) : '';
+            const match = id.match(/(?:^|[-_])(\d{10,13})$/);
+            if (match) {
+                let timestamp = parseInt(match[1], 10);
+                if (timestamp > 9999999999) {
+                    return timestamp;
+                }
+                return timestamp * 1000;
+            }
+
+            return 0;
+        };
+
+        const offerSectionHasRecentItem = function(sectionKey, days) {
+            const items = offerItemsBySection && Array.isArray(offerItemsBySection[sectionKey]) ? offerItemsBySection[sectionKey] : [];
+            const threshold = Date.now() - (Math.max(1, days) * 24 * 60 * 60 * 1000);
+            return items.some(function(item) {
+                const timestamp = getOfferItemTimestamp(item);
+                return timestamp > 0 && timestamp >= threshold;
+            });
+        };
+
+        const offerSectionHasItemToday = function(sectionKey) {
+            const items = offerItemsBySection && Array.isArray(offerItemsBySection[sectionKey]) ? offerItemsBySection[sectionKey] : [];
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const threshold = today.getTime();
+            return items.some(function(item) {
+                const timestamp = getOfferItemTimestamp(item);
+                return timestamp > 0 && timestamp >= threshold;
+            });
+        };
+
+        const dailyGuideCardsWithOfferStatus = dailyGuideCards.map(function(card) {
+            if (!card || !card.key) {
+                return card;
+            }
+
+            const recentStatusByKey = {
+                offer_product_monthly: offerSectionHasRecentItem('product', 30),
+                offer_audience_biweekly: offerSectionHasRecentItem('audience_type', 14),
+                offer_strategy_weekly: offerSectionHasRecentItem('strategy', 7),
+                offer_offer_create: offerSectionHasItemToday('offer'),
+            };
+
+            if (!Object.prototype.hasOwnProperty.call(recentStatusByKey, card.key)) {
+                return card;
+            }
+
+            return Object.assign({}, card, {
+                completed: recentStatusByKey[card.key],
+            });
+        });
+
         useEffect(function() {
             if (emailSubView === 'contacts' && !emailContactsHtml) {
                 return;
@@ -754,6 +834,53 @@
             });
         };
 
+        const createEmailCampaignWithAgent = function() {
+            if (dailyGuideSmartRunningKey === 'email_campaign_daily') {
+                return;
+            }
+
+            setDailyGuideSmartRunningKey('email_campaign_daily');
+
+            const body = new window.URLSearchParams();
+            body.append('action', 'smark_dashboard_email_campaign_agent_create');
+            body.append('nonce', config.emailCampaignAgentNonce || '');
+
+            window.fetch(config.ajaxUrl || window.ajaxurl || '', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                },
+                body: body.toString(),
+            }).then(function(response) {
+                return response.json();
+            }).then(function(response) {
+                if (response && response.success) {
+                    setActive('email');
+                    setLanguageOpen(false);
+                    setMarkOpen(false);
+                    setSettingsOpen(false);
+                    setEmailSubView('campaign-message');
+                    setEmailCampaignMessageHtml('');
+                    setEmailCampaignMessageError('');
+                    loadEmailEmbeddedView('smark_dashboard_email_campaign_message_view', config.emailCampaignMessageViewNonce || '', {}, function(html) {
+                        setEmailCampaignMessageHtml(html);
+                    }, function(message) {
+                        setEmailCampaignMessageError(message);
+                    }, function(isLoading) {
+                        setEmailCampaignMessageLoading(isLoading);
+                    });
+                    return;
+                }
+
+                window.alert((response && response.data && response.data.message) || text('smartError', 'Agent action failed. Please try again.'));
+            }).catch(function() {
+                window.alert(text('smartError', 'Agent action failed. Please try again.'));
+            }).finally(function() {
+                setDailyGuideSmartRunningKey('');
+            });
+        };
+
         const updateOfferProductForm = function(key, value) {
             setOfferProductForm(Object.assign({}, offerProductForm, { [key]: value }));
             setOfferProductNotice('');
@@ -798,6 +925,13 @@
                 return;
             }
 
+            const currentItems = Array.isArray(offerItemsBySection[offerActiveSection]) ? offerItemsBySection[offerActiveSection] : [];
+            const existingItem = offerProductEditingId
+                ? currentItems.filter(function(item) {
+                    return item.id === offerProductEditingId;
+                })[0]
+                : null;
+            const now = new Date().toISOString();
             const product = {
                 id: offerProductEditingId || ('product-' + Date.now()),
                 name: name,
@@ -810,8 +944,9 @@
                 strategy_id: offerActiveSection === 'offer' ? (offerProductForm.strategy_id || '').trim() : '',
                 audience_type_id: offerActiveSection === 'offer' ? (offerProductForm.audience_type_id || '').trim() : '',
                 notes: offerActiveSection === 'product' ? (offerProductForm.notes || '').trim() : '',
+                createdAt: existingItem ? (existingItem.createdAt || existingItem.created_at || now) : now,
+                updatedAt: now,
             };
-            const currentItems = Array.isArray(offerItemsBySection[offerActiveSection]) ? offerItemsBySection[offerActiveSection] : [];
             const nextProducts = offerProductEditingId
                 ? currentItems.map(function(item) {
                     return item.id === offerProductEditingId ? product : item;
@@ -1090,6 +1225,11 @@
                 return;
             }
 
+            if (key === 'email_campaign_daily') {
+                createEmailCampaignWithAgent();
+                return;
+            }
+
             if (key === 'offer_offer_create') {
                 createOfferWithAgent();
                 return;
@@ -1256,7 +1396,7 @@
         return h('main', { className: 'smark-dashboard-app-canvas smark-dashboard-app-canvas--' + (language === 'fa' ? 'rtl' : 'ltr'), 'aria-label': text('workspace', 'SMark dashboard workspace') },
             active === 'smark' ? h('div', { className: 'smark-dashboard-workspace-content' },
                 h('div', { key: 'smark', className: 'smark-dashboard-view' },
-                    h(DailyGuideGrid, { language: language, moduleVisibility: moduleVisibility, onOpenEmailView: openEmailSubViewFromDashboard, onOpenOfferSection: openOfferSectionFromDashboard, onOpenContentManagementView: openContentManagementView, onSmartAction: openDailyGuideSmartAction, smartRunningKey: dailyGuideSmartRunningKey })
+                    h(DailyGuideGrid, { cards: dailyGuideCardsWithOfferStatus, language: language, moduleVisibility: moduleVisibility, onOpenEmailView: openEmailSubViewFromDashboard, onOpenOfferSection: openOfferSectionFromDashboard, onOpenContentManagementView: openContentManagementView, onSmartAction: openDailyGuideSmartAction, smartRunningKey: dailyGuideSmartRunningKey })
                 )
             ) : null,
             active === 'seo' ? h('div', { className: 'smark-dashboard-workspace-content' },
