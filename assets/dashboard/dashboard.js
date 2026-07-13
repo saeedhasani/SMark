@@ -100,6 +100,7 @@
         const description = language === 'fa' ? (card.descriptionFa || card.description) : (card.descriptionEn || card.description);
         const completed = !!card.completed;
         const smartActionEnabled = card.smartActionEnabled !== false || card.key === 'email_contacts_daily';
+        const smartActionRunning = !!props.smartRunningKey && props.smartRunningKey === card.key;
         const agentMarkCost = parseInt(card.agentMarkCost || 0, 10);
 
         return h('article', { className: 'smark-dashboard-daily-card' + (completed ? ' is-complete' : '') },
@@ -132,11 +133,12 @@
                 }, textForLanguage(language, 'open', 'Open')),
                 h('button', {
                     type: 'button',
-                    className: 'smark-dashboard-daily-card__button daily-guide-btn daily-guide-btn--smart',
-                    'data-smark-daily-guide-smart': completed || !smartActionEnabled ? undefined : '1',
-                    'data-smark-daily-guide-key': completed || !smartActionEnabled ? undefined : (card.key || ''),
-                    disabled: completed || !smartActionEnabled,
-                    onClick: completed || !smartActionEnabled ? undefined : function(event) {
+                    className: 'smark-dashboard-daily-card__button daily-guide-btn daily-guide-btn--smart' + (smartActionRunning ? ' is-loading' : ''),
+                    'aria-busy': smartActionRunning ? 'true' : undefined,
+                    'data-smark-daily-guide-smart': completed || !smartActionEnabled || smartActionRunning ? undefined : '1',
+                    'data-smark-daily-guide-key': completed || !smartActionEnabled || smartActionRunning ? undefined : (card.key || ''),
+                    disabled: completed || !smartActionEnabled || smartActionRunning,
+                    onClick: completed || !smartActionEnabled || smartActionRunning ? undefined : function(event) {
                         if (card.key === 'email_contacts_daily' && typeof props.onSmartAction === 'function') {
                             event.preventDefault();
                             event.stopPropagation();
@@ -148,6 +150,7 @@
                         }
                     },
                 }, [
+                    smartActionRunning ? h('span', { key: 'spinner', className: 'smark-dashboard-daily-card__button-spinner', 'aria-hidden': true }) : null,
                     h('span', { key: 'label', className: 'smark-dashboard-daily-card__button-label' }, textForLanguage(language, 'smartAction', 'Agent do')),
                     agentMarkCost > 0 ? h('span', {
                         key: 'cost',
@@ -188,6 +191,7 @@
                     onOpenOfferSection: props.onOpenOfferSection,
                     onOpenContentManagementView: props.onOpenContentManagementView,
                     onSmartAction: props.onSmartAction,
+                    smartRunningKey: props.smartRunningKey,
                 });
             })
         );
@@ -544,6 +548,7 @@
         const [offerProductSaving, setOfferProductSaving] = useState(false);
         const [offerProductNotice, setOfferProductNotice] = useState('');
         const [offerProductNoticeType, setOfferProductNoticeType] = useState('success');
+        const [dailyGuideSmartRunningKey, setDailyGuideSmartRunningKey] = useState('');
         const [signalhireForm, setSignalhireForm] = useState(config.signalhireContactSearchSettings || {});
         const [signalhireSaving, setSignalhireSaving] = useState(false);
         const [signalhireMessage, setSignalhireMessage] = useState('');
@@ -701,11 +706,11 @@
         };
 
         const createOfferWithAgent = function() {
-            setActive('offer');
-            setLanguageOpen(false);
-            setMarkOpen(false);
-            setSettingsOpen(false);
-            setOfferActiveSection('offer');
+            if (dailyGuideSmartRunningKey === 'offer_offer_create') {
+                return;
+            }
+
+            setDailyGuideSmartRunningKey('offer_offer_create');
             setOfferProductSaving(true);
             setOfferProductNoticeType('success');
             setOfferProductNotice(text('smartRunning', 'Agent is working...'));
@@ -728,6 +733,11 @@
                     setOfferItemsBySection(response.data.sections);
                     setOfferProductForm(emptyOfferProductForm);
                     setOfferProductEditingId('');
+                    setActive('offer');
+                    setLanguageOpen(false);
+                    setMarkOpen(false);
+                    setSettingsOpen(false);
+                    setOfferActiveSection('offer');
                     setOfferProductNoticeType('success');
                     setOfferProductNotice(response.data.message || text('offerAgentCreated', 'Agent created the offer and placed it first in Offers.'));
                     return;
@@ -740,6 +750,7 @@
                 setOfferProductNotice(text('smartError', 'Agent action failed. Please try again.'));
             }).finally(function() {
                 setOfferProductSaving(false);
+                setDailyGuideSmartRunningKey('');
             });
         };
 
@@ -1245,7 +1256,7 @@
         return h('main', { className: 'smark-dashboard-app-canvas smark-dashboard-app-canvas--' + (language === 'fa' ? 'rtl' : 'ltr'), 'aria-label': text('workspace', 'SMark dashboard workspace') },
             active === 'smark' ? h('div', { className: 'smark-dashboard-workspace-content' },
                 h('div', { key: 'smark', className: 'smark-dashboard-view' },
-                    h(DailyGuideGrid, { language: language, moduleVisibility: moduleVisibility, onOpenEmailView: openEmailSubViewFromDashboard, onOpenOfferSection: openOfferSectionFromDashboard, onOpenContentManagementView: openContentManagementView, onSmartAction: openDailyGuideSmartAction })
+                    h(DailyGuideGrid, { language: language, moduleVisibility: moduleVisibility, onOpenEmailView: openEmailSubViewFromDashboard, onOpenOfferSection: openOfferSectionFromDashboard, onOpenContentManagementView: openContentManagementView, onSmartAction: openDailyGuideSmartAction, smartRunningKey: dailyGuideSmartRunningKey })
                 )
             ) : null,
             active === 'seo' ? h('div', { className: 'smark-dashboard-workspace-content' },

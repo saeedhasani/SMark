@@ -2,7 +2,7 @@
 /**
  * Plugin Name: SMark
  * Description: SEO, content, email marketing, social media, backlink, keyword research, and project workflow tools for WordPress.
- * Version: 1.0.9
+ * Version: 1.0.10
  * Author: Saeed Hasani
  * Author URI: https://saeedhasani.com
  * Update URI: https://github.com/saeedhasani/SMark
@@ -1805,7 +1805,7 @@ if (
 // Define plugin constants
 define('SMARK_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('SMARK_PLUGIN_PATH', plugin_dir_path(__FILE__));
-define('SMARK_VERSION', '1.0.9');
+define('SMARK_VERSION', '1.0.10');
 define('SMARK_PLUGIN_FILE', __FILE__);
 
 require_once SMARK_PLUGIN_PATH . 'includes/class-smark-github-updater.php';
