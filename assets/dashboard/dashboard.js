@@ -863,6 +863,7 @@
                     setEmailSubView('campaign-message');
                     setEmailCampaignMessageHtml('');
                     setEmailCampaignMessageError('');
+                    window.SMarkEmailCampaignScrollTarget = 'saved-messages';
                     loadEmailEmbeddedView('smark_dashboard_email_campaign_message_view', config.emailCampaignMessageViewNonce || '', {}, function(html) {
                         setEmailCampaignMessageHtml(html);
                     }, function(message) {

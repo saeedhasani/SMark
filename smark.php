@@ -4700,7 +4700,7 @@ class SMarkPlugin {
             'subject_line' => $subject_line,
             'preview_text' => $preview_text,
             'reply_to' => '',
-            'message_status' => 'ready',
+            'message_status' => 'draft',
             'target_segments' => array(),
             'target_contacts' => array(),
             'target_includes' => array('all:all'),

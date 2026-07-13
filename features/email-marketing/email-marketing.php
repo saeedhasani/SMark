@@ -626,6 +626,7 @@ class SMarkEmailMarketing {
         );
         $form_values['target_includes'] = $this->normalize_campaign_audience_tokens($form_values['target_includes']);
         $form_values['target_excludes'] = $this->normalize_campaign_audience_tokens($form_values['target_excludes']);
+        $form_values['message_status'] = (!empty($form_values['sent_at']) || $form_values['message_status'] === 'sent') ? 'sent' : 'draft';
         if (empty($form_values['target_includes']) && (!empty($form_values['target_segments']) || !empty($form_values['target_contacts']))) {
             $form_values['target_includes'] = $this->get_legacy_campaign_audience_tokens($form_values);
         }
@@ -736,7 +737,6 @@ class SMarkEmailMarketing {
                                 <span><?php echo esc_html($strings['field_status']); ?></span>
                                 <select name="message_status">
                                     <option value="draft" <?php selected($form_values['message_status'], 'draft'); ?>><?php echo esc_html($strings['status_draft']); ?></option>
-                                    <option value="ready" <?php selected($form_values['message_status'], 'ready'); ?>><?php echo esc_html($strings['status_ready']); ?></option>
                                     <option value="sent" <?php selected($form_values['message_status'], 'sent'); ?>><?php echo esc_html($strings['status_sent']); ?></option>
                                 </select>
                             </label>
@@ -801,7 +801,7 @@ class SMarkEmailMarketing {
                     </form>
                 </section>
 
-                <section class="seo-step-card seo-step-card--full smark-email-accounts-card" data-step="strategy" data-smark-campaign-message-section>
+                <section class="seo-step-card seo-step-card--full smark-email-accounts-card" id="smarkEmailCampaignSavedMessages" data-step="strategy" data-smark-campaign-message-section data-smark-campaign-messages-list>
                     <header class="seo-step-header smark-email-campaign-messages-list-header">
                         <div>
                             <h2><?php echo esc_html($strings['list_title']); ?></h2>
@@ -954,6 +954,7 @@ class SMarkEmailMarketing {
                     <?php foreach ($messages as $campaign_message) : ?>
                         <?php
                         $message_status = isset($campaign_message['message_status']) ? sanitize_key((string) $campaign_message['message_status']) : 'draft';
+                        $message_status = ($message_status === 'sent' || !empty($campaign_message['sent_at'])) ? 'sent' : 'draft';
                         $message_sent_at = isset($campaign_message['sent_at']) ? trim((string) $campaign_message['sent_at']) : '';
                         $campaign_was_sent = ($message_status === 'sent' || $message_sent_at !== '');
                         ?>
@@ -1031,6 +1032,7 @@ class SMarkEmailMarketing {
             $message['target_includes'] = $this->get_legacy_campaign_audience_tokens($message);
         }
         $message['sender_account_ids'] = $this->get_campaign_sender_account_ids($message);
+        $message_status = (!empty($message['sent_at']) || (isset($message['message_status']) && (string) $message['message_status'] === 'sent')) ? 'sent' : 'draft';
 
         return array(
             'id' => (string) ($message['id'] ?? ''),
@@ -1039,7 +1041,7 @@ class SMarkEmailMarketing {
             'subject_line' => (string) ($message['subject_line'] ?? ''),
             'preview_text' => (string) ($message['preview_text'] ?? ''),
             'reply_to' => (string) ($message['reply_to'] ?? ''),
-            'message_status' => (string) ($message['message_status'] ?? 'draft'),
+            'message_status' => $message_status,
             'target_includes' => array_values(array_map('strval', $message['target_includes'])),
             'target_excludes' => array_values(array_map('strval', $message['target_excludes'])),
             'email_body' => (string) ($message['email_body'] ?? ''),
@@ -1137,7 +1139,6 @@ class SMarkEmailMarketing {
                                 <span><?php echo esc_html($strings['field_status']); ?></span>
                                 <select name="message_status">
                                     <option value="draft"><?php echo esc_html($strings['status_draft']); ?></option>
-                                    <option value="ready"><?php echo esc_html($strings['status_ready']); ?></option>
                                     <option value="sent"><?php echo esc_html($strings['status_sent']); ?></option>
                                 </select>
                             </label>
@@ -4210,7 +4211,7 @@ class SMarkEmailMarketing {
         }
 
         $message_status = isset($_POST['message_status']) ? sanitize_key(wp_unslash($_POST['message_status'])) : 'draft';
-        $message_status = in_array($message_status, array('draft', 'ready', 'sent'), true) ? $message_status : 'draft';
+        $message_status = $message_status === 'sent' ? 'sent' : 'draft';
 
         $target_includes = isset($_POST['target_includes']) && is_array($_POST['target_includes'])
             ? $this->normalize_campaign_audience_tokens(wp_unslash($_POST['target_includes']))
@@ -4356,10 +4357,6 @@ class SMarkEmailMarketing {
     }
 
     private function get_campaign_status_label($status, $strings) {
-        if ($status === 'ready') {
-            return $strings['status_ready'];
-        }
-
         if ($status === 'sent') {
             return $strings['status_sent'];
         }
@@ -6668,12 +6665,18 @@ class SMarkEmailMarketing {
         $('#smark_email_edit_body_editor').val(content);
     }
 
-    function initializeCampaignMessageEditor() {
-        var editorId = 'smark_email_body_editor';
+    function initializeEmailEditor(editorId, forceRefresh) {
         var $editor = $('#' + editorId);
 
-        if (!$editor.length || (window.tinyMCE && window.tinyMCE.get(editorId))) {
+        if (!$editor.length) {
             return;
+        }
+
+        if (window.tinyMCE && window.tinyMCE.get(editorId)) {
+            if (!forceRefresh) {
+                return;
+            }
+            window.tinyMCE.execCommand('mceRemoveEditor', false, editorId);
         }
 
         $editor.closest('.wp-editor-wrap').find('.wp-editor-tabs').remove();
@@ -6693,6 +6696,35 @@ class SMarkEmailMarketing {
         if (window.quicktags && typeof window.quicktags === 'function' && !$('#qt_' + editorId + '_toolbar').length) {
             window.quicktags({ id: editorId });
         }
+    }
+
+    function activateVisualEmailEditor(editorId) {
+        if (window.switchEditors && typeof window.switchEditors.go === 'function') {
+            window.switchEditors.go(editorId, 'tmce');
+        }
+    }
+
+    function initializeCampaignMessageEditor() {
+        initializeEmailEditor('smark_email_body_editor', false);
+    }
+
+    function initializeCampaignMessageEditEditor() {
+        initializeEmailEditor('smark_email_edit_body_editor', true);
+        activateVisualEmailEditor('smark_email_edit_body_editor');
+    }
+
+    function scrollToCampaignSavedMessages() {
+        var $target = $('[data-smark-campaign-messages-list]').first();
+        if (!$target.length) {
+            return;
+        }
+
+        window.setTimeout(function () {
+            $target.get(0).scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 80);
     }
 
     function populateAudienceBuilder($form, mode, tokens) {
@@ -6733,13 +6765,16 @@ class SMarkEmailMarketing {
         });
         updateSenderPicker($form.find('[data-smark-sender-picker]'));
 
+        showCampaignWorkflowPanel($modal);
+        initializeCampaignMessageEditEditor();
         populateAudienceBuilder($form, 'include', data.target_includes || []);
         populateAudienceBuilder($form, 'exclude', data.target_excludes || []);
         setCampaignEditEditorContent(data.email_body || '');
         updateCampaignCapacityWarning($form);
 
-        showCampaignWorkflowPanel($modal);
         window.setTimeout(function () {
+            initializeCampaignMessageEditEditor();
+            setCampaignEditEditorContent(data.email_body || '');
             $form.find('[name="campaign_name"]').trigger('focus');
         }, 50);
     }
@@ -6771,6 +6806,10 @@ class SMarkEmailMarketing {
             syncAudienceBuilders();
             if (detail.view === 'campaign-message') {
                 initializeCampaignMessageEditor();
+                if (window.SMarkEmailCampaignScrollTarget === 'saved-messages') {
+                    window.SMarkEmailCampaignScrollTarget = '';
+                    scrollToCampaignSavedMessages();
+                }
             }
         });
 
@@ -8356,7 +8395,6 @@ JS;
                 'field_reply_to'               => 'ایمیل پاسخ‌به',
                 'field_status'                 => 'وضعیت پیام',
                 'status_draft'                 => 'پیش‌نویس',
-                'status_ready'                 => 'آماده ارسال',
                 'status_sent'                  => 'ارسال‌شده',
                 'field_include_audience'       => 'اینکلود',
                 'field_exclude_audience'       => 'اکسکلود',
@@ -8465,7 +8503,6 @@ JS;
             'field_reply_to'               => 'Reply-To Email',
             'field_status'                 => 'Message Status',
             'status_draft'                 => 'Draft',
-            'status_ready'                 => 'Ready to Send',
             'status_sent'                  => 'Sent',
             'field_include_audience'       => 'Include',
             'field_exclude_audience'       => 'Exclude',
@@ -10697,11 +10734,6 @@ JS;
             }
 
             .smark-email-status--lead {
-                background: rgba(37, 99, 235, 0.12);
-                color: #1d4ed8;
-            }
-
-            .smark-email-status--ready {
                 background: rgba(37, 99, 235, 0.12);
                 color: #1d4ed8;
             }
