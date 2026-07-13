@@ -246,7 +246,8 @@ body.smark-plugin-page #wpbody-content {
     padding: 18px 22px;
 }
 
-.smark-dashboard-embedded-view .smark-card.smark-project-settings-card {
+.smark-dashboard-embedded-view .smark-card.smark-project-settings-card,
+.smark-dashboard-embedded-view .smark-card.smark-agent-settings-card {
     border: 1px solid rgba(255, 255, 255, 0.62);
     background: rgba(255, 255, 255, 0.74);
     box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
@@ -434,6 +435,227 @@ body.smark-plugin-page #wpbody-content {
 .smark-module-toggle:has(input:checked) {
     border-color: rgba(34, 197, 94, 0.36);
     background: rgba(240, 253, 244, 0.72);
+}
+
+.smark-card.smark-agent-settings-card {
+    margin-top: 22px;
+    padding: 20px 22px 22px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 18px;
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.78)),
+        radial-gradient(circle at 8% 12%, rgba(102, 126, 234, 0.10), transparent 30%);
+    box-shadow: 0 12px 34px rgba(15, 23, 42, 0.07);
+}
+
+.smark-agent-settings-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.smark-agent-settings-card__header h2 {
+    margin: 0 0 5px;
+    color: #111827;
+    font-size: 1.18rem;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.smark-agent-settings-card__header p {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.88rem;
+    font-weight: 500;
+    line-height: 1.65;
+}
+
+.smark-agent-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(130px, 1fr));
+    gap: 10px;
+}
+
+.smark-agent-card {
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 12px;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: 13px;
+    background: rgba(255, 255, 255, 0.72);
+    color: #1f2937;
+    box-sizing: border-box;
+    text-align: left;
+    text-decoration: none;
+    transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+button.smark-agent-card {
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+    font: inherit;
+    cursor: pointer;
+}
+
+.smark-agent-card:hover {
+    transform: translateY(-1px);
+    border-color: rgba(102, 126, 234, 0.38);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+}
+
+.smark-agent-card.is-configurable {
+    position: relative;
+}
+
+.smark-agent-card.is-configurable:after {
+    content: "";
+    width: 7px;
+    height: 7px;
+    margin-left: auto;
+    border-top: 2px solid currentColor;
+    border-right: 2px solid currentColor;
+    opacity: 0.42;
+    transform: rotate(45deg);
+}
+
+.smark-project-settings-page.rtl .smark-agent-card.is-configurable:after {
+    margin-right: auto;
+    margin-left: 0;
+    transform: rotate(225deg);
+}
+
+.smark-agent-card__icon {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 11px;
+    color: #4f46e5;
+    background: rgba(99, 102, 241, 0.10);
+}
+
+.smark-agent-card__icon svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+}
+
+.smark-agent-card strong {
+    min-width: 0;
+    color: #1e293b;
+    font-size: 0.84rem;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.smark-agent-card--email .smark-agent-card__icon {
+    color: #6d28d9;
+    background: rgba(124, 58, 237, 0.10);
+}
+
+.smark-agent-card--offer .smark-agent-card__icon {
+    color: #047857;
+    background: rgba(16, 185, 129, 0.12);
+}
+
+.smark-agent-card--seo .smark-agent-card__icon {
+    color: #1d4ed8;
+    background: rgba(59, 130, 246, 0.12);
+}
+
+.smark-project-settings-page.rtl .smark-agent-settings-card__header {
+    text-align: right;
+}
+
+.smark-project-settings-page.rtl .smark-agent-card {
+    text-align: right;
+}
+
+.smark-agent-config-window {
+    margin-top: 16px;
+    padding: 18px;
+    border: 1px solid rgba(16, 185, 129, 0.22);
+    border-radius: 16px;
+    background:
+        linear-gradient(135deg, rgba(240, 253, 244, 0.84), rgba(255, 255, 255, 0.92)),
+        radial-gradient(circle at 92% 0%, rgba(16, 185, 129, 0.12), transparent 28%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 14px 34px rgba(15, 23, 42, 0.07);
+}
+
+.smark-agent-config-window[hidden] {
+    display: none !important;
+}
+
+.smark-agent-config-window__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+.smark-agent-config-window__header h3 {
+    margin: 0 0 5px;
+    color: #064e3b;
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.smark-agent-config-window__header p {
+    margin: 0;
+    color: #47635d;
+    font-size: 0.84rem;
+    font-weight: 600;
+    line-height: 1.6;
+}
+
+.smark-agent-config-window__status {
+    min-width: 86px;
+    color: #047857;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.smark-agent-config-window__status.is-error {
+    color: #b42318;
+}
+
+.smark-agent-config-window__fields {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.smark-agent-config-window__fields label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.smark-agent-config-window__fields label > span {
+    color: #1f2937;
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+.smark-agent-config-window__fields select {
+    width: 100%;
+}
+
+.smark-project-settings-page.rtl .smark-agent-config-window__header,
+.smark-project-settings-page.rtl .smark-agent-config-window__status {
+    text-align: right;
 }
 
 .smark-sc-secret-row {
@@ -631,5 +853,26 @@ body.smark-plugin-page #wpbody-content {
     }
     .smark-project-settings-page .form-table th {
         width: auto;
+    }
+}
+
+@media (max-width: 1180px) {
+    .smark-agent-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 900px) {
+    .smark-agent-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .smark-agent-config-window__fields {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 782px) {
+    .smark-agent-grid {
+        grid-template-columns: 1fr;
     }
 }

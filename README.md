@@ -31,9 +31,19 @@ Some features communicate with the central SMark Core service for shared API acc
 
 ## Version
 
-Current public release: `1.0.8`
+Current public release: `1.0.9`
 
 ## Current Release Highlights
+
+### SMark 1.0.9
+
+Version 1.0.9 adds Agent Settings to Project Settings and activates the Offer Agent workflow for Create Offer automation.
+
+- Add Agent Settings cards for Daily Guide automation setup.
+- Add configurable Offer Agent inputs for product, audience type, and strategy.
+- Support random selection for Offer Agent inputs when configured.
+- Send the configured Offer Agent context to SMark Core for AI offer generation.
+- Save generated offers at the top of the Offers table.
 
 ### SMark 1.0.8
 

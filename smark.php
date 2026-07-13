@@ -2,7 +2,7 @@
 /**
  * Plugin Name: SMark
  * Description: SEO, content, email marketing, social media, backlink, keyword research, and project workflow tools for WordPress.
- * Version: 1.0.8
+ * Version: 1.0.9
  * Author: Saeed Hasani
  * Author URI: https://saeedhasani.com
  * Update URI: https://github.com/saeedhasani/SMark
@@ -19,6 +19,12 @@
  * and should remain public distribution metadata.
  *
  * Changelog:
+ * Version 1.0.9 - Offer Agent settings and creation flow
+ * - Add Agent Settings to Project Settings for configuring Daily Guide automation agents.
+ * - Add Offer Agent controls for selecting product, audience type, and strategy inputs, with random selection support.
+ * - Persist Offer Agent settings per site for downstream Create Offer automation.
+ * - Enable the Create Offer Daily Guide agent and send the configured inputs to SMark Core.
+ * - Save generated offers at the top of the Offers table so the latest AI-created offer is immediately visible.
  * Version 1.0.8 - Email audience lists, tags, and campaign targeting
  * - Add contact lists and tags with assignment controls on the Contacts screen
  * - Add system All list and daily Received Email Today system tag
@@ -1799,7 +1805,7 @@ if (
 // Define plugin constants
 define('SMARK_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('SMARK_PLUGIN_PATH', plugin_dir_path(__FILE__));
-define('SMARK_VERSION', '1.0.8');
+define('SMARK_VERSION', '1.0.9');
 define('SMARK_PLUGIN_FILE', __FILE__);
 
 require_once SMARK_PLUGIN_PATH . 'includes/class-smark-github-updater.php';

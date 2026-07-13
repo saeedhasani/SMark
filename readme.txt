@@ -4,7 +4,7 @@ Tags: marketing, seo, ai, content
 Requires at least: 5.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.8
+Stable tag: 1.0.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,13 @@ The plugin helps WordPress site owners and marketing teams manage project setup,
 Some features may require common PHP extensions (for example `zip` for reading `.xlsx` files). If a feature needs an extension, it should show an error message when unavailable.
 
 == Changelog ==
+
+= 1.0.9 =
+* Added Agent Settings to Project Settings so Daily Guide automation inputs can be configured across sites.
+* Added Offer Agent settings for selecting the product, audience type, and strategy used by Create Offer automation.
+* Supported random Offer Agent input selection when a specific product, audience, or strategy is not required.
+* Enabled the Create Offer Daily Guide agent and connected it to the central SMark Core offer generation endpoint.
+* Saved AI-generated offers at the top of the Offers table so the newest generated offer is visible first.
 
 = 1.0.8 =
 * Added contact list management with assignment controls on the Contacts screen.

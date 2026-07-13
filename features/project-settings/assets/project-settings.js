@@ -510,6 +510,102 @@
     return true;
   }
 
+  let offerAgentSaveTimer = null;
+
+  function setOfferAgentStatus(message, type) {
+    const $status = $("[data-offer-agent-save-state]").first();
+    if (!$status.length) {
+      return;
+    }
+
+    $status
+      .removeClass("is-error")
+      .toggleClass("is-error", type === "error")
+      .text(message || "");
+  }
+
+  function collectOfferAgentSettings() {
+    const settings = {
+      product_id: "random",
+      audience_type_id: "random",
+      strategy_id: "random",
+    };
+
+    $("[data-offer-agent-setting]").each(function () {
+      const name = String($(this).attr("name") || "").trim();
+      if (!name) {
+        return;
+      }
+      settings[name] = String($(this).val() || "random").trim() || "random";
+    });
+
+    return settings;
+  }
+
+  function saveOfferAgentSettings() {
+    const cfg = window.SMarkProjectSettings || {};
+    if (!cfg.ajaxUrl || !cfg.offerAgentNonce) {
+      return;
+    }
+
+    const settings = collectOfferAgentSettings();
+    const strings = cfg.strings || {};
+
+    setOfferAgentStatus(strings.offerAgentSaving || "Saving...");
+
+    $.post(cfg.ajaxUrl, {
+      action: "smark_project_settings_save_offer_agent",
+      nonce: cfg.offerAgentNonce,
+      product_id: settings.product_id,
+      audience_type_id: settings.audience_type_id,
+      strategy_id: settings.strategy_id,
+    })
+      .done(function (resp) {
+        if (resp && resp.success) {
+          setOfferAgentStatus((resp.data && resp.data.message) || strings.offerAgentSaved || "Saved");
+          return;
+        }
+
+        setOfferAgentStatus((resp && resp.data && resp.data.message) || strings.offerAgentSaveError || "Unable to save.", "error");
+      })
+      .fail(function (xhr) {
+        const message =
+          xhr &&
+          xhr.responseJSON &&
+          xhr.responseJSON.data &&
+          xhr.responseJSON.data.message
+            ? xhr.responseJSON.data.message
+            : strings.offerAgentSaveError || "Unable to save.";
+        setOfferAgentStatus(message, "error");
+      });
+  }
+
+  function scheduleOfferAgentSave() {
+    window.clearTimeout(offerAgentSaveTimer);
+    offerAgentSaveTimer = window.setTimeout(saveOfferAgentSettings, 450);
+  }
+
+  function toggleOfferAgentPanel($trigger) {
+    const $panel = $("#smark_offer_agent_settings_panel");
+    if (!$panel.length) {
+      return;
+    }
+
+    const isHidden = $panel.prop("hidden");
+    $panel.prop("hidden", !isHidden);
+    $trigger.attr("aria-expanded", isHidden ? "true" : "false");
+
+    if (isHidden) {
+      setOfferAgentStatus("");
+      const firstSelect = $panel.find("select").first().get(0);
+      if (firstSelect) {
+        window.setTimeout(function () {
+          firstSelect.focus();
+        }, 80);
+      }
+    }
+  }
+
   $(function () {
     $(document).on("change", "#SMARK_language_select", function () {
       const cfg = window.SMarkProjectSettings || {};
@@ -544,6 +640,15 @@
     $(document).on("submit", ".smark-dashboard-embedded-view .smark-project-settings-card form", function (e) {
       e.preventDefault();
       saveEmbeddedProjectSettings($(this));
+    });
+
+    $(document).on("click", '[data-smark-agent-panel-trigger="offer"]', function (e) {
+      e.preventDefault();
+      toggleOfferAgentPanel($(this));
+    });
+
+    $(document).on("change", "[data-offer-agent-setting]", function () {
+      scheduleOfferAgentSave();
     });
 
     maybeHandleBrokerClaim();
