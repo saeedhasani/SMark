@@ -2624,6 +2624,15 @@ class SMarkPlugin {
                 'email_view' => 'campaign-message',
                 'smart_action' => true,
             ),
+            'email_failure_retry' => array(
+                'title_en' => 'Retry Failed Emails',
+                'title_fa' => 'ارسال مجدد ایمیل‌های ناموفق',
+                'category' => 'email',
+                'translation_key' => 'daily_guide_task_email_failure_retry',
+                'url' => '#',
+                'email_view' => 'performance-review',
+                'smart_action' => true,
+            ),
             'offer_product_monthly' => array(
                 'title_en' => 'Add Product',
                 'title_fa' => 'افزودن محصول',
@@ -2955,6 +2964,7 @@ class SMarkPlugin {
                 'daily_guide_task_backlink_acquired' => 'Acquire at least one backlink in Backlinks Management today.',
                 'daily_guide_task_email_contacts_daily' => 'Add 100 new email contacts today to keep campaign audiences growing.',
                 'daily_guide_task_email_campaign_daily' => 'Send one email campaign today to keep your audience engaged.',
+                'daily_guide_task_email_failure_retry' => 'Some campaign emails failed to send. Review the failure report and retry them so no recipient is left behind.',
                 'daily_guide_task_offer_product_monthly' => 'Add one new product to Offering Management so campaigns always have a fresh offer to promote.',
                 'daily_guide_task_offer_audience_biweekly' => 'Add one focused audience group to Offering Management to keep targeting precise.',
                 'daily_guide_task_offer_strategy_weekly' => 'Add one specific strategy to Offering Management to keep your offers moving with a clear angle.',
@@ -3002,6 +3012,7 @@ class SMarkPlugin {
                 'daily_guide_task_publish' => 'امروز هیچ محتوایی منتشر نشده است. حداقل یک محتوا منتشر کنید.',
                 'daily_guide_task_email_contacts_daily' => 'امروز ۱۰۰ مخاطب جدید به سیستم ایمیل مارکتینگ اضافه کنید تا لیست کمپین‌ها رشد کند.',
                 'daily_guide_task_email_campaign_daily' => 'امروز یک کمپین ایمیلی ارسال کنید تا ارتباط با مخاطبان فعال بماند.',
+                'daily_guide_task_email_failure_retry' => 'تعدادی از ایمیل‌های کمپین ناموفق بوده‌اند. گزارش خطا را بررسی کنید و آن‌ها را دوباره بفرستید تا هیچ مخاطبی از دست نرود.',
                 'daily_guide_task_offer_product_monthly' => 'یک محصول جدید به مدیریت آفریینگ اضافه کنید تا کمپین‌ها همیشه پیشنهاد تازه‌ای برای معرفی داشته باشند.',
                 'daily_guide_task_offer_audience_biweekly' => 'یک گروه مخاطب مشخص به مدیریت آفریینگ اضافه کنید تا هدف‌گیری کمپین‌ها دقیق‌تر شود.',
                 'daily_guide_task_offer_strategy_weekly' => 'یک استراتژی مشخص به مدیریت آفریینگ اضافه کنید تا زاویه فروش پیشنهادها روشن و به‌روز بماند.',
@@ -3097,6 +3108,19 @@ class SMarkPlugin {
                 'text' => $this->get_dashboard_translation('daily_guide_task_email_campaign_daily', $lang),
                 'url'  => '#',
                 'email_view' => 'campaign-message',
+            );
+        }
+
+        global $smark_email_marketing;
+        $email_failure_count = is_object($smark_email_marketing) && method_exists($smark_email_marketing, 'get_unresolved_campaign_failure_count')
+            ? (int) $smark_email_marketing->get_unresolved_campaign_failure_count()
+            : 0;
+        if ($email_failure_count > 0) {
+            $suggestions[] = array(
+                'key' => 'email_failure_retry',
+                'text' => $this->get_dashboard_translation('daily_guide_task_email_failure_retry', $lang),
+                'url' => '#',
+                'email_view' => 'performance-review',
             );
         }
 

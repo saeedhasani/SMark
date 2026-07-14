@@ -1370,7 +1370,7 @@ class SMarkEmailMarketing {
     private function render_campaign_failure_retry_modal($strings, $accounts, $failure_count) {
         $accounts = is_array($accounts) ? $accounts : array();
         ?>
-        <section class="seo-step-card seo-step-card--full smark-email-accounts-card smark-email-failure-retry-modal smark-email-failure-retry-section" id="smarkEmailFailureRetryModal" data-step="strategy" aria-hidden="true" hidden>
+        <section class="seo-step-card seo-step-card--full smark-email-accounts-card smark-email-failure-retry-modal smark-email-failure-retry-section" id="smarkEmailFailureRetryModal" data-step="strategy" data-failure-count="<?php echo esc_attr((int) $failure_count); ?>" aria-hidden="true" hidden>
                 <header class="seo-step-header smark-email-card-header-actions smark-email-contact-workflow-header smark-email-failure-retry-header">
                     <div>
                         <h2 id="smarkEmailFailureRetryTitle"><?php echo esc_html($strings['failure_retry_title']); ?></h2>
@@ -2893,8 +2893,9 @@ class SMarkEmailMarketing {
         $retry_count = isset($_POST['retry_count']) ? absint(wp_unslash($_POST['retry_count'])) : 0;
         $sender_account_id = isset($_POST['sender_account_id']) ? sanitize_text_field(wp_unslash($_POST['sender_account_id'])) : '';
         $campaign_id = isset($_POST['campaign_id']) ? sanitize_text_field(wp_unslash($_POST['campaign_id'])) : '';
+        $use_all_accounts = !empty($_POST['use_all_accounts']);
 
-        $session = $this->create_campaign_failure_retry_session($retry_count, $sender_account_id, $campaign_id);
+        $session = $this->create_campaign_failure_retry_session($retry_count, $sender_account_id, $campaign_id, $use_all_accounts);
         if (is_wp_error($session)) {
             wp_send_json_error(array('message' => $this->get_campaign_send_error_message($session, $strings)), 400);
         }
@@ -4595,7 +4596,7 @@ class SMarkEmailMarketing {
         return $session;
     }
 
-    private function create_campaign_failure_retry_session($retry_count, $sender_account_id, $campaign_id = '') {
+    private function create_campaign_failure_retry_session($retry_count, $sender_account_id, $campaign_id = '', $use_all_accounts = false) {
         $retry_count = absint($retry_count);
         $sender_account_id = sanitize_text_field($sender_account_id);
         $campaign_id = sanitize_text_field($campaign_id);
@@ -4604,13 +4605,20 @@ class SMarkEmailMarketing {
             return new WP_Error('no_recipients', 'No recipients selected.');
         }
 
-        $sender = $this->get_email_account_by_id($sender_account_id);
-        if (empty($sender) || empty($sender['smtp_host']) || empty($sender['email_address']) || empty($sender['app_password']) || !is_email($sender['email_address'])) {
+        $all_accounts = $this->get_email_accounts();
+        $sender_ids = $use_all_accounts
+            ? array_values(array_filter(array_map(function($account) {
+                return !empty($account['id']) ? (string) $account['id'] : '';
+            }, $all_accounts)))
+            : array($sender_account_id);
+        $sender_pool = $this->get_campaign_sender_pool(array('sender_account_ids' => $sender_ids));
+        if (empty($sender_pool)) {
             return new WP_Error('sender_not_configured', 'SMark sender account is not configured.');
         }
 
-        $sender_pool = $this->get_campaign_sender_pool(array('sender_account_ids' => array($sender_account_id)));
-        $remaining = isset($sender_pool[0]['remaining']) ? (int) $sender_pool[0]['remaining'] : 0;
+        $remaining = array_sum(array_map(function($sender_item) {
+            return max(0, (int) ($sender_item['remaining'] ?? 0));
+        }, $sender_pool));
         if ($remaining < $retry_count) {
             return new WP_Error('sender_capacity_insufficient', 'Selected sender accounts do not have enough daily capacity.', array(
                 'recipient_count' => $retry_count,
@@ -4627,7 +4635,10 @@ class SMarkEmailMarketing {
             'id' => wp_generate_uuid4(),
             'type' => 'failure_retry',
             'sender_account_id' => $sender_account_id,
-            'sender' => $sender,
+            'sender' => !$use_all_accounts && !empty($sender_pool[0]['account']) ? $sender_pool[0]['account'] : array(),
+            'sender_pool' => $use_all_accounts ? $sender_pool : array(),
+            'sender_start_index' => 0,
+            'use_all_accounts' => (bool) $use_all_accounts,
             'failures' => array_values($failures),
             'index' => 0,
             'total' => count($failures),
@@ -4646,6 +4657,10 @@ class SMarkEmailMarketing {
         ));
 
         return $session;
+    }
+
+    public function get_unresolved_campaign_failure_count() {
+        return count($this->get_unresolved_campaign_failures(''));
     }
 
     private function get_unresolved_campaign_failures($campaign_id = '') {
@@ -4876,13 +4891,16 @@ class SMarkEmailMarketing {
         $index = isset($session['index']) ? max(0, (int) $session['index']) : 0;
         $sender_account_id = isset($session['sender_account_id']) ? sanitize_text_field((string) $session['sender_account_id']) : '';
         $sender = !empty($session['sender']) && is_array($session['sender']) ? $session['sender'] : $this->get_email_account_by_id($sender_account_id);
+        $use_all_accounts = !empty($session['use_all_accounts']);
+        $sender_pool = $use_all_accounts && !empty($session['sender_pool']) && is_array($session['sender_pool']) ? array_values($session['sender_pool']) : array();
+        $sender_start_index = max(0, (int) ($session['sender_start_index'] ?? 0));
 
         if (empty($failures) || $index >= $total) {
             $session['complete'] = true;
             return $session;
         }
 
-        if (empty($sender) || empty($sender['smtp_host']) || empty($sender['email_address']) || empty($sender['app_password']) || !is_email($sender['email_address'])) {
+        if ((!$use_all_accounts && (empty($sender) || empty($sender['smtp_host']) || empty($sender['email_address']) || empty($sender['app_password']) || !is_email($sender['email_address']))) || ($use_all_accounts && empty($sender_pool))) {
             return new WP_Error('sender_not_configured', 'SMark sender account is not configured.');
         }
 
@@ -4912,9 +4930,35 @@ class SMarkEmailMarketing {
                     ? (string) $failure['recipient_hash']
                     : $this->get_campaign_recipient_hash($email);
 
-                $this->campaign_mailer_account = $sender;
                 $recipient_body = $this->add_campaign_tracking_to_html($this->prepare_campaign_email_html($body), $campaign_id, $recipient_hash);
-                $send_result = $this->send_campaign_email_via_direct_smtp($email, $subject, $recipient_body, $sender, $reply_to);
+                $send_result = false;
+
+                if ($use_all_accounts) {
+                    $attempt_index = $sender_start_index;
+                    while ($attempt_index < count($sender_pool)) {
+                        if ((int) ($sender_pool[$attempt_index]['remaining'] ?? 0) <= 0) {
+                            $attempt_index++;
+                            continue;
+                        }
+
+                        $sender = $sender_pool[$attempt_index]['account'];
+                        $sender_account_id = (string) $sender_pool[$attempt_index]['id'];
+                        $this->campaign_mailer_account = $sender;
+                        $send_result = $this->send_campaign_email_via_direct_smtp($email, $subject, $recipient_body, $sender, $reply_to);
+                        if ($send_result === true) {
+                            $sender_pool[$attempt_index]['remaining'] = max(0, (int) $sender_pool[$attempt_index]['remaining'] - 1);
+                            $sender_start_index = (int) $sender_pool[$attempt_index]['remaining'] > 0 ? $attempt_index : $attempt_index + 1;
+                            break;
+                        }
+
+                        // An SMTP/account failure makes this sender unsuitable for the rest of this run.
+                        $sender_pool[$attempt_index]['remaining'] = 0;
+                        $sender_start_index = ++$attempt_index;
+                    }
+                } else {
+                    $this->campaign_mailer_account = $sender;
+                    $send_result = $this->send_campaign_email_via_direct_smtp($email, $subject, $recipient_body, $sender, $reply_to);
+                }
 
                 if ($send_result === true) {
                     $session['sent_count'] = (int) ($session['sent_count'] ?? 0) + 1;
@@ -4957,6 +5001,8 @@ class SMarkEmailMarketing {
 
         $session['index'] = $index;
         $session['total'] = $total;
+        $session['sender_pool'] = $sender_pool;
+        $session['sender_start_index'] = $sender_start_index;
         $session['complete'] = $index >= $total;
 
         return $session;
@@ -7585,8 +7631,8 @@ class SMarkEmailMarketing {
         });
 
         function openFailureRetryModal() {
-            var count = parseInt($('[data-open-smark-failure-retry]').attr('data-failure-count') || '0', 10);
             var $modal = $('#smarkEmailFailureRetryModal');
+            var count = parseInt($modal.attr('data-failure-count') || $('[data-open-smark-failure-retry]').attr('data-failure-count') || '0', 10);
 
             if (isNaN(count)) {
                 count = 0;
@@ -7599,6 +7645,27 @@ class SMarkEmailMarketing {
             $modal.find('[data-smark-failure-retry-reports]').empty().append($('<li />').text($modal.find('[data-smark-failure-retry-reports]').attr('data-empty-text') || 'No email has been sent yet.'));
             showCampaignWorkflowPanel($modal);
         }
+
+        $(document).off('smark:dashboard-embedded-view-loaded.smarkFailureRetry').on('smark:dashboard-embedded-view-loaded.smarkFailureRetry', function (event) {
+            var detail = event.originalEvent && event.originalEvent.detail ? event.originalEvent.detail : {};
+            if (detail.view !== 'performance-review' || (!window.SMarkEmailFailureRetryOpen && !window.SMarkEmailFailureRetryAutoStart)) {
+                return;
+            }
+
+            var autoStart = !!window.SMarkEmailFailureRetryAutoStart;
+            window.SMarkEmailFailureRetryOpen = false;
+            window.SMarkEmailFailureRetryAutoStart = false;
+            openFailureRetryModal();
+
+            if (autoStart) {
+                window.setTimeout(function () {
+                    var $form = $('#smarkEmailFailureRetryForm');
+                    var $count = $form.find('[data-smark-failure-retry-count]');
+                    $count.val($count.attr('max') || $count.val());
+                    $form.data('smarkUseAllAccounts', true).trigger('submit');
+                }, 50);
+            }
+        });
 
         function closeFailureRetryModal() {
             hideCampaignWorkflowPanel($('#smarkEmailFailureRetryModal').removeClass('is-complete'));
@@ -7679,6 +7746,7 @@ class SMarkEmailMarketing {
                     if (response.data.complete) {
                         showNotification(response.data.message || '', 'success');
                         $button.prop('disabled', false).text($button.data('originalText') || $button.text());
+                        document.dispatchEvent(new window.CustomEvent('smark:email-failure-retry-complete', { detail: response.data }));
                     } else {
                         window.setTimeout(function () {
                             runFailureRetryBatch(sessionId, $button);
@@ -7687,11 +7755,13 @@ class SMarkEmailMarketing {
                 } else {
                     showNotification((response && response.data && response.data.message) || (smarkSeoOptimization.strings || {}).error || 'Error', 'error');
                     $button.prop('disabled', false).text($button.data('originalText') || $button.text());
+                    document.dispatchEvent(new window.CustomEvent('smark:email-failure-retry-complete', { detail: { error: true } }));
                 }
             }).fail(function (xhr) {
                 var message = xhr && xhr.responseJSON && xhr.responseJSON.data ? xhr.responseJSON.data.message : '';
                 showNotification(message || (smarkSeoOptimization.strings || {}).error || 'Error', 'error');
                 $button.prop('disabled', false).text($button.data('originalText') || $button.text());
+                document.dispatchEvent(new window.CustomEvent('smark:email-failure-retry-complete', { detail: { error: true } }));
             });
         }
 
@@ -7714,6 +7784,10 @@ class SMarkEmailMarketing {
 
             formData.set('action', 'smark_email_campaign_failure_retry_start');
             formData.set('nonce', smarkSeoOptimization.campaignMessageNonce || '');
+            if ($form.data('smarkUseAllAccounts')) {
+                formData.set('use_all_accounts', '1');
+                $form.removeData('smarkUseAllAccounts');
+            }
             $button.data('originalText', $button.text());
             $button.prop('disabled', true).text((smarkSeoOptimization.strings || {}).sending || 'Sending...');
 
@@ -7730,11 +7804,13 @@ class SMarkEmailMarketing {
                 } else {
                     showNotification((response && response.data && response.data.message) || (smarkSeoOptimization.strings || {}).error || 'Error', 'error');
                     $button.prop('disabled', false).text($button.data('originalText') || $button.text());
+                    document.dispatchEvent(new window.CustomEvent('smark:email-failure-retry-complete', { detail: { error: true } }));
                 }
             }).fail(function (xhr) {
                 var message = xhr && xhr.responseJSON && xhr.responseJSON.data ? xhr.responseJSON.data.message : '';
                 showNotification(message || (smarkSeoOptimization.strings || {}).error || 'Error', 'error');
                 $button.prop('disabled', false).text($button.data('originalText') || $button.text());
+                document.dispatchEvent(new window.CustomEvent('smark:email-failure-retry-complete', { detail: { error: true } }));
             });
         });
 

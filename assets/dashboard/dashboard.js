@@ -122,7 +122,7 @@
                         event.preventDefault();
                     } : card.emailView && typeof props.onOpenEmailView === 'function' ? function(event) {
                         event.preventDefault();
-                        props.onOpenEmailView(card.emailView);
+                        props.onOpenEmailView(card.emailView, card.key === 'email_failure_retry' ? { failureRetry: 'open' } : undefined);
                     } : card.offerSection && typeof props.onOpenOfferSection === 'function' ? function(event) {
                         event.preventDefault();
                         props.onOpenOfferSection(card.offerSection);
@@ -139,7 +139,7 @@
                     'data-smark-daily-guide-key': completed || !smartActionEnabled || smartActionRunning ? undefined : (card.key || ''),
                     disabled: completed || !smartActionEnabled || smartActionRunning,
                     onClick: completed || !smartActionEnabled || smartActionRunning ? undefined : function(event) {
-                        if ((card.key === 'email_contacts_daily' || card.key === 'email_campaign_daily') && typeof props.onSmartAction === 'function') {
+                        if ((card.key === 'email_contacts_daily' || card.key === 'email_campaign_daily' || card.key === 'email_failure_retry') && typeof props.onSmartAction === 'function') {
                             event.preventDefault();
                             event.stopPropagation();
                             props.onSmartAction(card);
@@ -1166,11 +1166,23 @@
             if (view === 'performance-review') {
                 setEmailPerformanceError('');
 
+                if (params && params.failureRetry) {
+                    window.SMarkEmailFailureRetryOpen = true;
+                    window.SMarkEmailFailureRetryAutoStart = params.failureRetry === 'auto';
+                }
+
                 if (emailPerformanceHtml) {
+                    if (params && params.failureRetry) {
+                        window.setTimeout(function() {
+                            document.dispatchEvent(new window.CustomEvent('smark:dashboard-embedded-view-loaded', {
+                                detail: { view: 'performance-review' },
+                            }));
+                        }, 0);
+                    }
                     return;
                 }
 
-                loadEmailPerformanceView({});
+                loadEmailPerformanceView(params || {});
 
                 return;
             }
@@ -1231,6 +1243,12 @@
                 return;
             }
 
+            if (key === 'email_failure_retry') {
+                setDailyGuideSmartRunningKey(key);
+                openEmailSubViewFromDashboard('performance-review', { failureRetry: 'auto' });
+                return;
+            }
+
             if (key === 'offer_offer_create') {
                 createOfferWithAgent();
                 return;
@@ -1270,6 +1288,17 @@
             return function() {
                 document.removeEventListener('smark:open-signalhire-contact-search', openSignalHirePanel);
                 document.removeEventListener('click', handleSignalHireSmartClick, true);
+            };
+        }, []);
+
+        useEffect(function() {
+            const handleFailureRetryComplete = function() {
+                setDailyGuideSmartRunningKey('');
+            };
+
+            document.addEventListener('smark:email-failure-retry-complete', handleFailureRetryComplete);
+            return function() {
+                document.removeEventListener('smark:email-failure-retry-complete', handleFailureRetryComplete);
             };
         }, []);
 
