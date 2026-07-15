@@ -1292,8 +1292,12 @@
         }, []);
 
         useEffect(function() {
-            const handleFailureRetryComplete = function() {
+            const handleFailureRetryComplete = function(event) {
                 setDailyGuideSmartRunningKey('');
+
+                if (event && event.detail && !event.detail.error) {
+                    loadEmailPerformanceView({});
+                }
             };
 
             document.addEventListener('smark:email-failure-retry-complete', handleFailureRetryComplete);

@@ -267,12 +267,6 @@ class SMarkEmailMarketing {
                                 <input type="email" name="email_address" required placeholder="name@example.com" data-email-placeholder="name@example.com" data-gmail-placeholder="name@gmail.com" data-outlook-placeholder="name@outlook.com" data-brevo-placeholder="sender@example.com">
                             </label>
 
-                            <label data-smark-brevo-only hidden>
-                                <span><?php echo esc_html($strings['field_smtp_username']); ?></span>
-                                <input type="text" name="smtp_username" autocomplete="username" placeholder="<?php echo esc_attr($strings['field_smtp_username_placeholder']); ?>">
-                                <small><?php echo esc_html($strings['field_smtp_username_help']); ?></small>
-                            </label>
-
                             <label>
                                 <span>
                                     <span data-smark-provider-text data-email-text="<?php echo esc_attr($strings['field_password_email']); ?>" data-gmail-text="<?php echo esc_attr($strings['field_password_gmail']); ?>" data-outlook-text="<?php echo esc_attr($strings['field_password_outlook']); ?>" data-brevo-text="<?php echo esc_attr($strings['field_password_brevo']); ?>"><?php echo esc_html($strings['field_password_email']); ?></span>
@@ -321,12 +315,12 @@ class SMarkEmailMarketing {
                                 <input type="number" name="daily_limit" required min="1" max="2000" value="100">
                             </label>
 
-                            <label>
+                            <label data-smark-smtp-settings>
                                 <span><?php echo esc_html($strings['field_smtp_host']); ?></span>
                                 <input type="text" name="smtp_host" required placeholder="mail.example.com" data-email-value="" data-gmail-value="smtp.gmail.com" data-outlook-value="smtp.office365.com" data-brevo-value="smtp-relay.brevo.com">
                             </label>
 
-                            <label>
+                            <label data-smark-smtp-settings>
                                 <span><?php echo esc_html($strings['field_smtp_port']); ?></span>
                                 <select name="smtp_port" required>
                                     <option value="587">587 - TLS</option>
@@ -336,7 +330,7 @@ class SMarkEmailMarketing {
                                 </select>
                             </label>
 
-                            <label>
+                            <label data-smark-smtp-settings>
                                 <span><?php echo esc_html($strings['field_encryption']); ?></span>
                                 <select name="encryption" required>
                                     <option value="tls">TLS</option>
@@ -387,7 +381,7 @@ class SMarkEmailMarketing {
                                                 <small><?php echo esc_html($account['sender_name']); ?></small>
                                             </td>
                                             <td><?php echo esc_html($account['email_address']); ?></td>
-                                            <td><?php echo esc_html($account['smtp_host'] . ':' . $account['smtp_port'] . ' / ' . strtoupper($account['encryption'])); ?></td>
+                                            <td><?php echo esc_html(($account['provider'] ?? '') === 'brevo' ? $strings['brevo_api_transport'] : ($account['smtp_host'] . ':' . $account['smtp_port'] . ' / ' . strtoupper($account['encryption']))); ?></td>
                                             <td>
                                                 <?php
                                                 $daily_limit = max(0, (int) $account['daily_limit']);
@@ -1473,7 +1467,7 @@ class SMarkEmailMarketing {
             </header>
 
             <div class="smark-email-inline-panel__body">
-                <form id="smarkEmailAccountEditForm" class="smark-email-account-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                <form id="smarkEmailAccountEditForm" class="smark-email-account-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" data-brevo-api-label="<?php echo esc_attr($strings['field_password_brevo']); ?>" data-smtp-password-label="<?php echo esc_attr($strings['field_app_password']); ?>">
                     <?php wp_nonce_field('smark_email_account_save', 'smark_email_account_nonce'); ?>
                     <input type="hidden" name="action" value="smark_email_account_save">
                     <input type="hidden" name="account_id" value="">
@@ -1504,14 +1498,8 @@ class SMarkEmailMarketing {
                             <input type="email" name="email_address" required placeholder="name@example.com">
                         </label>
 
-                        <label data-smark-edit-brevo-only hidden>
-                            <span><?php echo esc_html($strings['field_smtp_username']); ?></span>
-                            <input type="text" name="smtp_username" autocomplete="username" placeholder="<?php echo esc_attr($strings['field_smtp_username_placeholder']); ?>">
-                            <small><?php echo esc_html($strings['field_smtp_username_help']); ?></small>
-                        </label>
-
                         <label>
-                            <span><?php echo esc_html($strings['field_app_password']); ?></span>
+                            <span data-smark-edit-secret-label><?php echo esc_html($strings['field_app_password']); ?></span>
                             <input type="password" name="app_password" autocomplete="new-password" placeholder="<?php echo esc_attr($strings['field_password_placeholder_keep']); ?>">
                             <small><?php echo esc_html($strings['field_password_keep_help']); ?></small>
                         </label>
@@ -1521,12 +1509,12 @@ class SMarkEmailMarketing {
                             <input type="number" name="daily_limit" required min="1" max="2000" value="100">
                         </label>
 
-                        <label>
+                        <label data-smark-smtp-settings>
                             <span><?php echo esc_html($strings['field_smtp_host']); ?></span>
                             <input type="text" name="smtp_host" required placeholder="mail.example.com" data-gmail-value="smtp.gmail.com" data-outlook-value="smtp.office365.com" data-brevo-value="smtp-relay.brevo.com">
                         </label>
 
-                        <label>
+                        <label data-smark-smtp-settings>
                             <span><?php echo esc_html($strings['field_smtp_port']); ?></span>
                             <select name="smtp_port" required>
                                 <option value="587">587 - TLS</option>
@@ -1536,7 +1524,7 @@ class SMarkEmailMarketing {
                             </select>
                         </label>
 
-                        <label>
+                        <label data-smark-smtp-settings>
                             <span><?php echo esc_html($strings['field_encryption']); ?></span>
                             <select name="encryption" required>
                                 <option value="tls">TLS</option>
@@ -2255,7 +2243,7 @@ class SMarkEmailMarketing {
 
         $provider = isset($_POST['provider']) ? sanitize_key(wp_unslash($_POST['provider'])) : 'email';
         $provider = in_array($provider, array('email', 'gmail', 'outlook', 'brevo'), true) ? $provider : 'email';
-        $smtp_username = isset($_POST['smtp_username']) ? sanitize_text_field(wp_unslash($_POST['smtp_username'])) : '';
+        $smtp_username = $provider === 'brevo' ? '' : (isset($_POST['smtp_username']) ? sanitize_text_field(wp_unslash($_POST['smtp_username'])) : '');
 
         $smtp_port = isset($_POST['smtp_port']) ? absint($_POST['smtp_port']) : 587;
         $smtp_port = in_array($smtp_port, array(25, 465, 587, 2525), true) ? $smtp_port : 587;
@@ -2265,6 +2253,10 @@ class SMarkEmailMarketing {
 
         $daily_limit = isset($_POST['daily_limit']) ? absint($_POST['daily_limit']) : 1;
         $daily_limit = max(1, min(2000, $daily_limit));
+        if ($provider === 'brevo') {
+            $smtp_port = 443;
+            $encryption = 'none';
+        }
 
         $app_password = isset($_POST['app_password']) ? sanitize_text_field(wp_unslash($_POST['app_password'])) : '';
         if ($app_password === '' && is_array($existing_account) && !empty($existing_account['app_password'])) {
@@ -2280,7 +2272,7 @@ class SMarkEmailMarketing {
             'smtp_username' => $smtp_username,
             'app_password'  => $app_password,
             'daily_limit'   => $daily_limit,
-            'smtp_host'     => isset($_POST['smtp_host']) ? sanitize_text_field(wp_unslash($_POST['smtp_host'])) : '',
+            'smtp_host'     => $provider === 'brevo' ? 'api.brevo.com' : (isset($_POST['smtp_host']) ? sanitize_text_field(wp_unslash($_POST['smtp_host'])) : ''),
             'smtp_port'     => $smtp_port,
             'encryption'    => $encryption,
             'created_at'    => is_array($existing_account) && !empty($existing_account['created_at']) ? $existing_account['created_at'] : current_time('mysql'),
@@ -2292,18 +2284,11 @@ class SMarkEmailMarketing {
             return;
         }
 
-        if ($provider === 'brevo' && $account['smtp_username'] === '') {
-            $this->finish_email_account_save_error();
-            return;
-        }
-
         if ($account['smtp_host'] === '') {
             if ($provider === 'gmail') {
                 $account['smtp_host'] = 'smtp.gmail.com';
             } elseif ($provider === 'outlook') {
                 $account['smtp_host'] = 'smtp.office365.com';
-            } elseif ($provider === 'brevo') {
-                $account['smtp_host'] = 'smtp-relay.brevo.com';
             } else {
                 $this->finish_email_account_save_error();
                 return;
@@ -5291,6 +5276,10 @@ class SMarkEmailMarketing {
     }
 
     private function send_campaign_email_via_direct_smtp($recipient, $subject, $html_body, $sender, $reply_to = '') {
+        if (($sender['provider'] ?? '') === 'brevo') {
+            return $this->send_campaign_email_via_brevo_api($recipient, $subject, $html_body, $sender, $reply_to);
+        }
+
         if (!class_exists('PHPMailer\\PHPMailer\\PHPMailer')) {
             require_once ABSPATH . WPINC . '/PHPMailer/PHPMailer.php';
             require_once ABSPATH . WPINC . '/PHPMailer/SMTP.php';
@@ -5337,6 +5326,66 @@ class SMarkEmailMarketing {
                 'recipient' => $recipient,
             ));
         }
+    }
+
+    private function send_campaign_email_via_brevo_api($recipient, $subject, $html_body, $sender, $reply_to = '') {
+        $api_key = isset($sender['app_password']) ? trim((string) $sender['app_password']) : '';
+        $sender_email = isset($sender['email_address']) ? sanitize_email((string) $sender['email_address']) : '';
+        $recipient = sanitize_email($recipient);
+
+        if ($api_key === '' || $sender_email === '' || $recipient === '' || !is_email($sender_email) || !is_email($recipient)) {
+            return new WP_Error('brevo_api_not_configured', 'Brevo API key, sender address, or recipient is missing.');
+        }
+
+        $payload = array(
+            'sender' => array(
+                'email' => $sender_email,
+                'name' => !empty($sender['sender_name']) ? (string) $sender['sender_name'] : get_bloginfo('name'),
+            ),
+            'to' => array(array('email' => $recipient)),
+            'subject' => (string) $subject,
+            'htmlContent' => (string) $html_body,
+        );
+
+        if ($reply_to !== '' && is_email($reply_to)) {
+            $payload['replyTo'] = array('email' => sanitize_email($reply_to));
+        }
+
+        $response = wp_remote_post('https://api.brevo.com/v3/smtp/email', array(
+            'timeout' => 30,
+            'headers' => array(
+                'accept' => 'application/json',
+                'api-key' => $api_key,
+                'content-type' => 'application/json',
+            ),
+            'body' => wp_json_encode($payload),
+            'data_format' => 'body',
+        ));
+
+        if (is_wp_error($response)) {
+            return new WP_Error('brevo_api_request_failed', $response->get_error_message(), array(
+                'smtp_host' => 'api.brevo.com',
+                'smtp_port' => 443,
+                'sender_email' => $sender_email,
+            ));
+        }
+
+        $status = (int) wp_remote_retrieve_response_code($response);
+        $body = (string) wp_remote_retrieve_body($response);
+        $decoded = json_decode($body, true);
+        if ($status >= 200 && $status < 300 && is_array($decoded) && !empty($decoded['messageId'])) {
+            return true;
+        }
+
+        $message = is_array($decoded) && !empty($decoded['message']) ? sanitize_text_field((string) $decoded['message']) : 'Brevo API rejected the email request.';
+        $code = is_array($decoded) && !empty($decoded['code']) ? sanitize_key((string) $decoded['code']) : 'http_' . $status;
+
+        return new WP_Error('brevo_api_' . $code, $message, array(
+            'smtp_host' => 'api.brevo.com',
+            'smtp_port' => 443,
+            'sender_email' => $sender_email,
+            'http_status' => $status,
+        ));
     }
 
     private function prepare_campaign_email_html($body) {
@@ -5640,6 +5689,9 @@ class SMarkEmailMarketing {
 
     public function configure_campaign_phpmailer($phpmailer) {
         $account = $this->campaign_mailer_account;
+        if (($account['provider'] ?? '') === 'brevo') {
+            return;
+        }
         if (empty($account['smtp_host']) || empty($account['email_address']) || empty($account['app_password'])) {
             $this->log_campaign_mail_debug('phpmailer_config_skipped', array(
                 'reason' => 'smtp_host, email_address, or app_password is missing.',
@@ -6431,14 +6483,13 @@ class SMarkEmailMarketing {
         $form.find('[name="account_label"]').val($trigger.attr('data-account-label') || '');
         $form.find('[name="sender_name"]').val($trigger.attr('data-sender-name') || '');
         $form.find('[name="email_address"]').val($trigger.attr('data-email-address') || '');
-        $form.find('[name="smtp_username"]').val($trigger.attr('data-smtp-username') || '');
         $form.find('[name="app_password"]').val('');
         $form.find('[name="daily_limit"]').val($trigger.attr('data-daily-limit') || '100');
         $form.find('[name="smtp_host"]').val($trigger.attr('data-smtp-host') || '');
         $form.find('[name="smtp_port"]').val($trigger.attr('data-smtp-port') || '587');
-        $form.find('[name="encryption"]').val(provider === 'brevo' ? 'none' : ($trigger.attr('data-encryption') || 'tls'));
-        $form.find('[data-smark-edit-brevo-only]').prop('hidden', provider !== 'brevo');
-        $form.find('[name="smtp_username"]').prop('required', provider === 'brevo');
+        $form.find('[name="encryption"]').val($trigger.attr('data-encryption') || 'tls');
+        $form.find('[data-smark-edit-secret-label]').text(provider === 'brevo' ? ($form.attr('data-brevo-api-label') || 'Brevo API Key') : ($form.attr('data-smtp-password-label') || 'SMTP Password'));
+        $form.find('[data-smark-smtp-settings]').prop('hidden', provider === 'brevo').find(':input').prop('disabled', provider === 'brevo');
 
         showEmailAccountWorkflowPanel($modal);
         window.setTimeout(function () {
@@ -6506,18 +6557,17 @@ class SMarkEmailMarketing {
 
         $('[data-smark-gmail-only]').toggle(normalizedProvider === 'gmail');
         $('[data-smark-outlook-only]').toggle(normalizedProvider === 'outlook');
-        $('[data-smark-brevo-only]').prop('hidden', normalizedProvider !== 'brevo');
-        $form.find('[name="smtp_username"]').prop('required', normalizedProvider === 'brevo');
+        $form.find('[data-smark-smtp-settings]').prop('hidden', normalizedProvider === 'brevo').find(':input').prop('disabled', normalizedProvider === 'brevo');
 
         var $smtpHost = $form.find('[name="smtp_host"]');
         if ($smtpHost.length && !$smtpHost.val()) {
             $smtpHost.val($smtpHost.attr('data-' + normalizedProvider + '-value') || '');
         }
 
-        if (normalizedProvider === 'gmail' || normalizedProvider === 'outlook' || normalizedProvider === 'brevo') {
+        if (normalizedProvider === 'gmail' || normalizedProvider === 'outlook') {
             $form.find('[name="smtp_port"]').val('587');
-            $form.find('[name="encryption"]').val(normalizedProvider === 'brevo' ? 'none' : 'tls');
-            $smtpHost.val($smtpHost.attr('data-' + normalizedProvider + '-value') || (normalizedProvider === 'gmail' ? 'smtp.gmail.com' : (normalizedProvider === 'outlook' ? 'smtp.office365.com' : 'smtp-relay.brevo.com')));
+            $form.find('[name="encryption"]').val('tls');
+            $smtpHost.val($smtpHost.attr('data-' + normalizedProvider + '-value') || (normalizedProvider === 'gmail' ? 'smtp.gmail.com' : 'smtp.office365.com'));
         } else if ($smtpHost.val() === ($smtpHost.attr('data-gmail-value') || 'smtp.gmail.com') || $smtpHost.val() === ($smtpHost.attr('data-outlook-value') || 'smtp.office365.com') || $smtpHost.val() === ($smtpHost.attr('data-brevo-value') || 'smtp-relay.brevo.com')) {
             $smtpHost.val('');
         }
@@ -7476,19 +7526,19 @@ class SMarkEmailMarketing {
             var provider = ['gmail', 'outlook', 'brevo'].indexOf($(this).val()) !== -1 ? $(this).val() : 'email';
             var $smtpHost = $form.find('[name="smtp_host"]');
 
-            if (provider === 'gmail' || provider === 'outlook' || provider === 'brevo') {
-                var defaultHost = provider === 'gmail' ? 'smtp.gmail.com' : (provider === 'outlook' ? 'smtp.office365.com' : 'smtp-relay.brevo.com');
+            if (provider === 'gmail' || provider === 'outlook') {
+                var defaultHost = provider === 'gmail' ? 'smtp.gmail.com' : 'smtp.office365.com';
                 if (!$smtpHost.val() || $smtpHost.val() === 'smtp.gmail.com' || $smtpHost.val() === 'smtp.office365.com' || $smtpHost.val() === 'smtp-relay.brevo.com') {
                     $smtpHost.val(defaultHost);
                 }
                 $form.find('[name="smtp_port"]').val('587');
-                $form.find('[name="encryption"]').val(provider === 'brevo' ? 'none' : 'tls');
+                $form.find('[name="encryption"]').val('tls');
             } else if ($smtpHost.val() === 'smtp.gmail.com' || $smtpHost.val() === 'smtp.office365.com' || $smtpHost.val() === 'smtp-relay.brevo.com') {
                 $smtpHost.val('');
             }
 
-            $form.find('[data-smark-edit-brevo-only]').prop('hidden', provider !== 'brevo');
-            $form.find('[name="smtp_username"]').prop('required', provider === 'brevo');
+            $form.find('[data-smark-edit-secret-label]').text(provider === 'brevo' ? ($form.attr('data-brevo-api-label') || 'Brevo API Key') : ($form.attr('data-smtp-password-label') || 'SMTP Password'));
+            $form.find('[data-smark-smtp-settings]').prop('hidden', provider === 'brevo').find(':input').prop('disabled', provider === 'brevo');
         });
 
         var smarkContactsSearchTimer = null;
@@ -8241,7 +8291,7 @@ JS;
                 'form_description_email'        => 'برای ارسال از ایمیل معمولی، مشخصات SMTP، رمز عبور و سقف ارسال روزانه را وارد کنید.',
                 'form_description_gmail'        => 'برای ارسال از جیمیل، آدرس ایمیل، نام فرستنده، App Password و سقف ارسال روزانه لازم است.',
                 'form_description_outlook'      => 'برای ارسال از اوتلوک، آدرس ایمیل، نام فرستنده، رمز یا App Password و سقف ارسال روزانه لازم است.',
-                'form_description_brevo'        => 'برای ارسال از Brevo، آدرس فرستنده تاییدشده، SMTP key و سقف ارسال روزانه را وارد کنید.',
+                'form_description_brevo'        => 'برای اتصال به Brevo عنوان حساب، نام و آدرس فرستنده، API Key و سقف ارسال روزانه را وارد کنید.',
                 'edit_form_description_email'   => 'مشخصات SMTP، فرستنده و سقف ارسال این حساب را به‌روزرسانی کنید.',
                 'edit_form_description_gmail'   => 'مشخصات جیمیل، فرستنده، App Password و سقف ارسال این حساب را به‌روزرسانی کنید.',
                 'provider_label'                => 'نوع حساب',
@@ -8269,7 +8319,7 @@ JS;
                 'field_password_email'          => 'رمز SMTP / ایمیل',
                 'field_password_gmail'          => 'App Password جیمیل',
                 'field_password_outlook'        => 'رمز اوتلوک',
-                'field_password_brevo'          => 'SMTP Key / Password در Brevo',
+                'field_password_brevo'          => 'API Key در Brevo',
                 'gmail_app_password_link'       => 'دریافت App Password',
                 'gmail_app_password_tooltip_label'=> 'راهنمای دریافت App Password جیمیل',
                 'gmail_app_password_tooltip_title'=> 'راهنمای سریع',
@@ -8286,7 +8336,7 @@ JS;
                 'field_password_placeholder_email'=> 'رمز SMTP یا رمز ایمیل',
                 'field_password_placeholder_gmail'=> 'رمز برنامه ۱۶ کاراکتری گوگل',
                 'field_password_placeholder_outlook'=> 'رمز یا App Password حساب مایکروسافت',
-                'field_password_placeholder_brevo'=> 'SMTP key حساب Brevo',
+                'field_password_placeholder_brevo'=> 'API Key حساب Brevo',
                 'field_password_placeholder_keep'=> 'برای حفظ رمز فعلی خالی بگذارید',
                 'field_password_keep_help'      => 'اگر رمز جدید وارد نکنید، رمز ذخیره‌شده قبلی حفظ می‌شود.',
                 'field_daily_limit'             => 'تعداد ارسال روزانه',
@@ -8297,7 +8347,8 @@ JS;
                 'email_help'                    => 'برای ایمیل معمولی، اطلاعات SMTP را از هاست یا سرویس‌دهنده ایمیل خود وارد کنید.',
                 'gmail_help'                    => 'برای جیمیل باید تایید دو مرحله‌ای فعال باشد و از Google Account > Security > App passwords رمز برنامه بسازید. پسورد اصلی جیمیل را وارد نکنید.',
                 'outlook_help'                  => 'برای اوتلوک تنظیمات SMTP به‌صورت خودکار روی smtp.office365.com، پورت 587 و TLS قرار می‌گیرد. اگر ورود دو مرحله‌ای فعال است از App Password مایکروسافت استفاده کنید.',
-                'brevo_help'                    => 'برای Brevo از SMTP Login و SMTP Key بخش SMTP & API استفاده کنید؛ API key معتبر نیست. هاست smtp-relay.brevo.com و پورت 587 بدون encryption تنظیم می‌شود.',
+                'brevo_help'                    => 'کلید را از Brevo > Settings > SMTP & API > API Keys بسازید. SMark آن را رمزنگاری می‌کند و ارسال را از API رسمی Brevo انجام می‌دهد.',
+                'brevo_api_transport'           => 'Brevo API',
                 'save_button'                   => 'افزودن حساب',
                 'update_button'                 => 'ذخیره تغییرات',
                 'cancel_edit_button'            => 'لغو ویرایش',
@@ -8344,7 +8395,7 @@ JS;
             'form_description_email'        => 'For regular email, enter the SMTP details, password, and daily send limit.',
             'form_description_gmail'        => 'Gmail sending requires the email address, sender name, app password, and daily send limit.',
             'form_description_outlook'      => 'Outlook sending requires the email address, sender name, password or app password, and daily send limit.',
-            'form_description_brevo'        => 'Brevo sending requires a verified sender address, SMTP key, and daily send limit.',
+            'form_description_brevo'        => 'Connect Brevo with an account label, sender identity, API key, and daily send limit.',
             'edit_form_description_email'   => 'Update this account SMTP details, sender identity, and daily send limit.',
             'edit_form_description_gmail'   => 'Update this Gmail account, sender identity, app password, and daily send limit.',
             'provider_label'                => 'Account Type',
@@ -8372,7 +8423,7 @@ JS;
             'field_password_email'          => 'SMTP / Email Password',
             'field_password_gmail'          => 'Gmail App Password',
             'field_password_outlook'        => 'Outlook Password',
-            'field_password_brevo'          => 'Brevo SMTP Key / Password',
+            'field_password_brevo'          => 'Brevo API Key',
             'gmail_app_password_link'       => 'Get app password',
             'gmail_app_password_tooltip_label'=> 'Gmail app password help',
             'gmail_app_password_tooltip_title'=> 'Quick guide',
@@ -8389,7 +8440,7 @@ JS;
             'field_password_placeholder_email'=> 'SMTP or email password',
             'field_password_placeholder_gmail'=> '16-character Google app password',
             'field_password_placeholder_outlook'=> 'Microsoft account password or app password',
-            'field_password_placeholder_brevo'=> 'Brevo SMTP key',
+            'field_password_placeholder_brevo'=> 'Brevo API key',
             'field_password_placeholder_keep'=> 'Leave blank to keep the current password',
             'field_password_keep_help'      => 'If you do not enter a new password, the saved password stays unchanged.',
             'field_daily_limit'             => 'Daily Send Limit',
@@ -8400,7 +8451,8 @@ JS;
             'email_help'                    => 'For regular email, use the SMTP details provided by your host or email service.',
             'gmail_help'                    => 'For Gmail, enable 2-Step Verification and create an app password from Google Account > Security > App passwords. Do not enter the regular Gmail password.',
             'outlook_help'                  => 'For Outlook, SMark automatically uses smtp.office365.com, port 587, and TLS. If two-step verification is enabled, use a Microsoft app password.',
-            'brevo_help'                    => 'For Brevo, use the SMTP Login and SMTP Key from SMTP & API settings; an API key will not work. SMark uses smtp-relay.brevo.com on port 587 without encryption.',
+            'brevo_help'                    => 'Create a key under Brevo > Settings > SMTP & API > API Keys. SMark encrypts it and sends through the official Brevo API.',
+            'brevo_api_transport'           => 'Brevo API',
             'save_button'                   => 'Add Account',
             'update_button'                 => 'Save Changes',
             'cancel_edit_button'            => 'Cancel Edit',
@@ -9978,6 +10030,10 @@ JS;
                 font-weight: 600;
             }
 
+            .smark-email-form-grid [data-smark-smtp-settings][hidden] {
+                display: none !important;
+            }
+
             .smark-email-form-grid label small,
             .smark-email-form-field small,
             .smark-email-field-note {
@@ -10815,12 +10871,13 @@ JS;
                 z-index: 100001 !important;
                 width: min(464px, calc(100vw - 40px));
                 max-width: min(464px, calc(100vw - 40px)) !important;
-                min-height: 70px;
+                min-height: 76px !important;
                 min-width: 0 !important;
                 display: flex !important;
-                align-items: center;
+                align-items: center !important;
                 gap: 15px;
-                padding: 14px 14px 14px 16px !important;
+                padding: 12px 14px 12px 16px !important;
+                box-sizing: border-box !important;
                 border-radius: 15px !important;
                 background: rgba(255, 255, 255, 0.72) !important;
                 color: #0f172a !important;
