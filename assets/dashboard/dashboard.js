@@ -550,6 +550,7 @@
         const [offerProductNotice, setOfferProductNotice] = useState('');
         const [offerProductNoticeType, setOfferProductNoticeType] = useState('success');
         const [dailyGuideSmartRunningKey, setDailyGuideSmartRunningKey] = useState('');
+        const [dailyGuideCardState, setDailyGuideCardState] = useState(dailyGuideCards);
         const [signalhireForm, setSignalhireForm] = useState(config.signalhireContactSearchSettings || {});
         const [signalhireSaving, setSignalhireSaving] = useState(false);
         const [signalhireMessage, setSignalhireMessage] = useState('');
@@ -613,7 +614,7 @@
             });
         };
 
-        const dailyGuideCardsWithOfferStatus = dailyGuideCards.map(function(card) {
+        const dailyGuideCardsWithOfferStatus = dailyGuideCardState.map(function(card) {
             if (!card || !card.key) {
                 return card;
             }
@@ -695,6 +696,32 @@
             document.addEventListener('smark:dashboard-mark-balance-updated', handleMarkBalanceUpdate);
             return function() {
                 document.removeEventListener('smark:dashboard-mark-balance-updated', handleMarkBalanceUpdate);
+            };
+        }, []);
+
+        useEffect(function() {
+            const handleEmailContactsImported = function(event) {
+                const detail = event.detail || {};
+                if (!detail.dailyGuideCompleted) {
+                    return;
+                }
+
+                setDailyGuideCardState(function(cards) {
+                    return cards.map(function(card) {
+                        if (!card || card.key !== 'email_contacts_daily') {
+                            return card;
+                        }
+
+                        return Object.assign({}, card, {
+                            completed: true,
+                        });
+                    });
+                });
+            };
+
+            document.addEventListener('smark:email-contacts-imported', handleEmailContactsImported);
+            return function() {
+                document.removeEventListener('smark:email-contacts-imported', handleEmailContactsImported);
             };
         }, []);
 
