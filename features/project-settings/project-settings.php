@@ -160,6 +160,8 @@ class SMarkProjectSettings {
                 'projects_table_missing' => 'Projects table not found. Please activate SMark Core (Project Management) and try again.',
                 'project_name' => 'Project Name',
                 'project_name_help' => 'Required. Default is your site name; you can change it anytime.',
+                'business_description' => 'Business Description',
+                'business_description_help' => 'Describe your business type, processes, and the nature of what you offer.',
                 'brand_language' => 'Brand Language',
                 'canva_template' => 'Canva Template',
                 'website' => 'Website',
@@ -195,6 +197,14 @@ class SMarkProjectSettings {
                 'module_offer' => 'Offer',
                 'module_on' => 'On',
                 'module_off' => 'Off',
+                'main_settings_title' => 'Main Settings',
+                'main_settings_description' => 'Core project details used across SMark.',
+                'integration_settings_title' => 'Integration Settings',
+                'integration_settings_description' => 'Connect SMark to other tools and services.',
+                'telegram_bot_token' => 'Telegram Bot API Token',
+                'telegram_bot_token_help' => 'Paste your Telegram bot token to connect SMark to a Telegram bot.',
+                'collapse_section' => 'Collapse section',
+                'expand_section' => 'Expand section',
                 'agent_settings' => 'Agent Settings',
                 'agent_settings_help' => 'Future automation agents for Daily Guide actions. Agent execution is inactive for now.',
                 'agent_add_contacts' => 'Add Contacts Agent',
@@ -233,6 +243,8 @@ class SMarkProjectSettings {
                 'projects_table_missing' => 'جدول پروژه‌ها پیدا نشد. لطفاً SMark Core (Project Management) را فعال کنید و دوباره تلاش کنید.',
                 'project_name' => 'نام پروژه',
                 'project_name_help' => 'الزامی. مقدار پیش‌فرض نام سایت شماست و بعداً قابل تغییر است.',
+                'business_description' => 'توضیحات کسب‌وکار',
+                'business_description_help' => 'توضیحی درباره نوع، فرآیندها و جنس کسب‌وکار شما.',
                 'brand_language' => 'زبان برند',
                 'canva_template' => 'قالب کانوا',
                 'website' => 'سایت',
@@ -268,6 +280,14 @@ class SMarkProjectSettings {
                 'module_offer' => 'آفر',
                 'module_on' => 'روشن',
                 'module_off' => 'خاموش',
+                'main_settings_title' => 'تنظیمات اصلی',
+                'main_settings_description' => 'اطلاعات اصلی پروژه که در سراسر اسمارک استفاده می‌شود.',
+                'integration_settings_title' => 'تنظیمات یکپارچه‌سازی',
+                'integration_settings_description' => 'اسمارک را به ابزارها و سرویس‌های دیگر متصل کنید.',
+                'telegram_bot_token' => 'توکن API بات تلگرام',
+                'telegram_bot_token_help' => 'توکن بات تلگرام خود را وارد کنید تا اسمارک به آن متصل شود.',
+                'collapse_section' => 'بستن بخش',
+                'expand_section' => 'باز کردن بخش',
                 'agent_settings' => 'تنظیمات ایجنت‌ها',
                 'agent_settings_help' => 'ایجنت‌های آینده برای اجرای پیشنهادهای Daily Guide. اجرای ایجنت‌ها فعلاً غیرفعال است.',
                 'agent_add_contacts' => 'ایجنت افزودن مخاطب',
@@ -1450,6 +1470,16 @@ class SMarkProjectSettings {
             $wpdb->query("ALTER TABLE {$projects_table_sql} ADD COLUMN website varchar(1000) DEFAULT NULL AFTER canva_template");
         }
 
+        if (!$this->table_has_column($projects_table, 'business_description')) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table identifier is strictly validated by escape_db_identifier().
+            $wpdb->query("ALTER TABLE {$projects_table_sql} ADD COLUMN business_description text DEFAULT NULL AFTER website");
+        }
+
+        if (!$this->table_has_column($projects_table, 'telegram_bot_token')) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table identifier is strictly validated by escape_db_identifier().
+            $wpdb->query("ALTER TABLE {$projects_table_sql} ADD COLUMN telegram_bot_token varchar(255) DEFAULT NULL AFTER business_description");
+        }
+
         if (!$this->table_has_column($projects_table, 'wp_connected')) {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table identifier is strictly validated by escape_db_identifier().
             $wpdb->query("ALTER TABLE {$projects_table_sql} ADD COLUMN wp_connected tinyint(1) DEFAULT 0 AFTER website");
@@ -1783,6 +1813,8 @@ class SMarkProjectSettings {
  
         $db_id = isset($_POST['project_db_id']) ? absint(wp_unslash($_POST['project_db_id'])) : 0;
         $project_name = isset($_POST['project_name']) ? sanitize_text_field(wp_unslash($_POST['project_name'])) : '';
+        $business_description = isset($_POST['business_description']) ? sanitize_textarea_field(wp_unslash($_POST['business_description'])) : '';
+        $telegram_bot_token = isset($_POST['telegram_bot_token']) ? sanitize_text_field(wp_unslash($_POST['telegram_bot_token'])) : '';
         $brand_language = isset($_POST['brand_language']) ? sanitize_key(wp_unslash($_POST['brand_language'])) : 'en';
         $canva_template = isset($_POST['canva_template']) ? esc_url_raw(wp_unslash($_POST['canva_template'])) : '';
         $website = function_exists('home_url') ? home_url('/') : '';
@@ -1800,10 +1832,12 @@ class SMarkProjectSettings {
         $data = array(
             'project_name' => $project_name,
             'brand_language' => $brand_language,
+            'business_description' => $business_description !== '' ? $business_description : null,
+            'telegram_bot_token' => $telegram_bot_token !== '' ? $telegram_bot_token : null,
             'canva_template' => $canva_template !== '' ? $canva_template : null,
             'website' => $website !== '' ? $website : null,
         );
-        $format = array('%s', '%s', '%s', '%s');
+        $format = array('%s', '%s', '%s', '%s', '%s', '%s');
 
         if ($this->table_has_column($projects_table, 'wp_connected')) {
             $data['wp_connected'] = 1;
@@ -2408,14 +2442,6 @@ class SMarkProjectSettings {
             return;
         }
 
-        if (isset($_POST['smark_project_settings_submit'])) {
-            check_admin_referer('smark_project_settings_save', 'smark_project_settings_nonce');
-            if ($this->handle_submit()) {
-                wp_safe_redirect(admin_url('admin.php?page=smark-dashboard'));
-                exit;
-            }
-        }
- 
         $project = $this->ensure_site_project_row();
         if (!is_array($project)) {
             $project = $this->get_current_project();
@@ -2435,6 +2461,8 @@ class SMarkProjectSettings {
             'project_name' => function_exists('get_bloginfo') ? (string) get_bloginfo('name') : '',
             'created_at' => '',
             'brand_language' => $this->is_persian_site() ? 'fa' : 'en',
+            'business_description' => '',
+            'telegram_bot_token' => '',
             'canva_template' => '',
             'website' => function_exists('home_url') ? home_url() : '',
             'wp_connected' => 0,
@@ -2553,11 +2581,22 @@ class SMarkProjectSettings {
             <div class="smark-project-settings-content">
                 <?php settings_errors('smark_project_settings'); ?>
 
-                <div class="smark-card smark-project-settings-card">
-                    <form method="post" action="<?php echo esc_url(admin_url('admin.php?page=smark-project-settings')); ?>">
-                        <?php wp_nonce_field('smark_project_settings_save', 'smark_project_settings_nonce'); ?>
-                        <input type="hidden" name="project_db_id" value="<?php echo esc_attr((string) (int) $project['id']); ?>">
+                <form method="post" action="<?php echo esc_url(admin_url('admin.php?page=smark-project-settings')); ?>">
+                    <?php wp_nonce_field('smark_project_settings_save', 'smark_project_settings_nonce'); ?>
+                    <input type="hidden" name="project_db_id" value="<?php echo esc_attr((string) (int) $project['id']); ?>">
 
+                    <div class="smark-card smark-project-settings-card smark-settings-section" id="smark-section-main">
+                        <header class="smark-settings-section__header">
+                            <div>
+                                <h2><?php echo esc_html($strings['main_settings_title']); ?></h2>
+                                <p><?php echo esc_html($strings['main_settings_description']); ?></p>
+                            </div>
+                            <span class="smark-settings-section__save-state" data-smark-settings-save-state></span>
+                            <button type="button" class="smark-settings-section__toggle is-open" data-smark-section-toggle data-collapse-label="<?php echo esc_attr($strings['collapse_section']); ?>" data-expand-label="<?php echo esc_attr($strings['expand_section']); ?>" aria-expanded="true" aria-controls="smark-section-main-body" aria-label="<?php echo esc_attr($strings['collapse_section']); ?>">
+                                <span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>
+                            </button>
+                        </header>
+                        <div class="smark-settings-section__body" id="smark-section-main-body">
                         <table class="form-table" role="presentation">
                             <tbody>
                                 <tr>
@@ -2567,6 +2606,15 @@ class SMarkProjectSettings {
                                     <td>
                                         <input id="smark_project_name" name="project_name" type="text" class="regular-text" value="<?php echo esc_attr((string) $project['project_name']); ?>" required>
                                         <p class="description"><?php echo esc_html($strings['project_name_help']); ?></p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">
+                                        <label for="smark_business_description"><?php echo esc_html($strings['business_description']); ?></label>
+                                    </th>
+                                    <td>
+                                        <textarea id="smark_business_description" name="business_description" class="large-text" rows="4"><?php echo esc_textarea((string) $project['business_description']); ?></textarea>
+                                        <p class="description"><?php echo esc_html($strings['business_description_help']); ?></p>
                                     </td>
                                 </tr>
                                 <tr>
@@ -2652,18 +2700,50 @@ class SMarkProjectSettings {
                                 </tr>
                             </tbody>
                         </table>
+                        </div>
+                    </div>
 
-                        <?php submit_button($strings['save'], 'primary', 'smark_project_settings_submit'); ?>
-                    </form>
-                </div>
+                    <div class="smark-card smark-project-settings-card smark-settings-section" id="smark-section-integrations">
+                        <header class="smark-settings-section__header">
+                            <div>
+                                <h2><?php echo esc_html($strings['integration_settings_title']); ?></h2>
+                                <p><?php echo esc_html($strings['integration_settings_description']); ?></p>
+                            </div>
+                            <span class="smark-settings-section__save-state" data-smark-settings-save-state></span>
+                            <button type="button" class="smark-settings-section__toggle is-open" data-smark-section-toggle data-collapse-label="<?php echo esc_attr($strings['collapse_section']); ?>" data-expand-label="<?php echo esc_attr($strings['expand_section']); ?>" aria-expanded="true" aria-controls="smark-section-integrations-body" aria-label="<?php echo esc_attr($strings['collapse_section']); ?>">
+                                <span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>
+                            </button>
+                        </header>
+                        <div class="smark-settings-section__body" id="smark-section-integrations-body">
+                            <table class="form-table" role="presentation">
+                                <tbody>
+                                    <tr>
+                                        <th scope="row">
+                                            <label for="smark_telegram_bot_token"><?php echo esc_html($strings['telegram_bot_token']); ?></label>
+                                        </th>
+                                        <td>
+                                            <input id="smark_telegram_bot_token" name="telegram_bot_token" type="text" class="regular-text" autocomplete="off" value="<?php echo esc_attr((string) $project['telegram_bot_token']); ?>">
+                                            <p class="description"><?php echo esc_html($strings['telegram_bot_token_help']); ?></p>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
 
-                <div class="smark-card smark-agent-settings-card" aria-label="<?php echo esc_attr($strings['agent_settings']); ?>">
-                    <div class="smark-agent-settings-card__header">
+                </form>
+
+                <div class="smark-card smark-agent-settings-card smark-settings-section" id="smark-section-agents" aria-label="<?php echo esc_attr($strings['agent_settings']); ?>">
+                    <div class="smark-agent-settings-card__header smark-settings-section__header">
                         <div>
                             <h2><?php echo esc_html($strings['agent_settings']); ?></h2>
                             <p><?php echo esc_html($strings['agent_settings_help']); ?></p>
                         </div>
+                        <button type="button" class="smark-settings-section__toggle is-open" data-smark-section-toggle data-collapse-label="<?php echo esc_attr($strings['collapse_section']); ?>" data-expand-label="<?php echo esc_attr($strings['expand_section']); ?>" aria-expanded="true" aria-controls="smark-section-agents-body" aria-label="<?php echo esc_attr($strings['collapse_section']); ?>">
+                            <span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>
+                        </button>
                     </div>
+                    <div class="smark-settings-section__body" id="smark-section-agents-body">
                     <div class="smark-agent-grid">
                         <?php foreach ($agent_cards as $agent_card) : ?>
                             <?php
@@ -2749,6 +2829,7 @@ class SMarkProjectSettings {
                                 </select>
                             </label>
                         </div>
+                    </div>
                     </div>
                 </div>
             </div>

@@ -15,6 +15,13 @@
     const emailWorkflow = config.emailWorkflow || {};
     const initialOfferProducts = Array.isArray(config.offerProducts) ? config.offerProducts : [];
     const initialOfferSections = config.offerSections && typeof config.offerSections === 'object' ? config.offerSections : { product: initialOfferProducts };
+    const dailyGuideCategoryOrder = {
+        offer: 0,
+        email: 1,
+        ads: 2,
+        seo: 3,
+        social: 4,
+    };
 
     const text = function(key, fallback) {
         return strings[key] || fallback;
@@ -31,6 +38,7 @@
         email: 'M252 216a36 36 0 1 0 0 72 36 36 0 1 0 0-72zM0 252C0 112.8 112.8 0 252 0S504 112.8 504 252l0 36c0 69.6-56.4 126-126 126-15.7 0-30.9-1.2-45.9-6.3-2.6 1.8-5.3 3.4-8.1 5l0 55.3c0 39.8-32.2 72-72 72-139.2 0-252-112.8-252-252l0-36zm36 0c0 119.3 96.7 216 216 216 19.9 0 36-16.1 36-36s-16.1-36-36-36c-79.5 0-144-64.5-144-144s64.5-144 144-144 144 64.5 144 144c0 9.9-8.1 18-18 18s-18-8.1-18-18c0-59.6-48.4-108-108-108s-108 48.4-108 108 48.4 108 108 108c25.1 0 48.1-8.5 66.4-22.8 5.2-4.1 12.3-5 18.4-2.3 13.2 5.9 26.9 7.1 41.2 7.1 49.7 0 90-40.3 90-90 0-119.3-96.7-216-216-216S36 132.7 36 252z',
         ads: 'M42.5 186.3C15.6 198.4-.9 225.5 0 254.4L.7 297c.5 32.8 33.7 59.6 64.1 62.7l121.4 12.1 12.1 121.4c3.2 32.4 27.9 58.7 60.1 63.9s63.9-11.8 77.2-41.5l162-360c4.2-9.4 6.3-19.4 6.3-29.3l0-35.8c.1-18.9-7.2-37.4-21.1-51.3-21.2-21.2-53.2-27-80.5-14.7l-360 162zm415-121.8c10.6 10.6 13.5 26.6 7.4 40.2l-162 360c-6.7 14.9-22.5 23.4-38.6 20.8s-28.4-15.7-30-31.9l-13.6-136c-.9-8.5-7.6-15.3-16.1-16.1l-136-13.6c-16.2-1.6-29.3-13.9-31.9-30-2.6-15.8 6.1-32 20.8-38.6l360-162c13.6-6.1 29.7-3.2 40.2 7.4z',
         offer: 'M432 180c0-39.8-32.2-72-72-72l0-36c0-18.4-7-36.9-21.1-50.9-28.1-28.1-73.7-28.1-101.8 0L216 42.2 194.9 21.1C166.8-7 121.2-7 93.1 21.1 80.5 33.7 72 51.8 72 69.8L72 108c-39.8 0-72 32.2-72 72L0 432c0 39.8 32.2 72 72 72l288 0c39.8 0 72-32.2 72-72l0-252zM118.5 46.5c14.1-14.1 36.9-14.1 50.9 0l33.8 33.8c6.9 6.9 18.5 6.9 25.5 0l33.8-33.8c14.1-14.1 36.9-14.1 50.9 0s14.1 36.9 0 50.9l-10.5 10.5-173.8 0-10.5-10.5c-14.1-14.1-14.1-36.9 0-50.9zM72 144l72 0 0 126-108 0 0-90c0-19.9 16.1-36 36-36zm72 162l0 126-72 0c-19.9 0-36-16.1-36-36l0-90 108 0zM252 144l0 288-72 0 0-288 72 0zm36 126l0-126 72 0c19.9 0 36 16.1 36 36l0 90-108 0zm0 36l108 0 0 90c0 19.9-16.1 36-36 36l-72 0 0-126z',
+        crm: 'M0 180C0 75.1 90.3 0 189 0 256.4 0 319.3 34.7 352.9 90 450.9 91 540 165.8 540 270l0 36c0 50.4-21.1 94.3-54 126l0 35.4c.2 20.2-8.2 40-23.7 54-21.2 19.2-51.8 24-77.8 12.2L278.3 485.9c-31.5-14.2-57.9-35.9-77.6-62.6l-45.1 20.3c-26.1 11.7-56.6 6.9-77.8-12.2-15.5-14-23.9-33.8-23.7-54L54 342C21.1 310.3 0 266.4 0 216l0-36zm36 0c0 46.1 22.1 85.4 56.1 111.4 6.1 4.7 8.6 12.7 6.1 20l-6.4 19.2c-4.5 13.4-.5 28.6 10 38.1 10.6 9.6 25.9 12 38.9 6.1l41.1-18.5C169 329.9 162 300.5 162 270 162 179.2 229.6 110.7 311.8 94 283.4 58.4 238 36 189 36 107.1 36 36 97.9 36 180zm315-54c-81.9 0-153 61.9-153 144 0 63.5 37.2 121 95.1 147.1l106.1 47.8c13 5.9 28.3 3.5 38.9-6.1 7.6-6.9 11.8-17.1 11.9-27-.1-10.4-5-20.6-8.3-30.3-2.4-7.3 0-15.3 6.1-20 34-26 56.1-65.3 56.1-111.4 0-82.1-71.1-144-153-144z',
         creditCard: 'M288 288c-9.9 0-18 8.1-18 18s8.1 18 18 18l90 0c9.9 0 18-8.1 18-18s-8.1-18-18-18l-90 0zM0 126C0 86.2 32.2 54 72 54l360 0c39.8 0 72 32.2 72 72l0 288c0 39.8-32.2 72-72 72L72 486c-39.8 0-72-32.2-72-72L0 126zm36 72l0 180c0 19.9 16.1 36 36 36l360 0c19.9 0 36-16.1 36-36l0-180-432 0zm432-36l0-36c0-19.9-16.1-36-36-36L72 90c-19.9 0-36 16.1-36 36l0 36 432 0z',
         done: 'M0 252c0-18.5 7-36.8 21.1-50.9 28.1-28.1 73.7-28.1 101.8 0L180 258.2 381.1 57.1C409.2 29 454.8 29 482.9 57.1 497 71.1 504 89.6 504 108l0 36c0 18.4-7 36.9-21.1 50.9l-252 252c-28.1 28.1-73.7 28.1-101.8 0l-108-108C7.1 325 .1 306.6 0 288.3L0 252zM457.5 82.5c-14.1-14.1-36.9-14.1-50.9 0L192.7 296.4c-7 7-18.4 7-25.5 0L97.5 226.5c-14.1-14.1-36.9-14.1-50.9 0-7 7-10.5 16.3-10.5 25.5 0 9.2 3.5 18.4 10.5 25.4l108 108c14.1 14.1 36.9 14.1 50.9 0l252-252c14.1-14.1 14.1-36.9 0-50.9z',
         language: 'M0 126C0 86.2 32.2 54 72 54l360 0c39.8 0 72 32.2 72 72l0 288c0 39.8-32.2 72-72 72L72 486c-39.8 0-72-32.2-72-72L0 126zM36 378c0 19.9 16.1 36 36 36l360 0c19.9 0 36-16.1 36-36l0-252c0-19.9-16.1-36-36-36L72 90c-19.9 0-36 16.1-36 36l0 252zM342 171c7.1 0 13.6 4.2 16.4 10.7l72 162c4 9.1-.1 19.7-9.1 23.8s-19.7-.1-23.8-9.1l-19.2-43.3-72.6 0-19.2 43.3c-4 9.1-14.7 13.2-23.8 9.1s-13.2-14.7-9.1-23.8l12.8-28.7-14.3 0c-28.6 0-52.4-5.9-72-15.3-19.7 9.4-43.4 15.3-72 15.3-9.9 0-18-8.1-18-18s8.1-18 18-18c13.1 0 24.9-1.5 35.4-4.2-13.8-12.8-24.1-27.2-31.8-41.1-4.8-8.7-1.7-19.6 7-24.5s19.6-1.7 24.5 7c8.2 14.8 19.9 30.1 36.9 42 27.6-19.2 41.9-48.6 48.8-69.2L108 189c-9.9 0-18-8.1-18-18s8.1-18 18-18l54 0 0-18c0-9.9 8.1-18 18-18s18 8.1 18 18l0 18 54 0c5.2 0 10.2 2.3 13.6 6.2s5 9.2 4.2 14.3c-1.1 7.6-3.1 15.1-5.4 22.5-4 12.9-10.8 30.2-22 47.7-6.9 10.7-15.4 21.3-25.8 31.1 10.5 2.7 22.3 4.2 35.4 4.2l30.3 0 43.2-97.3c2.9-6.5 9.3-10.7 16.4-10.7zm0 62.3l-20.3 45.7 40.6 0-20.3-45.7z',
@@ -169,10 +177,29 @@
         const language = props.language === 'fa' ? 'fa' : 'en';
         const moduleVisibility = props.moduleVisibility || {};
         const cards = Array.isArray(props.cards) ? props.cards : dailyGuideCards;
-        const visibleCards = cards.filter(function(card) {
-            const category = card && card.category ? card.category : '';
-            return !category || moduleVisibility[category] !== false;
-        });
+        const visibleCards = cards
+            .map(function(card, index) {
+                return { card: card, index: index };
+            })
+            .filter(function(item) {
+                const category = item.card && item.card.category ? item.card.category : '';
+                return !category || moduleVisibility[category] !== false;
+            })
+            .sort(function(left, right) {
+                const leftCategory = left.card && left.card.category ? left.card.category : '';
+                const rightCategory = right.card && right.card.category ? right.card.category : '';
+                const leftOrder = Object.prototype.hasOwnProperty.call(dailyGuideCategoryOrder, leftCategory)
+                    ? dailyGuideCategoryOrder[leftCategory]
+                    : Number.MAX_SAFE_INTEGER;
+                const rightOrder = Object.prototype.hasOwnProperty.call(dailyGuideCategoryOrder, rightCategory)
+                    ? dailyGuideCategoryOrder[rightCategory]
+                    : Number.MAX_SAFE_INTEGER;
+
+                return leftOrder === rightOrder ? left.index - right.index : leftOrder - rightOrder;
+            })
+            .map(function(item) {
+                return item.card;
+            });
 
         if (!visibleCards.length) {
             return h('section', { className: 'smark-dashboard-daily-grid smark-dashboard-daily-grid--empty' },
@@ -411,6 +438,106 @@
                     )
                     : h('div', { className: 'smark-dashboard-offer__empty' }, isProduct ? text('offerProductEmpty', 'No products have been added yet.') : text('offerSectionEmpty', 'No items have been added to this section yet.'))
             )
+        );
+    }
+
+    function CRMSection(props) {
+        const isOpen = props.open;
+        return h('section', { className: 'smark-dashboard-crm__section' },
+            h('header', { className: 'smark-dashboard-crm__section-header' },
+                h('div', null,
+                    h('h2', null, props.title),
+                    h('p', null, props.description)
+                ),
+                h('button', {
+                    type: 'button',
+                    className: 'smark-dashboard-crm__toggle' + (isOpen ? ' is-open' : ''),
+                    'aria-expanded': isOpen,
+                    'aria-label': isOpen ? props.collapseLabel : props.expandLabel,
+                    onClick: props.onToggle,
+                }, h('span', { className: 'dashicons dashicons-arrow-down-alt2', 'aria-hidden': true }))
+            ),
+            isOpen ? h('div', { className: 'smark-dashboard-crm__section-body' },
+                h('p', { className: 'smark-dashboard-crm__placeholder' }, props.placeholder)
+            ) : null
+        );
+    }
+
+    function CRMPanel(props) {
+        const language = props.language === 'fa' ? 'fa' : 'en';
+        const crmStrings = {
+            en: {
+                title: 'CRM',
+                subtitle: 'Manage customer conversations, automations, and campaigns from one place.',
+                messengerTitle: 'Messenger',
+                messengerDescription: 'Unified inbox for customer conversations across channels.',
+                workflowsTitle: 'Workflows',
+                workflowsDescription: 'Automate customer journeys and follow-ups.',
+                campaignsTitle: 'Campaigns',
+                campaignsDescription: 'Plan and track outreach campaigns.',
+                placeholder: 'Configuration for this section will be available soon.',
+                expand: 'Expand section',
+                collapse: 'Collapse section',
+            },
+            fa: {
+                title: 'CRM',
+                subtitle: 'مدیریت مکالمات مشتریان، اتوماسیون‌ها و کمپین‌ها در یک مکان.',
+                messengerTitle: 'پیام‌رسان',
+                messengerDescription: 'صندوق پیام یکپارچه برای مکالمات مشتریان در همه کانال‌ها.',
+                workflowsTitle: 'گردش‌کارها',
+                workflowsDescription: 'اتوماسیون مسیر مشتری و پیگیری‌ها.',
+                campaignsTitle: 'کمپین‌ها',
+                campaignsDescription: 'برنامه‌ریزی و پیگیری کمپین‌های ارتباطی.',
+                placeholder: 'تنظیمات این بخش به‌زودی در دسترس قرار می‌گیرد.',
+                expand: 'باز کردن بخش',
+                collapse: 'بستن بخش',
+            },
+        };
+        const t = crmStrings[language];
+        const [openSections, setOpenSections] = useState({ messenger: true, workflows: true, campaigns: true });
+        const toggleSection = function(id) {
+            setOpenSections(function(prev) {
+                const next = Object.assign({}, prev);
+                next[id] = !prev[id];
+                return next;
+            });
+        };
+
+        return h('div', { className: 'smark-dashboard-crm smark-dashboard-view', 'aria-label': t.title },
+            h('header', { className: 'smark-dashboard-crm__header' },
+                h('h2', null, t.title),
+                h('p', null, t.subtitle)
+            ),
+            h(CRMSection, {
+                key: 'messenger',
+                title: t.messengerTitle,
+                description: t.messengerDescription,
+                placeholder: t.placeholder,
+                open: openSections.messenger,
+                expandLabel: t.expand,
+                collapseLabel: t.collapse,
+                onToggle: function() { toggleSection('messenger'); },
+            }),
+            h(CRMSection, {
+                key: 'workflows',
+                title: t.workflowsTitle,
+                description: t.workflowsDescription,
+                placeholder: t.placeholder,
+                open: openSections.workflows,
+                expandLabel: t.expand,
+                collapseLabel: t.collapse,
+                onToggle: function() { toggleSection('workflows'); },
+            }),
+            h(CRMSection, {
+                key: 'campaigns',
+                title: t.campaignsTitle,
+                description: t.campaignsDescription,
+                placeholder: t.placeholder,
+                open: openSections.campaigns,
+                expandLabel: t.expand,
+                collapseLabel: t.collapse,
+                onToggle: function() { toggleSection('campaigns'); },
+            })
         );
     }
 
@@ -771,6 +898,7 @@
             { id: 'seo', enabled: moduleVisibility.seo !== false, label: text('seo', 'SEO'), icon: h(SvgIcon, { path: icons.seo, viewBox: '0 0 504 540' }) },
             { id: 'social', enabled: moduleVisibility.social !== false, label: text('social', 'Social Media'), icon: h(SvgIcon, { path: icons.social, viewBox: '0 0 504 540' }) },
             { id: 'offer', enabled: moduleVisibility.offer !== false, label: text('offer', 'Offer'), icon: h(SvgIcon, { path: icons.offer, viewBox: '0 0 432 540' }) },
+            { id: 'crm', enabled: true, label: text('crm', 'CRM'), icon: h(SvgIcon, { path: icons.crm, viewBox: '0 0 540 540' }) },
         ].filter(function(item) {
             return item.enabled;
         });
@@ -1545,6 +1673,9 @@
                         setOfferProductNotice('');
                     },
                 })
+            ) : null,
+            active === 'crm' ? h('div', { className: 'smark-dashboard-workspace-content' },
+                h(CRMPanel, { key: 'crm', language: language })
             ) : null,
             active === 'project-settings' ? h('div', { className: 'smark-dashboard-workspace-content' },
                 h('section', { key: 'project-settings', className: 'smark-dashboard-embedded-view smark-dashboard-view' },

@@ -1,40 +1,65 @@
 (function ($) {
   function showNotification(message, type, options) {
+    if (!message) {
+      return;
+    }
+
     const t = type || "info";
     let $notice = $(".smark-notification");
     if (!$notice.length) {
       $notice = $('<div class="smark-notification" role="status" aria-live="polite" />').appendTo("body");
     }
 
-    $notice.removeClass("success error info visible rtl").addClass(t);
-    $notice.empty();
+    const isRTL =
+      $(".wrap.smark-project-settings-page").hasClass("rtl") ||
+      $(".wrap.smark-project-settings-page").attr("data-lang") === "fa";
 
-    const $body = $('<div class="smark-notification__body" />').text(message);
+    const titlesFa = {
+      success: "موفقیت‌آمیز",
+      error: "خطا",
+      warning: "هشدار",
+      info: "اطلاع‌رسانی",
+    };
+    const titlesEn = {
+      success: "Congratulations!",
+      error: "Something went wrong!",
+      warning: "Warning!",
+      info: "Did you know?",
+    };
+    const titles = isRTL ? titlesFa : titlesEn;
+    const icons = { success: "✓", error: "×", warning: "!", info: "i" };
+
+    $notice.removeClass("success error warning info visible rtl").addClass(t).empty();
+
+    const $icon = $('<div class="smark-notification__icon" aria-hidden="true" />').text(icons[t] || icons.info);
+    const $body = $('<div class="smark-notification__body" />');
+    $('<strong class="smark-notification__title" />').text(titles[t] || titles.info).appendTo($body);
+    $('<span class="smark-notification__message" />').text(message).appendTo($body);
     const $close = $(
       '<button type="button" class="smark-notification__close" aria-label="Close notification"><span class="dashicons dashicons-no-alt" aria-hidden="true"></span></button>'
     );
 
     $close.on("click", function () {
-      $notice.removeClass("visible");
       clearTimeout($notice.data("timeout"));
+      $notice.removeClass("visible");
       setTimeout(() => {
         if (!$notice.hasClass("visible")) {
           $notice.remove();
         }
-      }, 50);
+      }, 80);
     });
 
-    $notice.append($body, $close).addClass("visible");
+    $notice.append($icon, $body, $close);
 
-    const isRTL =
-      $(".wrap.smark-project-settings-page").hasClass("rtl") ||
-      $(".wrap.smark-project-settings-page").attr("data-lang") === "fa";
     if (isRTL) {
       $notice.addClass("rtl");
     }
 
-    clearTimeout($notice.data("timeout"));
+    window.setTimeout(function () {
+      $notice.addClass("visible");
+    }, 20);
 
+    clearTimeout($notice.data("timeout"));
     $notice.data("timeout", null);
   }
 
@@ -447,26 +472,33 @@
       });
   }
 
+  let mainSettingsSaveTimer = null;
+  let mainSettingsSaveXhr = null;
+
+  function setMainSettingsStatus(message, type) {
+    $("[data-smark-settings-save-state]")
+      .removeClass("is-error")
+      .toggleClass("is-error", type === "error")
+      .text(message || "");
+  }
+
   function saveEmbeddedProjectSettings($form) {
     const cfg = window.SMarkProjectSettings || {};
     if (!cfg.ajaxUrl) {
       return false;
     }
 
+    const strings = cfg.strings || {};
     const formData = new FormData($form.get(0));
-    const $button = $form.find('input[type="submit"], button[type="submit"]').first();
-    const originalText = $button.is("input") ? $button.val() : $button.text();
-
     formData.set("action", "smark_dashboard_project_settings_save");
 
-    $button.prop("disabled", true);
-    if ($button.is("input")) {
-      $button.val((cfg.strings && cfg.strings.saving) || "Saving...");
-    } else {
-      $button.text((cfg.strings && cfg.strings.saving) || "Saving...");
+    if (mainSettingsSaveXhr && mainSettingsSaveXhr.abort) {
+      mainSettingsSaveXhr.abort();
     }
 
-    $.ajax({
+    setMainSettingsStatus(strings.saving || "Saving...");
+
+    mainSettingsSaveXhr = $.ajax({
       url: cfg.ajaxUrl,
       method: "POST",
       data: formData,
@@ -475,7 +507,7 @@
     })
       .done(function (resp) {
         if (resp && resp.success && resp.data) {
-          showNotification(resp.data.message || (cfg.strings && cfg.strings.saved) || "Saved", "success");
+          setMainSettingsStatus(resp.data.message || strings.saved || "Saved");
           document.dispatchEvent(
             new window.CustomEvent("smark:dashboard-module-visibility-updated", {
               detail: {
@@ -486,28 +518,30 @@
           return;
         }
 
-        showNotification((resp && resp.data && resp.data.message) || "Unable to save project settings.", "error");
+        setMainSettingsStatus((resp && resp.data && resp.data.message) || "Unable to save.", "error");
       })
       .fail(function (xhr) {
+        if (xhr && xhr.statusText === "abort") {
+          return;
+        }
         const message =
           xhr &&
           xhr.responseJSON &&
           xhr.responseJSON.data &&
           xhr.responseJSON.data.message
             ? xhr.responseJSON.data.message
-            : "Unable to save project settings.";
-        showNotification(message, "error");
-      })
-      .always(function () {
-        $button.prop("disabled", false);
-        if ($button.is("input")) {
-          $button.val(originalText);
-        } else {
-          $button.text(originalText);
-        }
+            : "Unable to save.";
+        setMainSettingsStatus(message, "error");
       });
 
     return true;
+  }
+
+  function scheduleMainSettingsSave($form) {
+    window.clearTimeout(mainSettingsSaveTimer);
+    mainSettingsSaveTimer = window.setTimeout(function () {
+      saveEmbeddedProjectSettings($form);
+    }, 600);
   }
 
   let offerAgentSaveTimer = null;
@@ -685,6 +719,24 @@
     }
   }
 
+  function toggleSettingsSection($trigger) {
+    const panelId = String($trigger.attr("aria-controls") || "").trim();
+    const $panel = panelId ? $("#" + panelId) : $();
+    if (!$panel.length) {
+      return;
+    }
+
+    const isOpen = !$panel.prop("hidden");
+    $panel.prop("hidden", isOpen);
+    $trigger.toggleClass("is-open", !isOpen).attr("aria-expanded", isOpen ? "false" : "true");
+
+    const collapseLabel = $trigger.attr("data-collapse-label");
+    const expandLabel = $trigger.attr("data-expand-label");
+    if (collapseLabel && expandLabel) {
+      $trigger.attr("aria-label", isOpen ? expandLabel : collapseLabel);
+    }
+  }
+
   $(function () {
     $(document).on("change", "#SMARK_language_select", function () {
       const cfg = window.SMarkProjectSettings || {};
@@ -716,14 +768,35 @@
       connectSearchConsole();
     });
 
-    $(document).on("submit", ".smark-dashboard-embedded-view .smark-project-settings-card form", function (e) {
+    $(document).on("submit", ".smark-project-settings-content form", function (e) {
       e.preventDefault();
+      window.clearTimeout(mainSettingsSaveTimer);
       saveEmbeddedProjectSettings($(this));
     });
+
+    $(document).on(
+      "input",
+      '.smark-project-settings-content form input[type="text"], .smark-project-settings-content form input[type="url"], .smark-project-settings-content form textarea',
+      function () {
+        scheduleMainSettingsSave($(this).closest("form"));
+      }
+    );
+
+    $(document).on(
+      "change",
+      '.smark-project-settings-content form select, .smark-project-settings-content form input[type="checkbox"]',
+      function () {
+        scheduleMainSettingsSave($(this).closest("form"));
+      }
+    );
 
     $(document).on("click", "[data-smark-agent-panel-trigger]", function (e) {
       e.preventDefault();
       toggleAgentPanel($(this));
+    });
+
+    $(document).on("click", "[data-smark-section-toggle]", function () {
+      toggleSettingsSection($(this));
     });
 
     $(document).on("change", "[data-offer-agent-setting]", function () {

@@ -542,12 +542,11 @@ class SMarkEmailMarketing {
                 </section>
 
                 <?php $this->render_contact_add_modal($strings, $contact_lists, $contact_tags); ?>
+                <?php $this->render_contact_edit_modal($strings, $contact_lists, $contact_tags); ?>
                 <?php $this->render_contacts_import_modal($strings, $import_token, $import_preview); ?>
                 <?php $this->render_contact_list_modal($strings); ?>
                 <?php $this->render_contact_tag_modal($strings); ?>
             </div>
-
-            <?php $this->render_contact_edit_modal($strings, $contact_lists, $contact_tags); ?>
 
             <?php $this->render_version_footer($current_lang); ?>
         </div>
@@ -1708,20 +1707,18 @@ class SMarkEmailMarketing {
 
     private function render_contact_edit_modal($strings, $contact_lists, $contact_tags) {
         ?>
-        <div class="smark-email-import-modal smark-email-contact-edit-modal" id="smarkEmailContactEditModal" aria-hidden="true">
-            <div class="smark-email-import-modal__overlay" data-close-smark-contact-edit></div>
-            <div class="smark-email-import-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="smarkEmailContactEditTitle">
-                <header class="smark-email-import-modal__header">
-                    <div>
-                        <h2 id="smarkEmailContactEditTitle"><?php echo esc_html($strings['edit_modal_title']); ?></h2>
-                        <p><?php echo esc_html($strings['edit_modal_description']); ?></p>
-                    </div>
-                    <button type="button" class="smark-email-import-modal__close" data-close-smark-contact-edit aria-label="<?php echo esc_attr($strings['edit_modal_close']); ?>">
-                        <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
-                    </button>
-                </header>
+        <section class="seo-step-card seo-step-card--full smark-email-accounts-card smark-email-contact-edit-section" id="smarkEmailContactEditModal" data-step="strategy" aria-hidden="true" hidden>
+            <header class="seo-step-header smark-email-card-header-actions smark-email-contact-workflow-header smark-email-contact-edit-header">
+                <div>
+                    <h2 id="smarkEmailContactEditTitle"><?php echo esc_html($strings['edit_modal_title']); ?></h2>
+                    <p><?php echo esc_html($strings['edit_modal_description']); ?></p>
+                </div>
+                <button type="button" class="smark-email-inline-panel__close" data-close-smark-contact-edit aria-label="<?php echo esc_attr($strings['edit_modal_close']); ?>">
+                    <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+                </button>
+            </header>
 
-                <div class="smark-email-import-modal__body">
+                <div class="smark-email-inline-panel__body">
                     <form class="smark-email-account-form" id="smarkEmailContactEditForm" method="post">
                         <?php wp_nonce_field('smark_email_contact_save', 'smark_email_contact_nonce'); ?>
                         <input type="hidden" name="action" value="smark_email_contact_save_modal">
@@ -1773,6 +1770,12 @@ class SMarkEmailMarketing {
                             </label>
 
                             <label>
+                                <span><?php echo esc_html($strings['field_created_at']); ?></span>
+                                <input type="text" name="created_at_display" value="" readonly aria-readonly="true">
+                                <small class="smark-email-field-note"><?php echo esc_html($strings['field_created_at_help']); ?></small>
+                            </label>
+
+                            <label>
                                 <span><?php echo esc_html($strings['field_tags']); ?></span>
                                 <select name="contact_tag_ids[]" multiple size="4">
                                     <?php foreach ($contact_tags as $contact_tag) : ?>
@@ -1794,8 +1797,7 @@ class SMarkEmailMarketing {
                         </div>
                     </form>
                 </div>
-            </div>
-        </div>
+        </section>
         <?php
     }
 
@@ -2156,6 +2158,9 @@ class SMarkEmailMarketing {
                                             'source' => (string) ($contact['source'] ?? ''),
                                             'status' => $status,
                                             'notes' => (string) ($contact['notes'] ?? ''),
+                                            'created_at_display' => !empty($contact['created_at'])
+                                                ? mysql2date(get_option('date_format') . ' ' . get_option('time_format'), (string) $contact['created_at'])
+                                                : $strings['field_created_at_unknown'],
                                         ), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
                                     </script>
                                 </td>
@@ -2373,6 +2378,7 @@ class SMarkEmailMarketing {
         check_admin_referer('smark_email_contact_save', 'smark_email_contact_nonce');
 
         $strings = $this->get_contact_strings($this->get_current_panel_lang());
+        $is_new_contact = empty($_POST['contact_id']);
         $result = $this->save_contact_from_request();
         if (is_wp_error($result)) {
             wp_send_json_error(array('message' => $strings['notice_error']), 400);
@@ -2381,12 +2387,18 @@ class SMarkEmailMarketing {
         $search_query = isset($_POST['search_query']) ? sanitize_text_field(wp_unslash($_POST['search_query'])) : '';
 
         ob_start();
-        $this->render_contacts_list_content($strings, $this->get_contacts(), $this->get_contact_lists(), $this->get_contact_tags(), $this->get_daily_sent_contact_hashes(), 1, 100, $search_query);
+        $contacts = $this->get_contacts();
+        $this->render_contacts_list_content($strings, $contacts, $this->get_contact_lists(), $this->get_contact_tags(), $this->get_daily_sent_contact_hashes(), 1, 100, $search_query);
         $list_html = ob_get_clean();
+        $contacts_added_today = $this->get_contacts_added_today_count();
 
         wp_send_json_success(array(
             'message' => $strings['notice_saved'],
             'listHtml' => $list_html,
+            'badge' => sprintf($strings['contacts_count_badge'], number_format_i18n(count($contacts))),
+            'contactAdded' => $is_new_contact,
+            'contactsAddedToday' => $contacts_added_today,
+            'dailyGuideCompleted' => $contacts_added_today >= 100,
         ));
     }
 
@@ -2482,12 +2494,14 @@ class SMarkEmailMarketing {
         $search_query = isset($_POST['search_query']) ? sanitize_text_field(wp_unslash($_POST['search_query'])) : '';
 
         ob_start();
-        $this->render_contacts_list_content($strings, $this->get_contacts(), $this->get_contact_lists(), $this->get_contact_tags(), $this->get_daily_sent_contact_hashes(), 1, 100, $search_query);
+        $contacts = $this->get_contacts();
+        $this->render_contacts_list_content($strings, $contacts, $this->get_contact_lists(), $this->get_contact_tags(), $this->get_daily_sent_contact_hashes(), 1, 100, $search_query);
         $list_html = ob_get_clean();
 
         wp_send_json_success(array(
             'message' => $strings['notice_deleted'],
             'listHtml' => $list_html,
+            'badge' => sprintf($strings['contacts_count_badge'], number_format_i18n(count($contacts))),
         ));
     }
 
@@ -3038,7 +3052,8 @@ class SMarkEmailMarketing {
         }
 
         ob_start();
-        $this->render_contacts_list_content($strings, $this->get_contacts(), $this->get_contact_lists(), $this->get_contact_tags(), $this->get_daily_sent_contact_hashes());
+        $contacts = $this->get_contacts();
+        $this->render_contacts_list_content($strings, $contacts, $this->get_contact_lists(), $this->get_contact_tags(), $this->get_daily_sent_contact_hashes());
         $list_html = ob_get_clean();
         $contacts_added_today = $this->get_contacts_added_today_count();
 
@@ -3046,6 +3061,7 @@ class SMarkEmailMarketing {
             'imported' => $imported_count,
             'message' => sprintf($strings['notice_imported'], number_format_i18n($imported_count)),
             'listHtml' => $list_html,
+            'badge' => sprintf($strings['contacts_count_badge'], number_format_i18n(count($contacts))),
             'contactsAddedToday' => $contacts_added_today,
             'dailyGuideCompleted' => $contacts_added_today >= 100,
         ));
@@ -6509,7 +6525,7 @@ class SMarkEmailMarketing {
         var $panel = $('#smarkEmailImportModal');
         var $grid = $panel.closest('.seo-grid');
 
-        $grid.find('[data-smark-contact-section], #smarkEmailContactAddModal, #smarkEmailContactListModal, #smarkEmailContactTagModal')
+        $grid.find('[data-smark-contact-section], #smarkEmailContactAddModal, #smarkEmailContactEditModal, #smarkEmailContactListModal, #smarkEmailContactTagModal')
             .addClass('smark-email-contact-section-hidden')
             .prop('hidden', true)
             .attr('aria-hidden', 'true');
@@ -6551,7 +6567,7 @@ class SMarkEmailMarketing {
         var $panel = $('#smarkEmailContactListModal');
         var $grid = $panel.closest('.seo-grid');
 
-        $grid.find('[data-smark-contact-section], #smarkEmailContactAddModal, #smarkEmailImportModal, #smarkEmailContactTagModal')
+        $grid.find('[data-smark-contact-section], #smarkEmailContactAddModal, #smarkEmailContactEditModal, #smarkEmailImportModal, #smarkEmailContactTagModal')
             .addClass('smark-email-contact-section-hidden')
             .prop('hidden', true)
             .attr('aria-hidden', 'true');
@@ -6587,7 +6603,7 @@ class SMarkEmailMarketing {
         var $panel = $('#smarkEmailContactTagModal');
         var $grid = $panel.closest('.seo-grid');
 
-        $grid.find('[data-smark-contact-section], #smarkEmailContactAddModal, #smarkEmailImportModal, #smarkEmailContactListModal')
+        $grid.find('[data-smark-contact-section], #smarkEmailContactAddModal, #smarkEmailContactEditModal, #smarkEmailImportModal, #smarkEmailContactListModal')
             .addClass('smark-email-contact-section-hidden')
             .prop('hidden', true)
             .attr('aria-hidden', 'true');
@@ -6636,6 +6652,7 @@ class SMarkEmailMarketing {
         var data = getContactEditData(contactId);
         var $modal = $('#smarkEmailContactEditModal');
         var $form = $('#smarkEmailContactEditForm');
+        var $grid = $modal.closest('.seo-grid');
 
         if (!data || !$modal.length || !$form.length) {
             return;
@@ -6650,23 +6667,42 @@ class SMarkEmailMarketing {
         $form.find('[name="source"]').val(data.source || '');
         $form.find('[name="status"]').val(data.status || 'subscribed');
         $form.find('[name="notes"]').val(data.notes || '');
+        $form.find('[name="created_at_display"]').val(data.created_at_display || '');
         $form.find('[name="contact_tag_ids[]"] option').prop('selected', false);
         (data.contact_tag_ids || []).forEach(function (tagId) {
             $form.find('[name="contact_tag_ids[]"] option[value="' + tagId + '"]').prop('selected', true);
         });
 
-        $modal.addClass('is-open').attr('aria-hidden', 'false');
-        $('body').addClass('smark-email-modal-open');
+        $grid.find('[data-smark-contact-section], #smarkEmailContactAddModal, #smarkEmailImportModal, #smarkEmailContactListModal, #smarkEmailContactTagModal')
+            .addClass('smark-email-contact-section-hidden')
+            .prop('hidden', true)
+            .attr('aria-hidden', 'true');
+        $modal
+            .removeClass('smark-email-contact-section-hidden')
+            .prop('hidden', false)
+            .attr('aria-hidden', 'false');
+        resetContactWorkflowScroll();
         window.setTimeout(function () {
             $form.find('[name="first_name"]').trigger('focus');
         }, 50);
     }
 
     function closeContactEditModal() {
-        $('#smarkEmailContactEditModal').removeClass('is-open').attr('aria-hidden', 'true');
-        if (!$('#smarkEmailImportModal').hasClass('is-open') && !$('#smarkEmailAccountEditModal').hasClass('is-open') && !$('#smarkEmailContactListModal').hasClass('is-open') && !$('#smarkEmailContactTagModal').hasClass('is-open') && !$('#smarkEmailAudiencePickerModal').hasClass('is-open')) {
-            $('body').removeClass('smark-email-modal-open');
+        var $panel = $('#smarkEmailContactEditModal');
+        var $grid = $panel.closest('.seo-grid');
+
+        if (!$panel.length || $panel.prop('hidden')) {
+            return;
         }
+
+        $panel
+            .addClass('smark-email-contact-section-hidden')
+            .prop('hidden', true)
+            .attr('aria-hidden', 'true');
+        $grid.find('[data-smark-contact-section]')
+            .removeClass('smark-email-contact-section-hidden')
+            .prop('hidden', false)
+            .attr('aria-hidden', 'false');
     }
 
     function openAccountEditModal($trigger) {
@@ -7470,7 +7506,7 @@ class SMarkEmailMarketing {
             var $panel = $('#smarkEmailContactAddModal');
             var $grid = $panel.closest('.seo-grid');
 
-            $grid.find('[data-smark-contact-section], #smarkEmailImportModal, #smarkEmailContactListModal, #smarkEmailContactTagModal')
+            $grid.find('[data-smark-contact-section], #smarkEmailContactEditModal, #smarkEmailImportModal, #smarkEmailContactListModal, #smarkEmailContactTagModal')
                 .addClass('smark-email-contact-section-hidden')
                 .prop('hidden', true)
                 .attr('aria-hidden', 'true');
@@ -7527,8 +7563,8 @@ class SMarkEmailMarketing {
                 contentType: false
             }).done(function (response) {
                 if (response && response.success && response.data) {
-                    if (response.data.html) {
-                        $('#smarkEmailContactsList').html(response.data.html);
+                    if (response.data.listHtml) {
+                        $('#smarkEmailContactsList').html(response.data.listHtml);
                     }
                     if (response.data.badge) {
                         $('.smark-email-contacts-count-badge').text(response.data.badge);
@@ -7536,6 +7572,15 @@ class SMarkEmailMarketing {
                     hideContactAddSection();
                     $form[0].reset();
                     showNotification(response.data.message || '', 'success');
+                    if (response.data.contactAdded) {
+                        document.dispatchEvent(new window.CustomEvent('smark:email-contacts-imported', {
+                            detail: {
+                                imported: 1,
+                                contactsAddedToday: parseInt(response.data.contactsAddedToday || 0, 10),
+                                dailyGuideCompleted: !!response.data.dailyGuideCompleted
+                            }
+                        }));
+                    }
                 } else {
                     showNotification((response && response.data && response.data.message) || (smarkSeoOptimization.strings || {}).error || 'Error', 'error');
                 }
@@ -7638,6 +7683,9 @@ class SMarkEmailMarketing {
             }).done(function (response) {
                 if (response && response.success && response.data) {
                     $('#smarkEmailContactsList').html(response.data.listHtml || '');
+                    if (response.data.badge) {
+                        $('.smark-email-contacts-count-badge').text(response.data.badge);
+                    }
                     showNotification(response.data.message || '', 'success');
                 } else {
                     showNotification((response && response.data && response.data.message) || (smarkSeoOptimization.strings || {}).error || 'Error', 'error');
@@ -8120,6 +8168,9 @@ class SMarkEmailMarketing {
             }).done(function (response) {
                 if (response && response.success && response.data) {
                     $('#smarkEmailContactsList').html(response.data.listHtml || '');
+                    if (response.data.badge) {
+                        $('.smark-email-contacts-count-badge').text(response.data.badge);
+                    }
                     $('#smarkEmailImportMappingContainer').empty();
                     $('#smarkEmailImportPreviewForm')[0].reset();
                     showNotification(response.data.message || '', 'success');
@@ -8726,6 +8777,9 @@ JS;
                 'field_source'                  => 'منبع جذب',
                 'field_source_placeholder'      => 'مثلا فرم سایت، وبینار یا خرید',
                 'field_status'                  => 'وضعیت',
+                'field_created_at'              => 'تاریخ و ساعت افزوده‌شدن',
+                'field_created_at_help'         => 'این زمان هنگام ثبت مخاطب ذخیره می‌شود و قابل تغییر نیست.',
+                'field_created_at_unknown'      => 'برای مخاطبین قدیمی ثبت نشده است',
                 'field_notes'                   => 'یادداشت',
                 'field_notes_placeholder'       => 'نیاز، علاقه‌مندی یا نکته مهم برای کمپین...',
                 'contact_help'                  => 'فقط ایمیل برای هر مخاطب ضروری است. لیست، برچسب، منبع و یادداشت اختیاری هستند و هر ایمیل فقط یک‌بار ثبت می‌شود.',
@@ -8844,6 +8898,9 @@ JS;
             'field_source'                  => 'Acquisition Source',
             'field_source_placeholder'      => 'Example: Website form, webinar, purchase',
             'field_status'                  => 'Status',
+            'field_created_at'              => 'Date and Time Added',
+            'field_created_at_help'         => 'This timestamp is saved when the contact is created and cannot be changed.',
+            'field_created_at_unknown'      => 'Not recorded for this legacy contact',
             'field_notes'                   => 'Notes',
             'field_notes_placeholder'       => 'Need, interest, or campaign context...',
             'contact_help'                  => 'Only email is required. List, tags, source, and notes are optional, and each email address can only appear once.',
@@ -9851,6 +9908,7 @@ JS;
             }
 
             #smarkEmailContactAddModal[hidden],
+            #smarkEmailContactEditModal[hidden],
             #smarkEmailImportModal[hidden],
             #smarkEmailContactListModal[hidden],
             #smarkEmailContactTagModal[hidden],

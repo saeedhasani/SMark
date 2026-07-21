@@ -254,10 +254,94 @@ body.smark-plugin-page #wpbody-content {
     backdrop-filter: blur(18px);
 }
 
+.smark-card.smark-project-settings-card {
+    margin-bottom: 18px;
+}
+
+.smark-settings-section__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.smark-settings-section__header h2 {
+    margin: 0 0 4px;
+    color: #1f2937;
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.smark-settings-section__header p {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.86rem;
+    font-weight: 500;
+    line-height: 1.6;
+}
+
+.smark-settings-section__save-state {
+    flex: 0 0 auto;
+    align-self: center;
+    color: #047857;
+    font-size: 0.78rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.smark-settings-section__save-state.is-error {
+    color: #b42318;
+}
+
+.smark-settings-section__toggle {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    border: 2px solid #e1e8ed;
+    border-radius: 999px;
+    color: #667eea;
+    background: rgba(255, 255, 255, 0.95);
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.smark-settings-section__toggle .dashicons {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    line-height: 1;
+    transition: transform 0.2s ease;
+}
+
+.smark-settings-section__toggle.is-open .dashicons {
+    transform: rotate(180deg);
+}
+
+.smark-settings-section__toggle:hover,
+.smark-settings-section__toggle:focus-visible {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.08);
+    outline: none;
+}
+
+.smark-settings-section__body[hidden] {
+    display: none;
+}
+
 /* Inputs (match language selector look) */
 .smark-project-settings-page input.regular-text,
 .smark-project-settings-page input[type="text"],
 .smark-project-settings-page input[type="url"],
+.smark-project-settings-page textarea.large-text,
 .smark-project-settings-page select:not(.language-dropdown) {
     background-color: rgba(255, 255, 255, 0.95) !important;
     border: 2px solid #e1e8ed !important;
@@ -267,6 +351,13 @@ body.smark-plugin-page #wpbody-content {
     line-height: 1.4 !important;
     box-shadow: none !important;
     transition: all 0.25s ease !important;
+}
+
+.smark-project-settings-page textarea.large-text {
+    width: 100%;
+    max-width: 500px;
+    resize: vertical;
+    font-family: inherit;
 }
 
 .smark-project-settings-page select:not(.language-dropdown) {
@@ -284,6 +375,7 @@ body.smark-plugin-page #wpbody-content {
 .smark-project-settings-page input.regular-text:hover,
 .smark-project-settings-page input[type="text"]:hover,
 .smark-project-settings-page input[type="url"]:hover,
+.smark-project-settings-page textarea.large-text:hover,
 .smark-project-settings-page select:not(.language-dropdown):hover {
     border-color: #667eea !important;
     box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15) !important;
@@ -292,6 +384,7 @@ body.smark-plugin-page #wpbody-content {
 .smark-project-settings-page input.regular-text:focus,
 .smark-project-settings-page input[type="text"]:focus,
 .smark-project-settings-page input[type="url"]:focus,
+.smark-project-settings-page textarea.large-text:focus,
 .smark-project-settings-page select:not(.language-dropdown):focus {
     border-color: #667eea !important;
     box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.18) !important;
@@ -683,102 +776,156 @@ button.smark-agent-card {
 
 .smark-notification {
     position: fixed !important;
-    top: 20px !important;
-    right: 20px !important;
-    background: #10b981 !important;
-    color: white !important;
-    padding: 18px 20px 15px 52px !important;
-    border-radius: 10px !important;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
-    z-index: 9999999 !important;
-    min-width: 250px !important;
-    font-family: inherit !important;
-    line-height: 1.4 !important;
-    opacity: 0 !important;
-    transform: translateX(100%) !important;
-    transition: opacity 0.3s ease, transform 0.3s ease !important;
-    pointer-events: none !important;
-    white-space: pre-line !important;
+    top: 44px !important;
+    right: 24px !important;
+    left: auto !important;
+    z-index: 100001 !important;
+    width: min(464px, calc(100vw - 40px));
+    max-width: min(464px, calc(100vw - 40px)) !important;
+    min-height: 76px !important;
+    min-width: 0 !important;
     display: flex !important;
-    align-items: flex-start !important;
-    justify-content: space-between !important;
-    gap: 12px !important;
-}
-
-.smark-notification__body {
-    flex: 1 1 auto;
-    min-width: 0;
-}
-
-.smark-notification__close {
-    flex: 0 0 auto;
-    position: absolute !important;
-    top: 8px !important;
-    left: 10px !important;
-    width: 28px !important;
-    height: 28px !important;
-    display: inline-flex !important;
     align-items: center !important;
-    justify-content: center !important;
-    background: rgba(15,23,42,0.22) !important;
-    border: 1px solid rgba(255,255,255,0.38) !important;
-    border-radius: 999px !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    color: inherit !important;
-    cursor: pointer !important;
-    line-height: 1 !important;
-    opacity: 0.9 !important;
-    box-shadow: 0 6px 14px rgba(15,23,42,0.16) !important;
-    transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease !important;
-}
-
-.smark-notification__close:hover,
-.smark-notification__close:focus-visible {
-    opacity: 1 !important;
-    background: rgba(255,255,255,0.2) !important;
-    border-color: rgba(255,255,255,0.7) !important;
-    transform: scale(1.04) !important;
-    outline: none !important;
-}
-
-.smark-notification__close .dashicons,
-.smark-notification__close .dashicons:before {
-    font-size: 16px !important;
-    width: 16px !important;
-    height: 16px !important;
-    line-height: 16px !important;
-    color: #fff !important;
-    font-family: dashicons !important;
+    gap: 15px;
+    padding: 12px 14px 12px 16px !important;
+    box-sizing: border-box !important;
+    border-radius: 15px !important;
+    background: rgba(255, 255, 255, 0.72) !important;
+    color: #0f172a !important;
+    border: 1.5px solid rgba(148, 163, 184, 0.34);
+    box-shadow: 0 22px 58px rgba(15, 23, 42, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.62) !important;
+    backdrop-filter: blur(18px) saturate(150%);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+    transform: translateY(-12px) scale(0.98);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease, transform 0.22s ease;
+    line-height: normal !important;
+    white-space: normal !important;
 }
 
 .smark-notification.visible {
-    opacity: 1 !important;
-    transform: translateX(0) !important;
-    pointer-events: auto !important;
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+.smark-notification.success {
+    border-color: rgba(34, 197, 94, 0.78);
+    background: linear-gradient(135deg, rgba(240, 253, 244, 0.82), rgba(255, 255, 255, 0.68)) !important;
 }
 
 .smark-notification.error {
-    background: #ef4444 !important;
+    border-color: rgba(248, 113, 113, 0.82);
+    background: linear-gradient(135deg, rgba(254, 242, 242, 0.84), rgba(255, 255, 255, 0.68)) !important;
 }
 
 .smark-notification.info {
-    background: #3b82f6 !important;
+    border-color: rgba(59, 130, 246, 0.78);
+    background: linear-gradient(135deg, rgba(239, 246, 255, 0.84), rgba(255, 255, 255, 0.68)) !important;
+}
+
+.smark-notification.warning {
+    border-color: rgba(245, 158, 11, 0.82);
+    background: linear-gradient(135deg, rgba(255, 251, 235, 0.86), rgba(255, 255, 255, 0.68)) !important;
 }
 
 .smark-project-settings-page.rtl .smark-notification,
 .smark-notification.rtl {
-    right: auto !important;
-    left: 20px !important;
-    text-align: right !important;
-    direction: rtl !important;
+    direction: rtl;
+    right: 24px !important;
+    left: auto !important;
     font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif !important;
-    transform: translateX(-100%) !important;
 }
 
-.smark-project-settings-page.rtl .smark-notification.visible,
-.smark-notification.rtl.visible {
-    transform: translateX(0) !important;
+.smark-notification__body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    line-height: 1.55;
+}
+
+.smark-notification__title {
+    color: #111827;
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.smark-notification__message {
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.smark-notification__close {
+    position: static !important;
+    inset: auto !important;
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 34px;
+    border: 1px solid transparent !important;
+    border-radius: 10px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    color: #475569 !important;
+    box-shadow: none !important;
+    cursor: pointer;
+    transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+
+.smark-notification__close:hover,
+.smark-notification__close:focus-visible {
+    background: rgba(15, 23, 42, 0.06) !important;
+    border-color: rgba(148, 163, 184, 0.24) !important;
+    color: #111827 !important;
+    outline: none;
+    transform: none !important;
+}
+
+.smark-notification__close .dashicons,
+.smark-notification__close .dashicons:before {
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+    color: #475569 !important;
+    font-family: dashicons !important;
+}
+
+.smark-notification__icon {
+    width: 39px;
+    height: 39px;
+    flex: 0 0 39px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 900;
+    line-height: 1;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34), 0 8px 20px rgba(15, 23, 42, 0.12);
+}
+
+.smark-notification.success .smark-notification__icon {
+    background: linear-gradient(135deg, #5ee787, #22c55e);
+}
+
+.smark-notification.info .smark-notification__icon {
+    background: linear-gradient(135deg, #60a5fa, #2563eb);
+}
+
+.smark-notification.warning .smark-notification__icon {
+    background: linear-gradient(135deg, #facc15, #f59e0b);
+}
+
+.smark-notification.error .smark-notification__icon {
+    background: linear-gradient(135deg, #fb7185, #ef4444);
 }
 
 .smark-sc-badge {
