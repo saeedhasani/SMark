@@ -41,6 +41,7 @@ class SMarkEmailMarketing {
         add_action('wp_ajax_smark_email_contacts_import_preview', array($this, 'ajax_contacts_import_preview'));
         add_action('wp_ajax_smark_email_contacts_import', array($this, 'ajax_contacts_import'));
         add_action('wp_ajax_smark_email_contacts_page', array($this, 'ajax_contacts_page'));
+        add_action('wp_ajax_smark_crm_campaign_rule_search', array($this, 'ajax_crm_campaign_rule_search'));
         add_action('wp_ajax_smark_dashboard_email_contacts_view', array($this, 'ajax_dashboard_email_contacts_view'));
         add_action('wp_ajax_smark_dashboard_email_accounts_view', array($this, 'ajax_dashboard_email_accounts_view'));
         add_action('wp_ajax_smark_dashboard_email_campaign_message_view', array($this, 'ajax_dashboard_email_campaign_message_view'));
@@ -3085,6 +3086,128 @@ class SMarkEmailMarketing {
         wp_send_json_success(array(
             'listHtml' => $list_html,
         ));
+    }
+
+    public function ajax_crm_campaign_rule_search() {
+        if (!current_user_can('smark_access')) {
+            wp_send_json_error(array('message' => __('Permission denied', 'smark')), 403);
+        }
+
+        check_ajax_referer('smark_email_contacts_page_ajax', 'nonce');
+
+        $variable = isset($_POST['variable']) ? sanitize_key(wp_unslash($_POST['variable'])) : '';
+        $query = isset($_POST['query']) ? sanitize_text_field(wp_unslash($_POST['query'])) : '';
+        $query = trim($query);
+        if ($query === '') {
+            wp_send_json_success(array('items' => array()));
+        }
+
+        $lower = function($value) {
+            $value = (string) $value;
+            return function_exists('mb_strtolower') ? mb_strtolower($value) : strtolower($value);
+        };
+        $needle = $lower($query);
+        $items = array();
+
+        if ($variable === 'contact_name' || $variable === 'contact_email') {
+            foreach ($this->get_contacts() as $contact) {
+                $id = isset($contact['id']) ? sanitize_text_field((string) $contact['id']) : '';
+                $first_name = isset($contact['first_name']) ? sanitize_text_field((string) $contact['first_name']) : '';
+                $last_name = isset($contact['last_name']) ? sanitize_text_field((string) $contact['last_name']) : '';
+                $name = trim($first_name . ' ' . $last_name);
+                $email = isset($contact['email_address']) ? sanitize_email((string) $contact['email_address']) : '';
+                $haystack = $variable === 'contact_email' ? $email : trim($name . ' ' . $email);
+
+                if ($id === '' || $haystack === '' || strpos($lower($haystack), $needle) === false) {
+                    continue;
+                }
+
+                $items[] = array(
+                    'id' => 'email:' . $id,
+                    'label' => $name !== '' ? $name : $email,
+                    'meta' => $name !== '' ? $email : '',
+                );
+                if (count($items) >= 20) {
+                    break;
+                }
+            }
+
+            /*
+             * CRM contacts also include people discovered through Messenger.
+             * Merge Telegram chat identities with email-marketing contacts so
+             * campaign rules search the complete CRM audience.
+             */
+            if ($variable === 'contact_name' && count($items) < 20) {
+                global $wpdb;
+                $telegram_table = $wpdb->prefix . 'SMARK_telegram_messages';
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+                $table_exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $telegram_table));
+                if ($table_exists === $telegram_table) {
+                    $like = '%' . $wpdb->esc_like($query) . '%';
+                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is built only from the trusted WordPress prefix and a static suffix.
+                    $telegram_rows = $wpdb->get_results($wpdb->prepare(
+                        "SELECT id, chat_id, username, first_name, last_name
+                         FROM {$telegram_table}
+                         WHERE telegram_user_id = chat_id
+                           AND (
+                               first_name LIKE %s
+                               OR last_name LIKE %s
+                               OR username LIKE %s
+                               OR CAST(chat_id AS CHAR) LIKE %s
+                           )
+                         ORDER BY id DESC
+                         LIMIT 100",
+                        $like,
+                        $like,
+                        $like,
+                        $like
+                    ), ARRAY_A);
+
+                    $seen_chat_ids = array();
+                    foreach ((array) $telegram_rows as $row) {
+                        $chat_id = isset($row['chat_id']) ? (string) $row['chat_id'] : '';
+                        if ($chat_id === '' || isset($seen_chat_ids[$chat_id])) {
+                            continue;
+                        }
+                        $seen_chat_ids[$chat_id] = true;
+
+                        $first_name = isset($row['first_name']) ? sanitize_text_field((string) $row['first_name']) : '';
+                        $last_name = isset($row['last_name']) ? sanitize_text_field((string) $row['last_name']) : '';
+                        $username = isset($row['username']) ? sanitize_text_field((string) $row['username']) : '';
+                        $name = trim($first_name . ' ' . $last_name);
+
+                        $items[] = array(
+                            'id' => 'telegram:' . $chat_id,
+                            'label' => $name !== '' ? $name : ($username !== '' ? '@' . $username : '#' . $chat_id),
+                            'meta' => $username !== '' ? '@' . $username : 'Telegram',
+                        );
+                        if (count($items) >= 20) {
+                            break;
+                        }
+                    }
+                }
+            }
+        } elseif ($variable === 'contact_tag' || $variable === 'contact_list') {
+            $entities = $variable === 'contact_tag' ? $this->get_contact_tags() : $this->get_contact_lists();
+            foreach ($entities as $entity) {
+                $id = isset($entity['id']) ? sanitize_text_field((string) $entity['id']) : '';
+                $name = isset($entity['name']) ? sanitize_text_field((string) $entity['name']) : '';
+                if ($id === '' || $name === '' || strpos($lower($name), $needle) === false) {
+                    continue;
+                }
+
+                $items[] = array(
+                    'id' => $id,
+                    'label' => $name,
+                    'meta' => '',
+                );
+                if (count($items) >= 20) {
+                    break;
+                }
+            }
+        }
+
+        wp_send_json_success(array('items' => $items));
     }
 
     public function ajax_campaign_message_send_start() {

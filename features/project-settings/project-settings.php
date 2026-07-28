@@ -21,6 +21,7 @@ class SMarkProjectSettings {
     const OPTION_MODULE_VISIBILITY = 'smark_dashboard_module_visibility';
     const OPTION_OFFER_AGENT_SETTINGS = 'smark_offer_agent_settings';
     const OPTION_EMAIL_CAMPAIGN_AGENT_SETTINGS = 'smark_email_campaign_agent_settings';
+    const OPTION_AUDIENCE_AGENT_SETTINGS = 'smark_audience_agent_settings';
     const CENTRAL_SYNC_TOKEN_HEADER = 'x-smark-sync-token';
     const DEFAULT_CENTRAL_BASE_URL = 'https://saeedhasani.com';
     const CENTRAL_SYNC_PATH = '/wp-json/smark-core/v1/projects/sync';
@@ -50,6 +51,8 @@ class SMarkProjectSettings {
         add_action('wp_ajax_smark_dashboard_project_settings_save', array($this, 'ajax_dashboard_project_settings_save'));
         add_action('wp_ajax_smark_project_settings_save_offer_agent', array($this, 'ajax_save_offer_agent_settings'));
         add_action('wp_ajax_smark_project_settings_save_email_campaign_agent', array($this, 'ajax_save_email_campaign_agent_settings'));
+        add_action('wp_ajax_smark_project_settings_save_audience_agent', array($this, 'ajax_save_audience_agent_settings'));
+        add_action('wp_ajax_smark_project_settings_regenerate_telegram_key', array($this, 'ajax_regenerate_telegram_ingest_key'));
         add_action('rest_api_init', array($this, 'register_sc_oauth_broker_routes'));
     }
 
@@ -201,8 +204,14 @@ class SMarkProjectSettings {
                 'main_settings_description' => 'Core project details used across SMark.',
                 'integration_settings_title' => 'Integration Settings',
                 'integration_settings_description' => 'Connect SMark to other tools and services.',
-                'telegram_bot_token' => 'Telegram Bot API Token',
-                'telegram_bot_token_help' => 'Paste your Telegram bot token to connect SMark to a Telegram bot.',
+                'telegram_ingest_title' => 'Telegram Ingest URL',
+                'telegram_ingest_help' => 'Your Telegram bot keeps running exactly as it does today (polling or its own webhook). Add a couple of lines to your bot\'s own code so it also sends a copy of each incoming message to this URL — this never interferes with how your bot already works.',
+                'telegram_ingest_copy' => 'Copy',
+                'telegram_ingest_copied' => 'Copied!',
+                'telegram_ingest_regenerate' => 'Regenerate',
+                'telegram_ingest_regenerate_confirm' => 'This will invalidate the current URL — any bot code still using the old one will stop sending messages here. Continue?',
+                'telegram_ingest_regenerated' => 'A new URL was generated.',
+                'telegram_ingest_example_title' => 'Example (Python)',
                 'collapse_section' => 'Collapse section',
                 'expand_section' => 'Expand section',
                 'agent_settings' => 'Agent Settings',
@@ -234,6 +243,11 @@ class SMarkProjectSettings {
                 'email_campaign_agent_offer' => 'For which offer?',
                 'email_campaign_agent_saved' => 'Email Campaign Agent settings saved.',
                 'email_campaign_agent_save_error' => 'Email Campaign Agent settings could not be saved.',
+                'audience_agent_title' => 'Audience Agent',
+                'audience_agent_help' => 'Choose which product the Audience Agent should define a target audience group for.',
+                'audience_agent_product' => 'For which product?',
+                'audience_agent_saved' => 'Audience Agent settings saved.',
+                'audience_agent_save_error' => 'Audience Agent settings could not be saved.',
             ),
             'fa' => array(
                 'menu' => 'تنظیمات پروژه',
@@ -284,8 +298,14 @@ class SMarkProjectSettings {
                 'main_settings_description' => 'اطلاعات اصلی پروژه که در سراسر اسمارک استفاده می‌شود.',
                 'integration_settings_title' => 'تنظیمات یکپارچه‌سازی',
                 'integration_settings_description' => 'اسمارک را به ابزارها و سرویس‌های دیگر متصل کنید.',
-                'telegram_bot_token' => 'توکن API بات تلگرام',
-                'telegram_bot_token_help' => 'توکن بات تلگرام خود را وارد کنید تا اسمارک به آن متصل شود.',
+                'telegram_ingest_title' => 'آدرس دریافت پیام‌های تلگرام',
+                'telegram_ingest_help' => 'بات تلگرام شما دقیقاً مثل قبل کار می‌کند (polling یا وبهوک خودش). فقط چند خط به کد بات خودتان اضافه کنید تا یک کپی از هر پیام ورودی را هم به این آدرس بفرستد؛ این کار هیچ تداخلی با عملکرد فعلی بات ایجاد نمی‌کند.',
+                'telegram_ingest_copy' => 'کپی',
+                'telegram_ingest_copied' => 'کپی شد!',
+                'telegram_ingest_regenerate' => 'ساخت آدرس جدید',
+                'telegram_ingest_regenerate_confirm' => 'با این کار آدرس فعلی از کار می‌افتد و اگر کد بات هنوز از آدرس قبلی استفاده کند، دیگر پیامی به اینجا نمی‌رسد. ادامه می‌دهید؟',
+                'telegram_ingest_regenerated' => 'آدرس جدید ساخته شد.',
+                'telegram_ingest_example_title' => 'نمونه کد (پایتون)',
                 'collapse_section' => 'بستن بخش',
                 'expand_section' => 'باز کردن بخش',
                 'agent_settings' => 'تنظیمات ایجنت‌ها',
@@ -317,6 +337,11 @@ class SMarkProjectSettings {
                 'email_campaign_agent_offer' => 'برای کدام آفر؟',
                 'email_campaign_agent_saved' => 'تنظیمات ایجنت کمپین ایمیلی ذخیره شد.',
                 'email_campaign_agent_save_error' => 'ذخیره تنظیمات ایجنت کمپین ایمیلی انجام نشد.',
+                'audience_agent_title' => 'ایجنت مخاطب',
+                'audience_agent_help' => 'مشخص کنید ایجنت مخاطب برای کدام محصول گروه مخاطب هدف تعریف کند.',
+                'audience_agent_product' => 'برای چه محصولی؟',
+                'audience_agent_saved' => 'تنظیمات ایجنت مخاطب ذخیره شد.',
+                'audience_agent_save_error' => 'ذخیره تنظیمات ایجنت مخاطب انجام نشد.',
             ),
         );
 
@@ -397,6 +422,19 @@ class SMarkProjectSettings {
 
     private function get_email_campaign_agent_settings() {
         return $this->sanitize_email_campaign_agent_settings(get_option(self::OPTION_EMAIL_CAMPAIGN_AGENT_SETTINGS, array()));
+    }
+
+    private function sanitize_audience_agent_settings($settings) {
+        $settings = is_array($settings) ? $settings : array();
+        $product_id = isset($settings['product_id']) ? sanitize_key((string) $settings['product_id']) : 'random';
+
+        return array(
+            'product_id' => $product_id !== '' ? $product_id : 'random',
+        );
+    }
+
+    private function get_audience_agent_settings() {
+        return $this->sanitize_audience_agent_settings(get_option(self::OPTION_AUDIENCE_AGENT_SETTINGS, array()));
     }
 
     private function get_offer_agent_options() {
@@ -1480,6 +1518,16 @@ class SMarkProjectSettings {
             $wpdb->query("ALTER TABLE {$projects_table_sql} ADD COLUMN telegram_bot_token varchar(255) DEFAULT NULL AFTER business_description");
         }
 
+        if (!$this->table_has_column($projects_table, 'telegram_webhook_secret')) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table identifier is strictly validated by escape_db_identifier().
+            $wpdb->query("ALTER TABLE {$projects_table_sql} ADD COLUMN telegram_webhook_secret varchar(64) DEFAULT NULL AFTER telegram_bot_token");
+        }
+
+        if (!$this->table_has_column($projects_table, 'telegram_ingest_key')) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table identifier is strictly validated by escape_db_identifier().
+            $wpdb->query("ALTER TABLE {$projects_table_sql} ADD COLUMN telegram_ingest_key varchar(64) DEFAULT NULL AFTER telegram_webhook_secret");
+        }
+
         if (!$this->table_has_column($projects_table, 'wp_connected')) {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table identifier is strictly validated by escape_db_identifier().
             $wpdb->query("ALTER TABLE {$projects_table_sql} ADD COLUMN wp_connected tinyint(1) DEFAULT 0 AFTER website");
@@ -1538,7 +1586,64 @@ class SMarkProjectSettings {
 
         return $prefix . 'SMARK_projects';
     }
- 
+
+    /**
+     * Public accessors below let other SMark features (e.g. Telegram CRM) read/write
+     * the shared projects table without duplicating its resolution/upsert logic.
+     */
+    public function get_projects_table_name() {
+        return $this->resolve_projects_table();
+    }
+
+    public function get_current_project_row() {
+        return $this->get_current_project();
+    }
+
+    public function save_project_columns($project_id, array $data, array $format) {
+        global $wpdb;
+        $project_id = (int) $project_id;
+        if ($project_id <= 0 || empty($data)) {
+            return false;
+        }
+
+        $table = $this->resolve_projects_table();
+        $table_sql = self::escape_db_identifier($table);
+        if ($table_sql === '') {
+            return false;
+        }
+
+        return $wpdb->update($table, $data, array('id' => $project_id), $format, array('%d')); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+    }
+
+    /**
+     * Ensures the current project has a standing Telegram ingest key, generating one on first
+     * use. The bot itself (running independently, via polling or its own webhook) forwards a
+     * copy of each incoming update to this key's URL — SMark never registers as the bot's webhook.
+     */
+    private function ensure_telegram_ingest_key(&$project) {
+        if (!is_array($project) || empty($project['id'])) {
+            return;
+        }
+
+        if (!empty($project['telegram_ingest_key'])) {
+            return;
+        }
+
+        $key = wp_generate_password(48, false, false);
+        $saved = $this->save_project_columns((int) $project['id'], array('telegram_ingest_key' => $key), array('%s'));
+        if ($saved !== false) {
+            $project['telegram_ingest_key'] = $key;
+        }
+    }
+
+    public function get_telegram_ingest_url($key) {
+        $key = (string) $key;
+        if ($key === '') {
+            return '';
+        }
+        return rest_url('smark/v1/telegram/ingest/' . $key);
+    }
+
     private function get_current_project_db_id() {
         return (int) get_option(self::OPTION_CURRENT_PROJECT_DB_ID, 0);
     }
@@ -1731,6 +1836,8 @@ class SMarkProjectSettings {
             'languageNonce' => wp_create_nonce('SMARK_project_settings_language_nonce'),
             'offerAgentNonce' => wp_create_nonce('smark_offer_agent_settings'),
             'emailCampaignAgentNonce' => wp_create_nonce('smark_email_campaign_agent_settings'),
+            'audienceAgentNonce' => wp_create_nonce('smark_audience_agent_settings'),
+            'telegramRegenerateNonce' => wp_create_nonce('smark_project_settings_regenerate_telegram_key'),
             'currentLang' => $this->get_panel_language(),
             'projectId' => $project_id,
             'projectPublicId' => $project_public_id,
@@ -1755,6 +1862,8 @@ class SMarkProjectSettings {
                 'offerAgentSaveError' => $strings['offer_agent_save_error'],
                 'emailCampaignAgentSaved' => $strings['email_campaign_agent_saved'],
                 'emailCampaignAgentSaveError' => $strings['email_campaign_agent_save_error'],
+                'audienceAgentSaved' => $strings['audience_agent_saved'],
+                'audienceAgentSaveError' => $strings['audience_agent_save_error'],
             ),
         ));
     }
@@ -1814,7 +1923,6 @@ class SMarkProjectSettings {
         $db_id = isset($_POST['project_db_id']) ? absint(wp_unslash($_POST['project_db_id'])) : 0;
         $project_name = isset($_POST['project_name']) ? sanitize_text_field(wp_unslash($_POST['project_name'])) : '';
         $business_description = isset($_POST['business_description']) ? sanitize_textarea_field(wp_unslash($_POST['business_description'])) : '';
-        $telegram_bot_token = isset($_POST['telegram_bot_token']) ? sanitize_text_field(wp_unslash($_POST['telegram_bot_token'])) : '';
         $brand_language = isset($_POST['brand_language']) ? sanitize_key(wp_unslash($_POST['brand_language'])) : 'en';
         $canva_template = isset($_POST['canva_template']) ? esc_url_raw(wp_unslash($_POST['canva_template'])) : '';
         $website = function_exists('home_url') ? home_url('/') : '';
@@ -1833,11 +1941,10 @@ class SMarkProjectSettings {
             'project_name' => $project_name,
             'brand_language' => $brand_language,
             'business_description' => $business_description !== '' ? $business_description : null,
-            'telegram_bot_token' => $telegram_bot_token !== '' ? $telegram_bot_token : null,
             'canva_template' => $canva_template !== '' ? $canva_template : null,
             'website' => $website !== '' ? $website : null,
         );
-        $format = array('%s', '%s', '%s', '%s', '%s', '%s');
+        $format = array('%s', '%s', '%s', '%s', '%s');
 
         if ($this->table_has_column($projects_table, 'wp_connected')) {
             $data['wp_connected'] = 1;
@@ -1902,7 +2009,7 @@ class SMarkProjectSettings {
         $this->ensure_project_id($project);
         $this->maybe_sync_project_to_central($project);
         $this->save_module_visibility_from_request();
-  
+
         update_option(self::OPTION_SETUP_COMPLETED, true, false);
         add_settings_error('smark_project_settings', 'saved', $strings['project_settings_saved'], 'updated');
         return true;
@@ -2462,14 +2569,15 @@ class SMarkProjectSettings {
             'created_at' => '',
             'brand_language' => $this->is_persian_site() ? 'fa' : 'en',
             'business_description' => '',
-            'telegram_bot_token' => '',
+            'telegram_ingest_key' => '',
             'canva_template' => '',
             'website' => function_exists('home_url') ? home_url() : '',
             'wp_connected' => 0,
             'search_console_tokens' => null,
         );
         $project = is_array($project) ? array_merge($defaults, $project) : $defaults;
-  
+        $this->ensure_telegram_ingest_key($project);
+
         $search_console_connected = !empty($project['search_console_tokens']);
 
         $local_project_id = isset($project['id']) ? (int) $project['id'] : 0;
@@ -2535,12 +2643,13 @@ class SMarkProjectSettings {
         );
         $offer_agent_settings = $this->get_offer_agent_settings();
         $email_campaign_agent_settings = $this->get_email_campaign_agent_settings();
+        $audience_agent_settings = $this->get_audience_agent_settings();
         $offer_agent_options = $this->get_offer_agent_options();
         $agent_cards = array(
             array('label' => $strings['agent_add_contacts'], 'category' => 'email'),
             array('label' => $strings['agent_send_campaign'], 'category' => 'email', 'agent' => 'email_campaign'),
             array('label' => $strings['agent_add_product'], 'category' => 'offer'),
-            array('label' => $strings['agent_define_audience'], 'category' => 'offer'),
+            array('label' => $strings['agent_define_audience'], 'category' => 'offer', 'agent' => 'audience'),
             array('label' => $strings['agent_add_strategy'], 'category' => 'offer'),
             array('label' => $strings['agent_create_offer'], 'category' => 'offer', 'agent' => 'offer'),
             array('label' => $strings['agent_keyword_transfer'], 'category' => 'seo'),
@@ -2715,15 +2824,36 @@ class SMarkProjectSettings {
                             </button>
                         </header>
                         <div class="smark-settings-section__body" id="smark-section-integrations-body">
+                            <?php $telegram_ingest_url = $this->get_telegram_ingest_url((string) $project['telegram_ingest_key']); ?>
                             <table class="form-table" role="presentation">
                                 <tbody>
                                     <tr>
                                         <th scope="row">
-                                            <label for="smark_telegram_bot_token"><?php echo esc_html($strings['telegram_bot_token']); ?></label>
+                                            <label for="smark_telegram_ingest_url"><?php echo esc_html($strings['telegram_ingest_title']); ?></label>
                                         </th>
                                         <td>
-                                            <input id="smark_telegram_bot_token" name="telegram_bot_token" type="text" class="regular-text" autocomplete="off" value="<?php echo esc_attr((string) $project['telegram_bot_token']); ?>">
-                                            <p class="description"><?php echo esc_html($strings['telegram_bot_token_help']); ?></p>
+                                            <div class="smark-telegram-ingest">
+                                                <input id="smark_telegram_ingest_url" type="text" class="regular-text" value="<?php echo esc_attr($telegram_ingest_url); ?>" readonly onclick="this.select();">
+                                                <button type="button" class="button smark-telegram-ingest__copy" data-smark-copy-target="smark_telegram_ingest_url" data-copy-label="<?php echo esc_attr($strings['telegram_ingest_copy']); ?>" data-copied-label="<?php echo esc_attr($strings['telegram_ingest_copied']); ?>"><?php echo esc_html($strings['telegram_ingest_copy']); ?></button>
+                                                <button type="button" class="button smark-telegram-ingest__regenerate" data-smark-regenerate-telegram-key data-confirm="<?php echo esc_attr($strings['telegram_ingest_regenerate_confirm']); ?>"><?php echo esc_html($strings['telegram_ingest_regenerate']); ?></button>
+                                            </div>
+                                            <p class="description"><?php echo esc_html($strings['telegram_ingest_help']); ?></p>
+                                            <details class="smark-telegram-ingest__example">
+                                                <summary><?php echo esc_html($strings['telegram_ingest_example_title']); ?></summary>
+                                                <pre><code>import requests
+
+SMARK_INGEST_URL = "<?php echo esc_html($telegram_ingest_url); ?>"
+
+def forward_to_smark(update: dict):
+    try:
+        requests.post(SMARK_INGEST_URL, json=update, timeout=5)
+    except Exception:
+        pass  # never let CRM forwarding break the bot itself
+
+# Call forward_to_smark(update) with the raw Telegram Update dict
+# (the same object your bot already gets from getUpdates / your webhook)
+# right when you receive it - before or after your own handling.</code></pre>
+                                            </details>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -2750,9 +2880,9 @@ class SMarkProjectSettings {
                             $agent_category = isset($agent_card['category']) ? (string) $agent_card['category'] : 'seo';
                             $agent_view_box = $agent_category === 'offer' ? '0 0 432 540' : '0 0 504 540';
                             $agent_key = isset($agent_card['agent']) ? sanitize_key((string) $agent_card['agent']) : '';
-                            $is_configurable_agent = in_array($agent_key, array('offer', 'email_campaign'), true);
+                            $is_configurable_agent = in_array($agent_key, array('offer', 'email_campaign', 'audience'), true);
                             $agent_tag = $is_configurable_agent ? 'button' : 'div';
-                            $agent_panel_id = $agent_key === 'email_campaign' ? 'smark_email_campaign_agent_settings_panel' : 'smark_offer_agent_settings_panel';
+                            $agent_panel_id = 'smark_' . $agent_key . '_agent_settings_panel';
                             ?>
                             <<?php echo esc_html($agent_tag); ?>
                                 <?php if ($is_configurable_agent) : ?>
@@ -2825,6 +2955,26 @@ class SMarkProjectSettings {
                                     <option value="random" <?php selected($email_campaign_agent_settings['offer_id'], 'random'); ?>><?php echo esc_html($strings['offer_agent_random']); ?></option>
                                     <?php foreach ($offer_agent_options['offer'] as $option) : ?>
                                         <option value="<?php echo esc_attr($option['id']); ?>" <?php selected($email_campaign_agent_settings['offer_id'], $option['id']); ?>><?php echo esc_html($option['name']); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+                    <div id="smark_audience_agent_settings_panel" class="smark-agent-config-window" data-agent-panel="audience" hidden>
+                        <div class="smark-agent-config-window__header">
+                            <div>
+                                <h3><?php echo esc_html($strings['audience_agent_title']); ?></h3>
+                                <p><?php echo esc_html($strings['audience_agent_help']); ?></p>
+                            </div>
+                            <span class="smark-agent-config-window__status" data-audience-agent-save-state></span>
+                        </div>
+                        <div class="smark-agent-config-window__fields">
+                            <label>
+                                <span><?php echo esc_html($strings['audience_agent_product']); ?></span>
+                                <select name="product_id" data-audience-agent-setting>
+                                    <option value="random" <?php selected($audience_agent_settings['product_id'], 'random'); ?>><?php echo esc_html($strings['offer_agent_random']); ?></option>
+                                    <?php foreach ($offer_agent_options['product'] as $option) : ?>
+                                        <option value="<?php echo esc_attr($option['id']); ?>" <?php selected($audience_agent_settings['product_id'], $option['id']); ?>><?php echo esc_html($option['name']); ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </label>
@@ -2929,6 +3079,53 @@ class SMarkProjectSettings {
         wp_send_json_success(array(
             'message' => $strings['email_campaign_agent_saved'],
             'settings' => $settings,
+        ));
+    }
+
+    public function ajax_save_audience_agent_settings() {
+        check_ajax_referer('smark_audience_agent_settings', 'nonce');
+
+        if (!current_user_can('smark_access')) {
+            wp_send_json_error(array(
+                'message' => esc_html__('You do not have sufficient permissions to perform this action.', 'smark'),
+            ), 403);
+        }
+
+        $settings = $this->sanitize_audience_agent_settings(array(
+            'product_id' => isset($_POST['product_id']) ? wp_unslash($_POST['product_id']) : 'random',
+        ));
+
+        update_option(self::OPTION_AUDIENCE_AGENT_SETTINGS, $settings, false);
+
+        $strings = $this->get_strings();
+        wp_send_json_success(array(
+            'message' => $strings['audience_agent_saved'],
+            'settings' => $settings,
+        ));
+    }
+
+    public function ajax_regenerate_telegram_ingest_key() {
+        check_ajax_referer('smark_project_settings_regenerate_telegram_key', 'nonce');
+
+        if (!current_user_can('smark_access')) {
+            wp_send_json_error(array('message' => $this->get_strings()['permissions']), 403);
+        }
+
+        $project = $this->get_current_project();
+        if (!is_array($project) || empty($project['id'])) {
+            wp_send_json_error(array('message' => $this->get_strings()['db_invalid']), 400);
+        }
+
+        $key = wp_generate_password(48, false, false);
+        $saved = $this->save_project_columns((int) $project['id'], array('telegram_ingest_key' => $key), array('%s'));
+        if ($saved === false) {
+            wp_send_json_error(array('message' => 'Unable to save.'), 500);
+        }
+
+        $strings = $this->get_strings();
+        wp_send_json_success(array(
+            'message' => $strings['telegram_ingest_regenerated'],
+            'url' => $this->get_telegram_ingest_url($key),
         ));
     }
 }

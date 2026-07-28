@@ -1952,6 +1952,522 @@ body.rtl .table-actions {
     }
 }
 
+/* Modern SMark design system: social media tables and actions */
+.smark-social-media-page {
+    --smark-social-ink: #171128;
+    --smark-social-muted: #746b86;
+    --smark-social-purple: #310064;
+    --smark-social-purple-hover: #47108a;
+    --smark-social-purple-soft: #f3edff;
+    --smark-social-line: #e8def7;
+    --smark-social-surface: rgba(255, 255, 255, 0.76);
+    --smark-social-danger: #b42318;
+    --smark-social-danger-soft: #fff1f0;
+    --smark-social-success: #087a55;
+    --smark-social-success-soft: #eafbf4;
+    --smark-social-shadow: 0 12px 34px rgba(64, 27, 119, 0.08);
+}
+
+.smark-social-media-page .content-grid {
+    gap: 22px;
+}
+
+.smark-social-media-page .right-column {
+    min-height: 420px;
+}
+
+.smark-social-media-page .data-table-card .card {
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 24px;
+    background: var(--smark-social-surface);
+    box-shadow: var(--smark-social-shadow);
+    backdrop-filter: blur(22px) saturate(140%);
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+}
+
+.smark-social-media-page .suggestions-section {
+    margin-top: 22px;
+}
+
+.smark-social-media-page .card-header-with-button {
+    min-height: 82px;
+    padding: 20px 28px;
+    gap: 20px;
+    border-bottom: 1px solid var(--smark-social-line);
+    background: rgba(255, 255, 255, 0.46);
+}
+
+.smark-social-media-page .card-header-with-button h3 {
+    margin: 0;
+    color: var(--smark-social-ink);
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1.35;
+    letter-spacing: -0.02em;
+}
+
+.smark-social-media-page .card-header-with-button .btn.btn-primary {
+    min-height: 42px;
+    padding: 10px 17px;
+    border: 1px solid var(--smark-social-purple);
+    border-radius: 13px;
+    color: #fff;
+    background: var(--smark-social-purple);
+    box-shadow: 0 8px 18px rgba(49, 0, 100, 0.16);
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
+    transform: none;
+}
+
+.smark-social-media-page .card-header-with-button .btn.btn-primary:hover {
+    border-color: var(--smark-social-purple-hover);
+    color: #fff;
+    background: var(--smark-social-purple-hover);
+    box-shadow: 0 10px 22px rgba(49, 0, 100, 0.22);
+    transform: translateY(-1px);
+}
+
+.smark-social-media-page .card-header-with-button .btn.btn-primary:focus,
+.smark-social-media-page .card-header-with-button .btn.btn-primary:focus-visible {
+    outline: 3px solid rgba(121, 70, 190, 0.24);
+    outline-offset: 2px;
+    color: #fff;
+}
+
+.smark-social-media-page .card-header-with-button .btn.btn-primary:active {
+    box-shadow: 0 4px 12px rgba(49, 0, 100, 0.16);
+    transform: translateY(0);
+}
+
+.smark-social-media-page .card-header-with-button .btn .dashicons {
+    font-size: 17px;
+    width: 17px;
+    height: 17px;
+}
+
+.smark-social-media-page .table-wrapper {
+    overflow-x: auto;
+    background: rgba(255, 255, 255, 0.56);
+    scrollbar-color: #c8b7e4 transparent;
+    scrollbar-width: thin;
+}
+
+.smark-social-media-page .data-table {
+    min-width: 820px;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: auto;
+}
+
+.smark-social-media-page .suggestions-section .data-table {
+    min-width: 720px;
+}
+
+.smark-social-media-page .data-table thead {
+    background: #f4effb;
+}
+
+.smark-social-media-page .data-table thead th {
+    padding: 14px 16px;
+    border: 0;
+    border-bottom: 1px solid #dfd3f0;
+    color: #5f5273;
+    background: transparent;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.3;
+    letter-spacing: 0.055em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.smark-social-media-page .data-table thead th:first-child {
+    padding-inline-start: 28px;
+}
+
+.smark-social-media-page .data-table thead th:last-child {
+    padding-inline-end: 28px;
+}
+
+.smark-social-media-page .data-table tbody tr {
+    border: 0;
+    background: rgba(255, 255, 255, 0.3);
+    transition: background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.smark-social-media-page .data-table tbody tr:not(.no-data-row):hover {
+    background: rgba(246, 241, 255, 0.76);
+    box-shadow: inset 3px 0 0 #8a5bd0;
+}
+
+.smark-social-media-page.rtl .data-table tbody tr:not(.no-data-row):hover,
+.smark-social-media-page[data-lang="fa"] .data-table tbody tr:not(.no-data-row):hover {
+    box-shadow: inset -3px 0 0 #8a5bd0;
+}
+
+.smark-social-media-page .data-table tbody td {
+    padding: 17px 16px;
+    border: 0;
+    border-bottom: 1px solid #eee7f6;
+    color: #3c334b;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.55;
+    vertical-align: middle;
+}
+
+.smark-social-media-page .data-table tbody td:first-child {
+    padding-inline-start: 28px;
+    color: var(--smark-social-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.smark-social-media-page .data-table tbody td:last-child {
+    padding-inline-end: 28px;
+}
+
+.smark-social-media-page .data-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.smark-social-media-page .data-table tbody tr.no-data-row {
+    background: transparent;
+}
+
+.smark-social-media-page .data-table tbody tr.no-data-row:hover {
+    background: transparent;
+    box-shadow: none;
+}
+
+.smark-social-media-page .data-table tbody tr.no-data-row td {
+    height: 112px;
+    padding: 42px 24px;
+    color: #91879f;
+    background:
+        radial-gradient(circle at center, rgba(126, 81, 188, 0.055), transparent 48%);
+    font-size: 13px;
+    font-style: normal;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+.smark-social-media-page .score-badge,
+.smark-social-media-page .status-badge {
+    padding: 6px 10px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    box-shadow: none;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.2;
+    text-transform: none;
+}
+
+.smark-social-media-page .score-badge-perfect,
+.smark-social-media-page .status-badge-approved,
+.smark-social-media-page .status-badge-published {
+    border-color: #b8ead7;
+    color: var(--smark-social-success);
+    background: var(--smark-social-success-soft);
+}
+
+.smark-social-media-page .score-badge-normal,
+.smark-social-media-page .status-badge-sent {
+    border-color: #f5dfaa;
+    color: #8a5900;
+    background: #fff8e7;
+}
+
+.smark-social-media-page .status-badge-needs-approval {
+    border-color: #ffc9c5;
+    color: var(--smark-social-danger);
+    background: var(--smark-social-danger-soft);
+}
+
+.smark-social-media-page .score-badge:hover,
+.smark-social-media-page .status-badge:hover {
+    box-shadow: none;
+    transform: none;
+}
+
+.smark-social-media-page .table-actions {
+    gap: 6px;
+    flex-wrap: nowrap;
+}
+
+.smark-social-media-page .table-action-btn {
+    min-height: 32px;
+    margin: 0;
+    padding: 7px 10px;
+    border: 1px solid #dfd4ec;
+    border-radius: 9px;
+    color: #574a69;
+    background: rgba(255, 255, 255, 0.84);
+    box-shadow: none;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.2;
+    white-space: nowrap;
+    transform: none;
+}
+
+.smark-social-media-page .table-action-btn.edit,
+.smark-social-media-page .table-action-btn.view-suggestion {
+    border-color: #d8c8ee;
+    color: var(--smark-social-purple);
+    background: var(--smark-social-purple-soft);
+}
+
+.smark-social-media-page .table-action-btn.transfer-suggestion {
+    border-color: #b8ead7;
+    color: var(--smark-social-success);
+    background: var(--smark-social-success-soft);
+}
+
+.smark-social-media-page .table-action-btn.delete,
+.smark-social-media-page .table-action-btn.delete-suggestion {
+    border-color: #ffd0cc;
+    color: var(--smark-social-danger);
+    background: var(--smark-social-danger-soft);
+}
+
+.smark-social-media-page .table-action-btn:hover {
+    border-color: #bca6d8;
+    color: var(--smark-social-purple);
+    background: #fff;
+    box-shadow: 0 5px 12px rgba(64, 27, 119, 0.1);
+    transform: translateY(-1px);
+}
+
+.smark-social-media-page .table-action-btn.delete:hover,
+.smark-social-media-page .table-action-btn.delete-suggestion:hover {
+    border-color: #f2a9a3;
+    color: #8f1710;
+    background: #fff7f6;
+}
+
+.smark-social-media-page .table-action-btn:focus,
+.smark-social-media-page .table-action-btn:focus-visible {
+    outline: 3px solid rgba(121, 70, 190, 0.18);
+    outline-offset: 1px;
+}
+
+/* In-page item editor (replaces the legacy overlay modal) */
+.smark-social-media-page .smark-social-item-editor.smark-modal {
+    position: relative;
+    inset: auto;
+    z-index: 1;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    align-items: initial;
+    justify-content: initial;
+    background: transparent;
+}
+
+.smark-social-media-page .smark-social-item-editor .modal-overlay {
+    display: none;
+}
+
+.smark-social-media-page .smark-social-item-editor .modal-content {
+    position: relative;
+    z-index: auto;
+    display: flex;
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    overflow: visible;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 24px;
+    background: var(--smark-social-surface);
+    box-shadow: var(--smark-social-shadow);
+    animation: smarkSocialEditorIn 220ms ease both;
+    backdrop-filter: blur(22px) saturate(140%);
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+}
+
+@keyframes smarkSocialEditorIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.smark-social-media-page .smark-social-item-editor .modal-header {
+    min-height: 84px;
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--smark-social-line);
+    border-radius: 24px 24px 0 0;
+    color: var(--smark-social-ink);
+    background: rgba(255, 255, 255, 0.52);
+}
+
+.smark-social-media-page .smark-social-item-editor .modal-header h3 {
+    margin: 0;
+    color: var(--smark-social-ink);
+    font-size: 21px;
+    font-weight: 800;
+    line-height: 1.35;
+    letter-spacing: -0.02em;
+}
+
+.smark-social-media-page .smark-social-item-editor .modal-close {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    border: 1px solid #dfd4ec;
+    border-radius: 12px;
+    color: var(--smark-social-purple);
+    background: var(--smark-social-purple-soft);
+    box-shadow: none;
+}
+
+.smark-social-media-page .smark-social-item-editor .modal-close:hover {
+    border-color: #c8b1e5;
+    color: var(--smark-social-purple-hover);
+    background: #fff;
+    transform: none;
+}
+
+.smark-social-media-page .smark-social-item-editor .modal-close:focus,
+.smark-social-media-page .smark-social-item-editor .modal-close:focus-visible {
+    outline: 3px solid rgba(121, 70, 190, 0.2);
+    outline-offset: 2px;
+}
+
+.smark-social-media-page .smark-social-item-editor .modal-close .dashicons {
+    color: currentColor;
+}
+
+.smark-social-media-page .smark-social-item-editor .modal-body {
+    flex: none;
+    padding: 28px;
+    overflow: visible;
+    background: rgba(255, 255, 255, 0.28);
+}
+
+.smark-social-media-page .smark-social-item-editor .modal-body form {
+    max-width: 1040px;
+    margin: 0 auto;
+}
+
+.smark-social-media-page .smark-social-item-editor .modal-body .form-control {
+    border: 1px solid #dfd4ec;
+    border-radius: 12px;
+    color: var(--smark-social-ink);
+    background: rgba(255, 255, 255, 0.82);
+    box-shadow: none;
+}
+
+.smark-social-media-page .smark-social-item-editor .modal-body .form-control:focus {
+    border-color: #8c62c6;
+    box-shadow: 0 0 0 3px rgba(121, 70, 190, 0.13);
+}
+
+.smark-social-media-page .smark-social-item-editor .modal-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    padding: 18px 28px;
+    border-top: 1px solid var(--smark-social-line);
+    border-radius: 0 0 24px 24px;
+    background: rgba(250, 247, 255, 0.92);
+    box-shadow: 0 -8px 22px rgba(64, 27, 119, 0.05);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+
+.smark-social-media-page .smark-social-item-editor .modal-footer .btn {
+    min-height: 40px;
+    padding: 10px 16px;
+    border-radius: 11px;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.smark-social-media-page .smark-social-item-editor .modal-footer .btn-primary {
+    border: 1px solid var(--smark-social-purple);
+    color: #fff;
+    background: var(--smark-social-purple);
+    box-shadow: 0 7px 16px rgba(49, 0, 100, 0.15);
+}
+
+.smark-social-media-page .smark-social-item-editor .modal-footer .btn-secondary {
+    border: 1px solid #dfd4ec;
+    color: #574a69;
+    background: #fff;
+}
+
+.smark-social-media-page.is-item-editor-open .smark-version-footer {
+    display: none;
+}
+
+@media (max-width: 782px) {
+    .smark-social-media-page .card-header-with-button {
+        min-height: 0;
+        padding: 18px;
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .smark-social-media-page .card-header-with-button .btn.btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .smark-social-media-page .data-table-card .card {
+        border-radius: 18px;
+    }
+
+    .smark-social-media-page .data-table thead th,
+    .smark-social-media-page .data-table tbody td {
+        padding-right: 13px;
+        padding-left: 13px;
+    }
+
+    .smark-social-media-page .smark-social-item-editor .modal-content {
+        border-radius: 18px;
+    }
+
+    .smark-social-media-page .smark-social-item-editor .modal-header,
+    .smark-social-media-page .smark-social-item-editor .modal-body,
+    .smark-social-media-page .smark-social-item-editor .modal-footer {
+        padding-right: 18px;
+        padding-left: 18px;
+    }
+
+    .smark-social-media-page .smark-social-item-editor .modal-footer {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .smark-social-media-page .smark-social-item-editor .expert-approval-section,
+    .smark-social-media-page .smark-social-item-editor .expert-status-select,
+    .smark-social-media-page .smark-social-item-editor .modal-footer .btn {
+        width: 100%;
+        max-width: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .smark-social-media-page .data-table tbody tr,
+    .smark-social-media-page .table-action-btn,
+    .smark-social-media-page .card-header-with-button .btn.btn-primary {
+        transition: none;
+    }
+}
+
 /* Expert Approval Dropdown Styles */
 .expert-approval-section {
     margin: 15px 0 0 0;

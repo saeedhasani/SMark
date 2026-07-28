@@ -1826,8 +1826,10 @@ class SMarkPlugin {
     const OPTION_CENTRAL_BASE_URL = 'smark_central_base_url';
     const DEFAULT_CENTRAL_BASE_URL = 'https://saeedhasani.com';
     const CENTRAL_SERPER_SEARCH_PATH = '/wp-json/smark-core/v1/tools/serper/search';
+    const CENTRAL_PRODUCT_GENERATE_PATH = '/wp-json/smark-core/v1/products/generate';
     const CENTRAL_OFFER_GENERATE_PATH = '/wp-json/smark-core/v1/offers/generate';
     const CENTRAL_EMAIL_CAMPAIGN_GENERATE_PATH = '/wp-json/smark-core/v1/email-campaigns/generate';
+    const CENTRAL_AUDIENCE_GENERATE_PATH = '/wp-json/smark-core/v1/audience/generate';
 
     /**
      * Constructor
@@ -1841,10 +1843,14 @@ class SMarkPlugin {
         add_action('wp_ajax_smark_save_language', array($this, 'ajax_save_language'));
         add_action('wp_ajax_smark_daily_guide_smart_action', array($this, 'ajax_daily_guide_smart_action'));
         add_action('wp_ajax_smark_save_signalhire_contact_search_settings', array($this, 'ajax_save_signalhire_contact_search_settings'));
+        add_action('wp_ajax_smark_dashboard_product_agent_create', array($this, 'ajax_dashboard_product_agent_create'));
         add_action('wp_ajax_smark_dashboard_offer_agent_create', array($this, 'ajax_dashboard_offer_agent_create'));
         add_action('wp_ajax_smark_dashboard_email_campaign_agent_create', array($this, 'ajax_dashboard_email_campaign_agent_create'));
+        add_action('wp_ajax_smark_dashboard_audience_agent_create', array($this, 'ajax_dashboard_audience_agent_create'));
         add_action('wp_ajax_smark_dashboard_offer_products_save', array($this, 'ajax_dashboard_offer_products_save'));
         add_action('wp_ajax_smark_dashboard_offer_sections_get', array($this, 'ajax_dashboard_offer_sections_get'));
+        add_action('wp_ajax_smark_dashboard_product_feedback_get', array($this, 'ajax_dashboard_product_feedback_get'));
+        add_action('wp_ajax_smark_dashboard_product_feedback_save', array($this, 'ajax_dashboard_product_feedback_save'));
         add_action('init', array($this, 'check_database_schema'));
         add_action('rest_api_init', array($this, 'register_rest_routes'));
         add_filter('map_meta_cap', array($this, 'map_meta_cap'), 10, 4);
@@ -2640,7 +2646,8 @@ class SMarkPlugin {
                 'translation_key' => 'daily_guide_task_offer_product_monthly',
                 'url' => '#',
                 'offer_section' => 'product',
-                'smart_action' => false,
+                'agent_mark_cost' => 10,
+                'smart_action' => true,
             ),
             'offer_audience_biweekly' => array(
                 'title_en' => 'Define Audience Group',
@@ -2649,7 +2656,8 @@ class SMarkPlugin {
                 'translation_key' => 'daily_guide_task_offer_audience_biweekly',
                 'url' => '#',
                 'offer_section' => 'audience_type',
-                'smart_action' => false,
+                'agent_mark_cost' => 10,
+                'smart_action' => true,
             ),
             'offer_strategy_weekly' => array(
                 'title_en' => 'Add Strategy',
@@ -3438,6 +3446,10 @@ class SMarkPlugin {
             'offerProducts' => $this->get_dashboard_offer_products(),
             'offerSections' => $this->get_dashboard_offer_sections(),
             'offerProductsNonce' => wp_create_nonce('smark_dashboard_offer_products'),
+            'productAgentNonce' => wp_create_nonce('smark_dashboard_product_agent'),
+            'audienceAgentNonce' => wp_create_nonce('smark_dashboard_audience_agent'),
+            'productFeedback' => $this->get_product_agent_feedback(),
+            'productFeedbackNonce' => wp_create_nonce('smark_dashboard_product_feedback'),
             'offerAgentNonce' => wp_create_nonce('smark_dashboard_offer_agent'),
             'emailCampaignAgentNonce' => wp_create_nonce('smark_dashboard_email_campaign_agent'),
             'signalhireSettingsNonce' => wp_create_nonce('smark_signalhire_contact_search_settings'),
@@ -3447,6 +3459,7 @@ class SMarkPlugin {
             'emailCampaignMessageViewNonce' => wp_create_nonce('smark_email_campaign_message_ajax'),
             'emailPerformanceViewNonce' => wp_create_nonce('smark_email_performance_ajax'),
             'projectSettingsViewNonce' => wp_create_nonce('smark_project_settings_dashboard_ajax'),
+            'telegramNonce' => wp_create_nonce('smark_telegram_dashboard_ajax'),
             'seoViewNonce' => wp_create_nonce('smark_seo_dashboard_ajax'),
             'contentManagementViewNonce' => wp_create_nonce('smark_content_management_dashboard_ajax'),
             'socialViewNonce' => wp_create_nonce('smark_social_dashboard_ajax'),
@@ -4475,6 +4488,16 @@ class SMarkPlugin {
         );
     }
 
+    private function get_audience_agent_settings() {
+        $settings = get_option('smark_audience_agent_settings', array());
+        $settings = is_array($settings) ? $settings : array();
+        $product_id = isset($settings['product_id']) ? sanitize_key((string) $settings['product_id']) : 'random';
+
+        return array(
+            'product_id' => $product_id !== '' ? $product_id : 'random',
+        );
+    }
+
     private function resolve_offer_agent_section_item($items, $selected_id) {
         $items = is_array($items) ? array_values($items) : array();
         $available = array();
@@ -4528,6 +4551,324 @@ class SMarkPlugin {
         }
 
         return $out;
+    }
+
+    private function get_current_project_business_description($project_id = 0) {
+        global $wpdb;
+
+        $project_id = (int) $project_id;
+        if ($project_id <= 0) {
+            $project_id = $this->resolve_current_project_id();
+        }
+        $projects_table = $this->resolve_projects_table();
+        $projects_table_sql = $this->escape_db_identifier($projects_table);
+        if ($project_id <= 0 || $projects_table_sql === '' || !$this->table_has_column($projects_table, 'business_description')) {
+            return '';
+        }
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Identifier validated via escape_db_identifier().
+        $description = $wpdb->get_var(
+            $wpdb->prepare("SELECT business_description FROM {$projects_table_sql} WHERE id = %d LIMIT 1", $project_id)
+        );
+
+        return is_scalar($description) ? sanitize_textarea_field((string) $description) : '';
+    }
+
+    /**
+     * CREATE TABLE IF NOT EXISTS-style lazy migration for a single column, matching
+     * how business_description/telegram_* columns are added elsewhere in this file.
+     */
+    private function ensure_product_agent_feedback_column($projects_table) {
+        if ($this->table_has_column($projects_table, 'product_agent_feedback')) {
+            return;
+        }
+        global $wpdb;
+        $projects_table_sql = $this->escape_db_identifier($projects_table);
+        if ($projects_table_sql === '') {
+            return;
+        }
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table identifier is strictly validated by escape_db_identifier().
+        $wpdb->query("ALTER TABLE {$projects_table_sql} ADD COLUMN product_agent_feedback text DEFAULT NULL AFTER business_description");
+    }
+
+    /**
+     * A merchant's "Add comment" note on the product agent is general guidance for
+     * the prompt, not tied to any one generated product - it lives on the project
+     * row so it survives that product being deleted or replaced by a newer one.
+     */
+    private function get_product_agent_feedback($project_id = 0) {
+        global $wpdb;
+
+        $project_id = (int) $project_id;
+        if ($project_id <= 0) {
+            $project_id = $this->resolve_current_project_id();
+        }
+        if ($project_id <= 0) {
+            return '';
+        }
+        $projects_table = $this->resolve_projects_table();
+        $this->ensure_product_agent_feedback_column($projects_table);
+        $projects_table_sql = $this->escape_db_identifier($projects_table);
+        if ($projects_table_sql === '') {
+            return '';
+        }
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Identifier validated via escape_db_identifier().
+        $feedback = $wpdb->get_var(
+            $wpdb->prepare("SELECT product_agent_feedback FROM {$projects_table_sql} WHERE id = %d LIMIT 1", $project_id)
+        );
+
+        return is_scalar($feedback) ? sanitize_textarea_field((string) $feedback) : '';
+    }
+
+    private function save_product_agent_feedback($project_id, $feedback) {
+        global $wpdb;
+
+        $project_id = (int) $project_id;
+        if ($project_id <= 0) {
+            return false;
+        }
+        $projects_table = $this->resolve_projects_table();
+        $this->ensure_product_agent_feedback_column($projects_table);
+        $projects_table_sql = $this->escape_db_identifier($projects_table);
+        if ($projects_table_sql === '') {
+            return false;
+        }
+
+        $feedback = sanitize_textarea_field((string) $feedback);
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Identifier validated via escape_db_identifier(); wpdb->update() itself prepares the query.
+        return $wpdb->update(
+            $projects_table,
+            array('product_agent_feedback' => $feedback !== '' ? $feedback : null),
+            array('id' => $project_id),
+            array('%s'),
+            array('%d')
+        ) !== false;
+    }
+
+    public function ajax_dashboard_product_feedback_get() {
+        check_ajax_referer('smark_dashboard_product_feedback', 'nonce');
+
+        if (!current_user_can(self::CAP_ACCESS)) {
+            wp_send_json_error(array('message' => __('Permission denied', 'smark')), 403);
+        }
+
+        wp_send_json_success(array('feedback' => $this->get_product_agent_feedback()));
+    }
+
+    public function ajax_dashboard_product_feedback_save() {
+        check_ajax_referer('smark_dashboard_product_feedback', 'nonce');
+
+        if (!current_user_can(self::CAP_ACCESS)) {
+            wp_send_json_error(array('message' => __('Permission denied', 'smark')), 403);
+        }
+
+        $project_id = (int) $this->resolve_current_project_id();
+        $feedback = isset($_POST['feedback']) ? sanitize_textarea_field(wp_unslash($_POST['feedback'])) : '';
+
+        if ($project_id <= 0) {
+            wp_send_json_error(array('message' => __('No active project.', 'smark')), 400);
+        }
+
+        $this->save_product_agent_feedback($project_id, $feedback);
+
+        wp_send_json_success(array('feedback' => $feedback));
+    }
+
+    public function ajax_dashboard_product_agent_create() {
+        check_ajax_referer('smark_dashboard_product_agent', 'nonce');
+
+        if (!current_user_can(self::CAP_ACCESS)) {
+            wp_send_json_error(array('message' => __('Permission denied', 'smark')), 403);
+        }
+
+        $panel_lang = get_option('smark_panel_language', 'en');
+        $panel_lang = ($panel_lang === 'fa') ? 'fa' : 'en';
+        $project_id = (int) $this->resolve_current_project_id();
+        $brand_language = $this->get_current_project_brand_language($project_id);
+        $business_description = $this->get_current_project_business_description($project_id);
+        if (trim($business_description) === '') {
+            $message = ($panel_lang === 'fa')
+                ? 'ابتدا فیلد توضیحات کسب‌وکار را در تنظیمات پروژه تکمیل کنید.'
+                : 'Complete the Business Description field in Project Settings first.';
+            wp_send_json_error(array('message' => $message), 400);
+        }
+
+        $sections = $this->get_dashboard_offer_sections();
+        $products = isset($sections['product']) && is_array($sections['product']) ? $sections['product'] : array();
+        $product_feedback = $this->get_product_agent_feedback($project_id);
+
+        $payload = array(
+            'language' => isset($brand_language['name']) ? (string) $brand_language['name'] : 'English',
+            'brand_language' => isset($brand_language['code']) ? (string) $brand_language['code'] : 'en',
+            'site_url' => rtrim((string) home_url('/'), '/'),
+            'project_id' => $project_id,
+            'business_description' => $business_description,
+            'product_feedback' => $product_feedback,
+        );
+        $headers = array('Content-Type' => 'application/json; charset=utf-8');
+        $token = $this->get_central_sync_token();
+        if ($token !== '') {
+            $headers['x-smark-sync-token'] = $token;
+        }
+
+        $resp = wp_remote_post($this->get_central_endpoint(self::CENTRAL_PRODUCT_GENERATE_PATH), array(
+            'timeout' => 60,
+            'redirection' => 3,
+            'headers' => $headers,
+            'body' => wp_json_encode($payload, JSON_UNESCAPED_UNICODE),
+            'user-agent' => 'SMark/' . (defined('SMARK_VERSION') ? (string) SMARK_VERSION : '1.0.0') . ' (product-agent)',
+        ));
+        if (is_wp_error($resp)) {
+            wp_send_json_error(array('message' => $resp->get_error_message()), 500);
+        }
+
+        $code = (int) wp_remote_retrieve_response_code($resp);
+        $data = json_decode((string) wp_remote_retrieve_body($resp), true);
+        if ($code < 200 || $code >= 300 || !is_array($data) || (isset($data['success']) && !$data['success'])) {
+            $message = is_array($data) && isset($data['message'])
+                ? sanitize_text_field((string) $data['message'])
+                : __('Product generation failed.', 'smark');
+            wp_send_json_error(array('message' => $message), $code >= 400 ? $code : 500);
+        }
+
+        $product = isset($data['product']) && is_array($data['product']) ? $data['product'] : array();
+        $name = isset($product['name']) ? sanitize_text_field((string) $product['name']) : '';
+        if ($name === '') {
+            $name = ($panel_lang === 'fa') ? 'محصول پیشنهادی هوش مصنوعی' : 'AI suggested product';
+        }
+        $new_product = array(
+            'id' => 'product-agent-' . (string) time(),
+            'name' => $name,
+            'price' => isset($product['price']) ? sanitize_text_field((string) $product['price']) : '',
+            'url' => isset($product['url']) ? esc_url_raw((string) $product['url']) : '',
+            'audience_details' => '',
+            'strategy_details' => '',
+            'offer_details' => '',
+            'product_id' => '',
+            'strategy_id' => '',
+            'audience_type_id' => '',
+            'notes' => isset($product['notes']) ? sanitize_textarea_field((string) $product['notes']) : '',
+            'createdAt' => current_time('mysql'),
+            'updatedAt' => current_time('mysql'),
+        );
+
+        array_unshift($products, $new_product);
+        $sections['product'] = $this->sanitize_dashboard_offer_items($products);
+        update_option('smark_dashboard_offer_sections', $sections, false);
+        update_option('smark_dashboard_offer_products', $sections['product'], false);
+
+        wp_send_json_success(array(
+            'product' => $new_product,
+            'sections' => $sections,
+            'message' => ($panel_lang === 'fa')
+                ? 'محصول با ایجنت ساخته شد و در ردیف اول محصولات قرار گرفت.'
+                : 'Agent created the product and placed it first in Products.',
+        ));
+    }
+
+    public function ajax_dashboard_audience_agent_create() {
+        check_ajax_referer('smark_dashboard_audience_agent', 'nonce');
+
+        if (!current_user_can(self::CAP_ACCESS)) {
+            wp_send_json_error(array('message' => __('Permission denied', 'smark')), 403);
+        }
+
+        $panel_lang = get_option('smark_panel_language', 'en');
+        $panel_lang = ($panel_lang === 'fa') ? 'fa' : 'en';
+        $project_id = (int) $this->resolve_current_project_id();
+        $brand_language = $this->get_current_project_brand_language($project_id);
+        $business_description = $this->get_current_project_business_description($project_id);
+        if (trim($business_description) === '') {
+            $message = ($panel_lang === 'fa')
+                ? 'ابتدا فیلد توضیحات کسب‌وکار را در تنظیمات پروژه تکمیل کنید.'
+                : 'Complete the Business Description field in Project Settings first.';
+            wp_send_json_error(array('message' => $message), 400);
+        }
+
+        $sections = $this->get_dashboard_offer_sections();
+        $agent_settings = $this->get_audience_agent_settings();
+
+        $product = $this->resolve_offer_agent_section_item(
+            isset($sections['product']) ? $sections['product'] : array(),
+            isset($agent_settings['product_id']) ? $agent_settings['product_id'] : 'random'
+        );
+
+        if (empty($product)) {
+            $message = ($panel_lang === 'fa')
+                ? 'ابتدا حداقل یک محصول اضافه کنید، یا محصول انتخاب‌شده را در تنظیمات ایجنت مخاطب بررسی کنید.'
+                : 'Add at least one product first, or check the selected product in Agent Settings.';
+            wp_send_json_error(array('message' => $message), 400);
+        }
+
+        $payload = array(
+            'language' => isset($brand_language['name']) ? (string) $brand_language['name'] : 'English',
+            'brand_language' => isset($brand_language['code']) ? (string) $brand_language['code'] : 'en',
+            'site_url' => rtrim((string) home_url('/'), '/'),
+            'project_id' => $project_id,
+            'business_description' => $business_description,
+            'agent_settings' => $agent_settings,
+            'product' => $this->get_offer_agent_context_item($product, 'product'),
+        );
+        $headers = array('Content-Type' => 'application/json; charset=utf-8');
+        $token = $this->get_central_sync_token();
+        if ($token !== '') {
+            $headers['x-smark-sync-token'] = $token;
+        }
+
+        $resp = wp_remote_post($this->get_central_endpoint(self::CENTRAL_AUDIENCE_GENERATE_PATH), array(
+            'timeout' => 60,
+            'redirection' => 3,
+            'headers' => $headers,
+            'body' => wp_json_encode($payload, JSON_UNESCAPED_UNICODE),
+            'user-agent' => 'SMark/' . (defined('SMARK_VERSION') ? (string) SMARK_VERSION : '1.0.0') . ' (audience-agent)',
+        ));
+        if (is_wp_error($resp)) {
+            wp_send_json_error(array('message' => $resp->get_error_message()), 500);
+        }
+
+        $code = (int) wp_remote_retrieve_response_code($resp);
+        $data = json_decode((string) wp_remote_retrieve_body($resp), true);
+        if ($code < 200 || $code >= 300 || !is_array($data) || (isset($data['success']) && !$data['success'])) {
+            $message = is_array($data) && isset($data['message'])
+                ? sanitize_text_field((string) $data['message'])
+                : __('Audience generation failed.', 'smark');
+            wp_send_json_error(array('message' => $message), $code >= 400 ? $code : 500);
+        }
+
+        $audience = isset($data['audience']) && is_array($data['audience']) ? $data['audience'] : array();
+        $name = isset($audience['name']) ? sanitize_text_field((string) $audience['name']) : '';
+        if ($name === '') {
+            $name = ($panel_lang === 'fa') ? 'گروه مخاطب پیشنهادی هوش مصنوعی' : 'AI suggested audience group';
+        }
+        $new_audience = array(
+            'id' => 'audience-agent-' . (string) time(),
+            'name' => $name,
+            'price' => '',
+            'url' => '',
+            'audience_details' => isset($audience['audience_details']) ? sanitize_textarea_field((string) $audience['audience_details']) : '',
+            'strategy_details' => '',
+            'offer_details' => '',
+            'product_id' => '',
+            'strategy_id' => '',
+            'audience_type_id' => '',
+            'notes' => '',
+            'createdAt' => current_time('mysql'),
+            'updatedAt' => current_time('mysql'),
+        );
+
+        $audience_items = isset($sections['audience_type']) && is_array($sections['audience_type']) ? $sections['audience_type'] : array();
+        array_unshift($audience_items, $new_audience);
+        $sections['audience_type'] = $this->sanitize_dashboard_offer_items($audience_items);
+        update_option('smark_dashboard_offer_sections', $sections, false);
+
+        wp_send_json_success(array(
+            'audience' => $new_audience,
+            'sections' => $sections,
+            'message' => ($panel_lang === 'fa')
+                ? 'گروه مخاطب با ایجنت ساخته شد و در ردیف اول قرار گرفت.'
+                : 'Agent created the audience group and placed it first.',
+        ));
     }
 
     public function ajax_dashboard_offer_agent_create() {
@@ -5812,6 +6153,7 @@ require_once SMARK_PLUGIN_PATH . 'features/content-management/content-management
 require_once SMARK_PLUGIN_PATH . 'features/backlinks-management/backlinks-management.php';
 require_once SMARK_PLUGIN_PATH . 'features/competitor-analysis/competitor-analysis.php';
 require_once SMARK_PLUGIN_PATH . 'features/project-settings/project-settings.php';
+require_once SMARK_PLUGIN_PATH . 'features/telegram-crm/telegram-crm.php';
 
 // Prompt Bank is now in SMark Core - only load if Core is not active.
 // Use active plugins list (not class_exists) to avoid load-order issues.
@@ -5881,6 +6223,10 @@ $smark_keyword_gap = new SMarkKeywordGap();
 // Initialize Project Settings feature globally
 global $smark_project_settings;
 $smark_project_settings = new SMarkProjectSettings();
+
+// Initialize Telegram CRM feature globally
+global $smark_telegram_crm;
+$smark_telegram_crm = new SMarkTelegramCrm();
 
 // Initialize Content Management feature globally
 global $smark_content_management;

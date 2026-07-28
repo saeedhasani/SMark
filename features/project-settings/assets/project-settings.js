@@ -690,9 +690,80 @@
     emailCampaignAgentSaveTimer = window.setTimeout(saveEmailCampaignAgentSettings, 450);
   }
 
+  let audienceAgentSaveTimer = null;
+
+  function setAudienceAgentStatus(message, type) {
+    const $status = $("[data-audience-agent-save-state]").first();
+    if (!$status.length) {
+      return;
+    }
+
+    $status
+      .removeClass("is-error")
+      .toggleClass("is-error", type === "error")
+      .text(message || "");
+  }
+
+  function collectAudienceAgentSettings() {
+    const settings = {
+      product_id: "random",
+    };
+
+    $("[data-audience-agent-setting]").each(function () {
+      const name = String($(this).attr("name") || "").trim();
+      if (!name) {
+        return;
+      }
+      settings[name] = String($(this).val() || "random").trim() || "random";
+    });
+
+    return settings;
+  }
+
+  function saveAudienceAgentSettings() {
+    const cfg = window.SMarkProjectSettings || {};
+    if (!cfg.ajaxUrl || !cfg.audienceAgentNonce) {
+      return;
+    }
+
+    const settings = collectAudienceAgentSettings();
+    const strings = cfg.strings || {};
+
+    setAudienceAgentStatus(strings.offerAgentSaving || "Saving...");
+
+    $.post(cfg.ajaxUrl, {
+      action: "smark_project_settings_save_audience_agent",
+      nonce: cfg.audienceAgentNonce,
+      product_id: settings.product_id,
+    })
+      .done(function (resp) {
+        if (resp && resp.success) {
+          setAudienceAgentStatus((resp.data && resp.data.message) || strings.audienceAgentSaved || "Saved");
+          return;
+        }
+
+        setAudienceAgentStatus((resp && resp.data && resp.data.message) || strings.audienceAgentSaveError || "Unable to save.", "error");
+      })
+      .fail(function (xhr) {
+        const message =
+          xhr &&
+          xhr.responseJSON &&
+          xhr.responseJSON.data &&
+          xhr.responseJSON.data.message
+            ? xhr.responseJSON.data.message
+            : strings.audienceAgentSaveError || "Unable to save.";
+        setAudienceAgentStatus(message, "error");
+      });
+  }
+
+  function scheduleAudienceAgentSave() {
+    window.clearTimeout(audienceAgentSaveTimer);
+    audienceAgentSaveTimer = window.setTimeout(saveAudienceAgentSettings, 450);
+  }
+
   function toggleAgentPanel($trigger) {
     const agent = String($trigger.attr("data-smark-agent-panel-trigger") || "").trim();
-    const panelId = agent === "email_campaign" ? "smark_email_campaign_agent_settings_panel" : "smark_offer_agent_settings_panel";
+    const panelId = "smark_" + agent + "_agent_settings_panel";
     const $panel = $("#" + panelId);
     if (!$panel.length) {
       return;
@@ -705,11 +776,12 @@
     $trigger.attr("aria-expanded", isHidden ? "true" : "false");
 
     if (isHidden) {
-      if (agent === "email_campaign") {
-        setEmailCampaignAgentStatus("");
-      } else {
-        setOfferAgentStatus("");
-      }
+      const statusSetters = {
+        email_campaign: setEmailCampaignAgentStatus,
+        audience: setAudienceAgentStatus,
+        offer: setOfferAgentStatus,
+      };
+      (statusSetters[agent] || setOfferAgentStatus)("");
       const firstSelect = $panel.find("select").first().get(0);
       if (firstSelect) {
         window.setTimeout(function () {
@@ -735,6 +807,75 @@
     if (collapseLabel && expandLabel) {
       $trigger.attr("aria-label", isOpen ? expandLabel : collapseLabel);
     }
+  }
+
+  function copyTelegramIngestUrl($button) {
+    const targetId = String($button.attr("data-smark-copy-target") || "").trim();
+    const $input = targetId ? $("#" + targetId) : $();
+    if (!$input.length) {
+      return;
+    }
+
+    const value = String($input.val() || "");
+    const restoreLabel = $button.text();
+    const copiedLabel = $button.attr("data-copied-label") || restoreLabel;
+
+    const markCopied = function () {
+      $button.text(copiedLabel);
+      window.clearTimeout($button.data("smark-copy-timeout"));
+      $button.data(
+        "smark-copy-timeout",
+        window.setTimeout(function () {
+          $button.text(restoreLabel);
+        }, 1500)
+      );
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(value).then(markCopied).catch(function () {
+        $input.get(0).select();
+        document.execCommand("copy");
+        markCopied();
+      });
+      return;
+    }
+
+    $input.get(0).select();
+    document.execCommand("copy");
+    markCopied();
+  }
+
+  function regenerateTelegramIngestKey($button) {
+    const cfg = window.SMarkProjectSettings || {};
+    if (!cfg.ajaxUrl || !cfg.telegramRegenerateNonce) {
+      return;
+    }
+
+    const confirmMessage = $button.attr("data-confirm") || "";
+    if (confirmMessage && !window.confirm(confirmMessage)) {
+      return;
+    }
+
+    $button.prop("disabled", true);
+
+    $.post(cfg.ajaxUrl, {
+      action: "smark_project_settings_regenerate_telegram_key",
+      nonce: cfg.telegramRegenerateNonce,
+    })
+      .done(function (resp) {
+        if (resp && resp.success && resp.data && resp.data.url) {
+          $("#smark_telegram_ingest_url").val(resp.data.url);
+          setMainSettingsStatus(resp.data.message || "");
+        } else {
+          setMainSettingsStatus((resp && resp.data && resp.data.message) || "Unable to save.", "error");
+        }
+      })
+      .fail(function () {
+        setMainSettingsStatus("Unable to save.", "error");
+      })
+      .always(function () {
+        $button.prop("disabled", false);
+      });
   }
 
   $(function () {
@@ -799,12 +940,24 @@
       toggleSettingsSection($(this));
     });
 
+    $(document).on("click", "[data-smark-copy-target]", function () {
+      copyTelegramIngestUrl($(this));
+    });
+
+    $(document).on("click", "[data-smark-regenerate-telegram-key]", function () {
+      regenerateTelegramIngestKey($(this));
+    });
+
     $(document).on("change", "[data-offer-agent-setting]", function () {
       scheduleOfferAgentSave();
     });
 
     $(document).on("change", "[data-email-campaign-agent-setting]", function () {
       scheduleEmailCampaignAgentSave();
+    });
+
+    $(document).on("change", "[data-audience-agent-setting]", function () {
+      scheduleAudienceAgentSave();
     });
 
     maybeHandleBrokerClaim();

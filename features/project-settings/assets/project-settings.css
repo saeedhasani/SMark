@@ -774,6 +774,50 @@ button.smark-agent-card {
     max-width: 100%;
 }
 
+.smark-telegram-ingest {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.smark-telegram-ingest input.regular-text {
+    flex: 1 1 320px;
+    min-width: 220px;
+    color: #475569;
+    background-color: rgba(248, 250, 252, 0.95) !important;
+}
+
+.smark-telegram-ingest__copy,
+.smark-telegram-ingest__regenerate {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+.smark-telegram-ingest__example {
+    margin-top: 10px;
+}
+
+.smark-telegram-ingest__example summary {
+    cursor: pointer;
+    color: #667eea;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.smark-telegram-ingest__example pre {
+    margin: 10px 0 0;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: #0f172a;
+    color: #e2e8f0;
+    font-size: 12px;
+    line-height: 1.6;
+    overflow-x: auto;
+    direction: ltr;
+    text-align: left;
+}
+
 .smark-notification {
     position: fixed !important;
     top: 44px !important;

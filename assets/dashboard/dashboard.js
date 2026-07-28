@@ -5,7 +5,7 @@
         return;
     }
 
-    const { createElement: h, useEffect, useState } = wp.element;
+    const { createElement: h, useEffect, useRef, useState } = wp.element;
     const config = window.SMarkDashboard || {};
     const strings = config.strings || {};
     const stringsByLang = config.stringsByLang || {};
@@ -151,7 +151,7 @@
                             event.preventDefault();
                             event.stopPropagation();
                             props.onSmartAction(card);
-                        } else if (card.key === 'offer_offer_create' && typeof props.onSmartAction === 'function') {
+                        } else if ((card.key === 'offer_product_monthly' || card.key === 'offer_offer_create' || card.key === 'offer_audience_biweekly') && typeof props.onSmartAction === 'function') {
                             event.preventDefault();
                             event.stopPropagation();
                             props.onSmartAction(card);
@@ -395,7 +395,13 @@
             ),
             h('div', { className: 'smark-dashboard-offer__list' },
                 products.length
-                    ? h('table', { className: 'smark-dashboard-offer__table' },
+                    ? h('div', { className: 'smark-dashboard-offer__table-wrap' },
+                        isProduct ? h('button', {
+                            type: 'button',
+                            className: 'smark-dashboard-offer__table-add-comment',
+                            onClick: props.onAddComment,
+                        }, text('offerProductAddComment', 'Add comment')) : null,
+                        h('table', { className: 'smark-dashboard-offer__table' },
                         h('thead', null,
                             h('tr', null,
                                 h('th', null, isProduct ? text('offerProductName', 'Product name') : text('offerItemName', 'Title')),
@@ -435,8 +441,73 @@
                                 );
                             })
                         )
+                        )
                     )
                     : h('div', { className: 'smark-dashboard-offer__empty' }, isProduct ? text('offerProductEmpty', 'No products have been added yet.') : text('offerSectionEmpty', 'No items have been added to this section yet.'))
+            )
+        );
+    }
+
+    function ProductCommentPanel(props) {
+        const language = props.language === 'fa' ? 'fa' : 'en';
+        const strings = {
+            en: {
+                title: 'Add comment',
+                close: 'Close and return to Offering Management',
+                hint: 'Your comment is sent directly to the AI and will be taken into account every time it generates a new product.',
+                placeholder: 'Write general guidance for the product agent...',
+                save: 'Save comment',
+                saving: 'Saving...',
+                cancel: 'Cancel',
+            },
+            fa: {
+                title: 'افزودن کامنت',
+                close: 'بستن و بازگشت به مدیریت پیشنهادها',
+                hint: 'کامنت شما مستقیم برای هوش مصنوعی ارسال می‌شود و در هر بار تولید محصول جدید در نظر گرفته خواهد شد.',
+                placeholder: 'راهنمایی کلی برای ایجنت تولید محصول بنویسید...',
+                save: 'ذخیره کامنت',
+                saving: 'در حال ذخیره...',
+                cancel: 'انصراف',
+            },
+        };
+        const t = strings[language];
+
+        return h('section', {
+            className: 'smark-dashboard-comment-panel smark-dashboard-view',
+            dir: language === 'fa' ? 'rtl' : 'ltr',
+            'aria-labelledby': 'smark-comment-panel-title',
+        },
+            h('header', { className: 'smark-dashboard-comment-panel__header' },
+                h('h2', { id: 'smark-comment-panel-title' }, t.title),
+                h('button', {
+                    type: 'button',
+                    className: 'smark-dashboard-comment-panel__close',
+                    'aria-label': t.close,
+                    title: t.close,
+                    onClick: props.onClose,
+                }, h('span', { className: 'dashicons dashicons-no-alt', 'aria-hidden': true }))
+            ),
+            h('p', { className: 'smark-dashboard-comment-panel__hint' }, t.hint),
+            h('textarea', {
+                className: 'smark-dashboard-comment-panel__textarea',
+                rows: 8,
+                value: props.value || '',
+                placeholder: t.placeholder,
+                autoFocus: true,
+                onChange: function(event) { props.onChange(event.target.value); },
+            }),
+            h('div', { className: 'smark-dashboard-comment-panel__actions' },
+                h('button', {
+                    type: 'button',
+                    className: 'smark-dashboard-offer__button smark-dashboard-offer__button--primary',
+                    disabled: props.saving,
+                    onClick: props.onSave,
+                }, props.saving ? t.saving : t.save),
+                h('button', {
+                    type: 'button',
+                    className: 'smark-dashboard-offer__button',
+                    onClick: props.onClose,
+                }, t.cancel)
             )
         );
     }
@@ -449,17 +520,904 @@
                     h('h2', null, props.title),
                     h('p', null, props.description)
                 ),
-                h('button', {
-                    type: 'button',
-                    className: 'smark-dashboard-crm__toggle' + (isOpen ? ' is-open' : ''),
-                    'aria-expanded': isOpen,
-                    'aria-label': isOpen ? props.collapseLabel : props.expandLabel,
-                    onClick: props.onToggle,
-                }, h('span', { className: 'dashicons dashicons-arrow-down-alt2', 'aria-hidden': true }))
+                h('div', { className: 'smark-dashboard-crm__section-actions' },
+                    props.headerAction || null,
+                    h('button', {
+                        type: 'button',
+                        className: 'smark-dashboard-crm__toggle' + (isOpen ? ' is-open' : ''),
+                        'aria-expanded': isOpen,
+                        'aria-label': isOpen ? props.collapseLabel : props.expandLabel,
+                        onClick: props.onToggle,
+                    }, h('span', { className: 'dashicons dashicons-arrow-down-alt2', 'aria-hidden': true }))
+                )
             ),
             isOpen ? h('div', { className: 'smark-dashboard-crm__section-body' },
-                h('p', { className: 'smark-dashboard-crm__placeholder' }, props.placeholder)
+                props.body ? props.body : h('p', { className: 'smark-dashboard-crm__placeholder' }, props.placeholder)
             ) : null
+        );
+    }
+
+    function formatMessengerTime(value, language) {
+        if (!value) {
+            return '';
+        }
+        const isoLike = String(value).indexOf('T') === -1 ? String(value).replace(' ', 'T') + 'Z' : value;
+        const date = new Date(isoLike);
+        if (isNaN(date.getTime())) {
+            return '';
+        }
+
+        const now = new Date();
+        const isSameDay = date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
+        const locale = language === 'fa' ? 'fa-IR' : 'en-US';
+
+        if (isSameDay) {
+            return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+        }
+
+        return date.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
+    }
+
+    const MESSENGER_PAGE_SIZE = 5;
+
+    function MessengerPanel(props) {
+        const language = props.language === 'fa' ? 'fa' : 'en';
+        const cfg = window.SMarkDashboard || {};
+        const strings = {
+            en: {
+                emptyChats: 'No Telegram conversations yet. Once someone starts your bot, their messages will show up here.',
+                selectChat: 'Select a conversation to view messages.',
+                emptyMessages: 'No messages in this conversation yet.',
+                loading: 'Loading...',
+                error: 'Unable to load Telegram data.',
+                loadMoreChats: 'Load more conversations',
+                loadOlderMessages: 'Load older messages',
+            },
+            fa: {
+                emptyChats: 'هنوز مکالمه‌ای در تلگرام ثبت نشده. به‌محض اینکه کسی بات شما را استارت کند، پیام‌هایش اینجا نمایش داده می‌شود.',
+                selectChat: 'برای مشاهده پیام‌ها یک مکالمه را انتخاب کنید.',
+                emptyMessages: 'هنوز پیامی در این مکالمه نیست.',
+                loading: 'در حال بارگذاری...',
+                error: 'دریافت اطلاعات تلگرام ممکن نشد.',
+                loadMoreChats: 'مکالمه‌های بیشتر',
+                loadOlderMessages: 'بارگذاری پیام‌های قدیمی‌تر',
+            },
+        };
+        const t = strings[language];
+
+        const [chats, setChats] = useState([]);
+        const [chatsLoading, setChatsLoading] = useState(true);
+        const [chatsLoadingMore, setChatsLoadingMore] = useState(false);
+        const [chatsError, setChatsError] = useState('');
+        const [chatsHasMore, setChatsHasMore] = useState(false);
+        const [activeChatId, setActiveChatId] = useState('');
+        const [messages, setMessages] = useState([]);
+        const [messagesLoading, setMessagesLoading] = useState(false);
+        const [messagesLoadingMore, setMessagesLoadingMore] = useState(false);
+        const [messagesHasMore, setMessagesHasMore] = useState(false);
+        const messagesRef = useRef(null);
+        const bottomChatRef = useRef('');
+        const userNearBottomRef = useRef(true);
+        const olderScrollRef = useRef(null);
+        const chatsLimitRef = useRef(MESSENGER_PAGE_SIZE);
+        const latestMessagesRef = useRef([]);
+
+        const fetchChats = function(limit) {
+            if (!cfg.ajaxUrl || !cfg.telegramNonce) {
+                return;
+            }
+            const body = new window.URLSearchParams();
+            body.append('action', 'smark_telegram_list_chats');
+            body.append('nonce', cfg.telegramNonce);
+            body.append('limit', String(limit));
+
+            window.fetch(cfg.ajaxUrl, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                body: body.toString(),
+            }).then(function(response) {
+                return response.json();
+            }).then(function(response) {
+                if (response && response.success && response.data) {
+                    setChats(Array.isArray(response.data.chats) ? response.data.chats : []);
+                    setChatsHasMore(!!response.data.hasMore);
+                    setChatsError('');
+                } else {
+                    setChatsError(t.error);
+                }
+            }).catch(function() {
+                setChatsError(t.error);
+            }).finally(function() {
+                setChatsLoading(false);
+                setChatsLoadingMore(false);
+            });
+        };
+
+        /*
+         * Messages are fetched with a cursor instead of a growing limit: a plain call
+         * gets the last MESSENGER_PAGE_SIZE messages, options.beforeId extends the
+         * window upward (older), and options.afterId tails new messages onto the end
+         * without disturbing anything already loaded above.
+         */
+        const fetchMessages = function(chatId, options) {
+            if (!cfg.ajaxUrl || !cfg.telegramNonce || !chatId) {
+                return;
+            }
+            const opts = options || {};
+            if (opts.showLoading) {
+                setMessagesLoading(true);
+            }
+            if (opts.beforeId) {
+                setMessagesLoadingMore(true);
+            }
+            const body = new window.URLSearchParams();
+            body.append('action', 'smark_telegram_list_messages');
+            body.append('nonce', cfg.telegramNonce);
+            body.append('chat_id', chatId);
+            body.append('limit', String(MESSENGER_PAGE_SIZE));
+            if (opts.beforeId) {
+                body.append('before_id', String(opts.beforeId));
+            } else if (opts.afterId) {
+                body.append('after_id', String(opts.afterId));
+            }
+
+            window.fetch(cfg.ajaxUrl, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                body: body.toString(),
+            }).then(function(response) {
+                return response.json();
+            }).then(function(response) {
+                if (!response || !response.success || !response.data) {
+                    return;
+                }
+                const fetched = Array.isArray(response.data.messages) ? response.data.messages : [];
+                if (opts.beforeId) {
+                    if (fetched.length > 0) {
+                        setMessages(function(current) { return fetched.concat(current); });
+                    }
+                    setMessagesHasMore(!!response.data.hasMore);
+                } else if (opts.afterId) {
+                    if (fetched.length > 0) {
+                        setMessages(function(current) { return current.concat(fetched); });
+                    }
+                } else {
+                    setMessages(fetched);
+                    setMessagesHasMore(!!response.data.hasMore);
+                }
+            }).finally(function() {
+                if (opts.showLoading) {
+                    setMessagesLoading(false);
+                }
+                if (opts.beforeId) {
+                    setMessagesLoadingMore(false);
+                }
+            });
+        };
+
+        useEffect(function() {
+            chatsLimitRef.current = MESSENGER_PAGE_SIZE;
+            fetchChats(MESSENGER_PAGE_SIZE);
+            const interval = window.setInterval(function() {
+                fetchChats(chatsLimitRef.current);
+            }, 8000);
+            return function() {
+                window.clearInterval(interval);
+            };
+        }, []);
+
+        useEffect(function() {
+            latestMessagesRef.current = messages;
+        }, [messages]);
+
+        useEffect(function() {
+            if (!activeChatId) {
+                return undefined;
+            }
+            setMessages([]);
+            setMessagesHasMore(false);
+            latestMessagesRef.current = [];
+            userNearBottomRef.current = true;
+            fetchMessages(activeChatId, { showLoading: true });
+            const interval = window.setInterval(function() {
+                const current = latestMessagesRef.current;
+                const newestId = current.length ? current[current.length - 1].id : 0;
+                if (newestId) {
+                    fetchMessages(activeChatId, { afterId: newestId });
+                } else {
+                    fetchMessages(activeChatId, {});
+                }
+            }, 5000);
+            return function() {
+                window.clearInterval(interval);
+            };
+        }, [activeChatId]);
+
+        useEffect(function() {
+            const el = messagesRef.current;
+            if (!el || messagesLoading || messages.length === 0) {
+                return undefined;
+            }
+
+            if (olderScrollRef.current) {
+                const previous = olderScrollRef.current;
+                olderScrollRef.current = null;
+                const frame = window.requestAnimationFrame(function() {
+                    el.scrollTop = el.scrollHeight - previous.scrollHeight + previous.scrollTop;
+                });
+                return function() {
+                    window.cancelAnimationFrame(frame);
+                };
+            }
+
+            const isNewConversation = bottomChatRef.current !== activeChatId;
+            if (!isNewConversation && !userNearBottomRef.current) {
+                return undefined;
+            }
+
+            const frame = window.requestAnimationFrame(function() {
+                el.scrollTop = el.scrollHeight;
+                bottomChatRef.current = activeChatId;
+                userNearBottomRef.current = true;
+            });
+            return function() {
+                window.cancelAnimationFrame(frame);
+            };
+        }, [activeChatId, messagesLoading, messages.length]);
+
+        const trackMessageScroll = function(event) {
+            const el = event.currentTarget;
+            userNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 64;
+        };
+
+        const loadMoreChats = function() {
+            const nextLimit = chatsLimitRef.current + MESSENGER_PAGE_SIZE;
+            chatsLimitRef.current = nextLimit;
+            setChatsLoadingMore(true);
+            fetchChats(nextLimit);
+        };
+
+        const loadOlderMessages = function() {
+            if (!messages.length) {
+                return;
+            }
+            const el = messagesRef.current;
+            if (el) {
+                olderScrollRef.current = { scrollHeight: el.scrollHeight, scrollTop: el.scrollTop };
+            }
+            fetchMessages(activeChatId, { beforeId: messages[0].id });
+        };
+
+        const activeChat = chats.filter(function(chat) { return chat.chatId === activeChatId; })[0] || null;
+
+        return h('div', { className: 'smark-dashboard-messenger', dir: 'ltr' },
+            h('div', { className: 'smark-dashboard-messenger__list' },
+                chatsLoading ? h('div', { className: 'smark-dashboard-messenger__state' }, t.loading)
+                    : chatsError ? h('div', { className: 'smark-dashboard-messenger__state smark-dashboard-messenger__state--error' }, chatsError)
+                    : chats.length === 0 ? h('div', { className: 'smark-dashboard-messenger__state' }, t.emptyChats)
+                    : chats.map(function(chat) {
+                        const isActive = chat.chatId === activeChatId;
+                        return h('button', {
+                            key: chat.chatId,
+                            type: 'button',
+                            className: 'smark-dashboard-messenger__chat' + (isActive ? ' is-active' : ''),
+                            onClick: function() { setActiveChatId(chat.chatId); },
+                        },
+                            h('span', { className: 'smark-dashboard-messenger__chat-avatar', 'aria-hidden': true }, (chat.name || '?').charAt(0).toUpperCase()),
+                            h('span', { className: 'smark-dashboard-messenger__chat-body' },
+                                h('span', { className: 'smark-dashboard-messenger__chat-top' },
+                                    h('strong', null, chat.name),
+                                    h('span', { className: 'smark-dashboard-messenger__chat-time' }, formatMessengerTime(chat.lastMessageAt, language))
+                                ),
+                                h('span', { className: 'smark-dashboard-messenger__chat-preview' }, chat.lastMessage || '')
+                            )
+                        );
+                    }).concat(chatsHasMore ? [
+                        h('button', {
+                            key: 'load-more-chats',
+                            type: 'button',
+                            className: 'smark-dashboard-messenger__load-more',
+                            disabled: chatsLoadingMore,
+                            onClick: loadMoreChats,
+                        }, chatsLoadingMore ? t.loading : t.loadMoreChats)
+                    ] : [])
+            ),
+            h('div', { className: 'smark-dashboard-messenger__conversation' },
+                !activeChat ? h('div', { className: 'smark-dashboard-messenger__state' }, t.selectChat) : h(
+                    'div',
+                    { className: 'smark-dashboard-messenger__conversation-inner' },
+                    h('header', { className: 'smark-dashboard-messenger__conversation-header' },
+                        h('span', { className: 'smark-dashboard-messenger__chat-avatar', 'aria-hidden': true }, (activeChat.name || '?').charAt(0).toUpperCase()),
+                        h('strong', null, activeChat.name)
+                    ),
+                    h('div', {
+                        className: 'smark-dashboard-messenger__messages',
+                        ref: messagesRef,
+                        onScroll: trackMessageScroll,
+                    },
+                        messagesLoading ? h('div', { className: 'smark-dashboard-messenger__state' }, t.loading)
+                            : messages.length === 0 ? h('div', { className: 'smark-dashboard-messenger__state' }, t.emptyMessages)
+                            : [
+                                messagesHasMore ? h('button', {
+                                    key: 'load-older-messages',
+                                    type: 'button',
+                                    className: 'smark-dashboard-messenger__load-more smark-dashboard-messenger__load-more--messages',
+                                    disabled: messagesLoadingMore,
+                                    onClick: loadOlderMessages,
+                                }, messagesLoadingMore ? t.loading : t.loadOlderMessages) : null
+                            ].concat(messages.map(function(message) {
+                                return h('div', {
+                                    key: message.id,
+                                    className: 'smark-dashboard-messenger__bubble-row' + (message.direction === 'out' ? ' is-out' : ' is-in'),
+                                },
+                                    h('div', { className: 'smark-dashboard-messenger__bubble' },
+                                        h('span', { className: 'smark-dashboard-messenger__bubble-text' }, message.text || ''),
+                                        h('span', { className: 'smark-dashboard-messenger__bubble-time' }, formatMessengerTime(message.createdAt, language))
+                                    )
+                                );
+                            }))
+                    )
+                )
+            )
+        );
+    }
+
+    function CampaignRuleValueSearch(props) {
+        const cfg = window.SMarkDashboard || {};
+        const [query, setQuery] = useState(props.valueLabel || '');
+        const [items, setItems] = useState([]);
+        const [loading, setLoading] = useState(false);
+        const [open, setOpen] = useState(false);
+        const [selected, setSelected] = useState(!!props.value);
+
+        useEffect(function() {
+            setQuery(props.valueLabel || '');
+            setSelected(!!props.value);
+            setItems([]);
+            setOpen(false);
+        }, [props.variable]);
+
+        useEffect(function() {
+            const searchQuery = query.trim();
+            if (!props.variable || selected || searchQuery.length < 1 || !cfg.ajaxUrl || !cfg.emailContactsViewNonce) {
+                setLoading(false);
+                if (!selected) {
+                    setItems([]);
+                    setOpen(false);
+                }
+                return undefined;
+            }
+
+            const controller = new window.AbortController();
+            const timeout = window.setTimeout(function() {
+                setLoading(true);
+                const body = new window.URLSearchParams();
+                body.append('action', 'smark_crm_campaign_rule_search');
+                body.append('nonce', cfg.emailContactsViewNonce);
+                body.append('variable', props.variable);
+                body.append('query', searchQuery);
+
+                window.fetch(cfg.ajaxUrl, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    body: body.toString(),
+                    signal: controller.signal,
+                }).then(function(response) {
+                    return response.json();
+                }).then(function(response) {
+                    const nextItems = response && response.success && response.data && Array.isArray(response.data.items)
+                        ? response.data.items
+                        : [];
+                    setItems(nextItems);
+                    setOpen(true);
+                }).catch(function(error) {
+                    if (error && error.name !== 'AbortError') {
+                        setItems([]);
+                        setOpen(true);
+                    }
+                }).finally(function() {
+                    if (!controller.signal.aborted) {
+                        setLoading(false);
+                    }
+                });
+            }, 280);
+
+            return function() {
+                window.clearTimeout(timeout);
+                controller.abort();
+            };
+        }, [query, props.variable, selected]);
+
+        const chooseItem = function(item) {
+            setQuery(item.label || '');
+            setSelected(true);
+            setItems([]);
+            setOpen(false);
+            props.onSelect(String(item.id || ''), String(item.label || ''));
+        };
+
+        return h('div', { className: 'smark-dashboard-campaign-composer__rule-search' },
+            h('input', {
+                type: 'search',
+                value: query,
+                disabled: !props.variable,
+                placeholder: props.variable ? props.searchPlaceholder : props.selectVariableFirst,
+                autoComplete: 'off',
+                role: 'combobox',
+                'aria-expanded': open,
+                onChange: function(event) {
+                    const value = event.target.value;
+                    setQuery(value);
+                    setSelected(false);
+                    props.onSelect('', value);
+                },
+                onFocus: function() {
+                    if (!selected && query.trim() !== '') {
+                        setOpen(true);
+                    }
+                },
+                onBlur: function() {
+                    window.setTimeout(function() { setOpen(false); }, 150);
+                },
+            }),
+            loading ? h('span', { className: 'smark-dashboard-campaign-composer__search-spinner', 'aria-hidden': true }) : null,
+            open ? h('div', { className: 'smark-dashboard-campaign-composer__search-results', role: 'listbox' },
+                loading ? h('div', { className: 'smark-dashboard-campaign-composer__search-state' }, props.searching)
+                    : items.length === 0 ? h('div', { className: 'smark-dashboard-campaign-composer__search-state' }, props.noResults)
+                    : items.map(function(item) {
+                        return h('button', {
+                            key: item.id,
+                            type: 'button',
+                            className: 'smark-dashboard-campaign-composer__search-result',
+                            role: 'option',
+                            onMouseDown: function(event) {
+                                event.preventDefault();
+                                chooseItem(item);
+                            },
+                        },
+                            h('strong', null, item.label),
+                            item.meta ? h('small', null, item.meta) : null
+                        );
+                    })
+            ) : null
+        );
+    }
+
+    function CampaignComposer(props) {
+        const language = props.language === 'fa' ? 'fa' : 'en';
+        const labels = {
+            en: {
+                title: 'Add campaign',
+                subtitle: 'Create the campaign details now. Sending and saving will be connected in the next step.',
+                close: 'Close and return to CRM',
+                campaignTitle: 'Campaign title',
+                campaignTitlePlaceholder: 'Enter a title for this campaign',
+                sendTime: 'Send time',
+                now: 'Send now',
+                schedule: 'Schedule',
+                scheduleAt: 'Scheduled date and time',
+                audience: 'Campaign contacts',
+                audiencePlaceholder: 'Select campaign contacts',
+                allContacts: 'All contacts',
+                selectedContacts: 'Selected contacts',
+                addRule: 'Add rule',
+                rules: 'Rules',
+                ruleVariable: 'Rule variable',
+                selectVariable: 'Select a variable',
+                contactName: 'Contact name',
+                contactEmail: 'Contact email',
+                contactTag: 'Contact tag',
+                contactList: 'Contact list',
+                ruleValue: 'Rule value',
+                searchValue: 'Search and select a value',
+                selectVariableFirst: 'Select a rule variable first',
+                searching: 'Searching...',
+                noResults: 'No matching CRM contacts found.',
+                removeRule: 'Remove rule',
+                message: 'Campaign text',
+                messagePlaceholder: 'Write your campaign message...',
+                save: 'Save',
+                send: 'Send',
+                sending: 'Sending...',
+                required: 'Enter a campaign title, message, and recipients.',
+                sentSuccess: 'Campaign sent successfully.',
+                scheduledSuccess: 'Campaign scheduled successfully.',
+                sendError: 'Campaign could not be sent.',
+            },
+            fa: {
+                title: 'افزودن کمپین',
+                subtitle: 'اطلاعات کمپین را وارد کنید. عملکرد ذخیره و ارسال در مرحله بعد متصل خواهد شد.',
+                close: 'بستن و بازگشت به CRM',
+                campaignTitle: 'عنوان کمپین',
+                campaignTitlePlaceholder: 'عنوان این کمپین را وارد کنید',
+                sendTime: 'زمان ارسال',
+                now: 'همین الان',
+                schedule: 'زمان‌بندی',
+                scheduleAt: 'تاریخ و ساعت ارسال',
+                audience: 'مخاطبین کمپین',
+                audiencePlaceholder: 'مخاطبین کمپین را انتخاب کنید',
+                allContacts: 'همه مخاطبین',
+                selectedContacts: 'مخاطبین منتخب',
+                addRule: 'افزودن رول',
+                rules: 'رول‌ها',
+                ruleVariable: 'متغیر رول',
+                selectVariable: 'یک متغیر انتخاب کنید',
+                contactName: 'نام مخاطب',
+                contactEmail: 'ایمیل مخاطب',
+                contactTag: 'تگ مخاطب',
+                contactList: 'لیست مخاطب',
+                ruleValue: 'مقدار رول',
+                searchValue: 'مقدار موردنظر را جست‌وجو و انتخاب کنید',
+                selectVariableFirst: 'ابتدا متغیر رول را انتخاب کنید',
+                searching: 'در حال جست‌وجو...',
+                noResults: 'مورد مشابهی در مخاطبین CRM پیدا نشد.',
+                removeRule: 'حذف رول',
+                message: 'متن کمپین',
+                messagePlaceholder: 'متن پیام کمپین را بنویسید...',
+                save: 'ذخیره',
+                send: 'ارسال',
+                sending: 'در حال ارسال...',
+                required: 'عنوان، متن پیام و مخاطب کمپین را کامل کنید.',
+                sentSuccess: 'کمپین با موفقیت ارسال شد.',
+                scheduledSuccess: 'کمپین با موفقیت زمان‌بندی شد.',
+                sendError: 'ارسال کمپین انجام نشد.',
+            },
+        };
+        const t = labels[language];
+        const [sendTiming, setSendTiming] = useState('now');
+        const [campaignTitle, setCampaignTitle] = useState('');
+        const [campaignText, setCampaignText] = useState('');
+        const [scheduledAt, setScheduledAt] = useState('');
+        const [audience, setAudience] = useState('');
+        const [rules, setRules] = useState([]);
+        const [sending, setSending] = useState(false);
+        const [notice, setNotice] = useState(null);
+        const nextRuleId = useRef(1);
+
+        useEffect(function() {
+            const frame = window.requestAnimationFrame(function() {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+            return function() {
+                window.cancelAnimationFrame(frame);
+            };
+        }, []);
+
+        const addRule = function() {
+            const id = nextRuleId.current;
+            nextRuleId.current += 1;
+            setRules(function(currentRules) {
+                return currentRules.concat([{ id: id, variable: '', value: '', valueLabel: '' }]);
+            });
+        };
+
+        const removeRule = function(id) {
+            setRules(function(currentRules) {
+                return currentRules.filter(function(rule) { return rule.id !== id; });
+            });
+        };
+
+        const sendCampaign = function() {
+            const selectedRules = rules.filter(function(rule) { return rule.value; });
+            if (!campaignTitle.trim() || !campaignText.trim() || !audience || (audience === 'selected' && selectedRules.length === 0)) {
+                setNotice({ type: 'error', message: t.required });
+                return;
+            }
+            if (sendTiming === 'scheduled' && !scheduledAt) {
+                setNotice({ type: 'error', message: t.required });
+                return;
+            }
+
+            setSending(true);
+            setNotice(null);
+            const body = new window.URLSearchParams();
+            body.append('action', 'smark_crm_campaign_send');
+            body.append('nonce', (window.SMarkDashboard || {}).telegramNonce || '');
+            body.append('title', campaignTitle.trim());
+            body.append('text', campaignText.trim());
+            body.append('audience', audience);
+            body.append('timing', sendTiming);
+            body.append('scheduled_at', sendTiming === 'scheduled' ? new Date(scheduledAt).toISOString() : '');
+            body.append('rules', JSON.stringify(selectedRules.map(function(rule) {
+                return { variable: rule.variable, value: rule.value };
+            })));
+
+            window.fetch((window.SMarkDashboard || {}).ajaxUrl, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                body: body.toString(),
+            }).then(function(response) {
+                return response.json();
+            }).then(function(response) {
+                if (!response || !response.success) {
+                    const message = response && response.data && response.data.message ? response.data.message : t.sendError;
+                    throw new Error(message);
+                }
+                setNotice({
+                    type: 'success',
+                    message: response.data && response.data.scheduled ? t.scheduledSuccess : t.sentSuccess,
+                });
+            }).catch(function(error) {
+                setNotice({ type: 'error', message: error && error.message ? error.message : t.sendError });
+            }).finally(function() {
+                setSending(false);
+            });
+        };
+
+        return h('section', {
+            className: 'smark-dashboard-campaign-composer smark-dashboard-view',
+            dir: language === 'fa' ? 'rtl' : 'ltr',
+            'aria-labelledby': 'smark-campaign-composer-title',
+        },
+            h('header', { className: 'smark-dashboard-campaign-composer__header' },
+                h('div', null,
+                    h('h2', { id: 'smark-campaign-composer-title' }, t.title),
+                    h('p', null, t.subtitle)
+                ),
+                h('button', {
+                    type: 'button',
+                    className: 'smark-dashboard-campaign-composer__close',
+                    'aria-label': t.close,
+                    title: t.close,
+                    onClick: props.onClose,
+                }, h('span', { className: 'dashicons dashicons-no-alt', 'aria-hidden': true }))
+            ),
+            h('form', {
+                className: 'smark-dashboard-campaign-composer__form',
+                onSubmit: function(event) { event.preventDefault(); },
+            },
+                h('label', { className: 'smark-dashboard-campaign-composer__field' },
+                    h('span', null, t.campaignTitle),
+                    h('input', {
+                        type: 'text',
+                        value: campaignTitle,
+                        placeholder: t.campaignTitlePlaceholder,
+                        onChange: function(event) { setCampaignTitle(event.target.value); },
+                    })
+                ),
+                h('fieldset', { className: 'smark-dashboard-campaign-composer__field smark-dashboard-campaign-composer__fieldset' },
+                    h('legend', null, t.sendTime),
+                    h('div', { className: 'smark-dashboard-campaign-composer__timing' },
+                        h('label', null,
+                            h('input', {
+                                type: 'radio',
+                                name: 'campaign_send_timing',
+                                value: 'now',
+                                checked: sendTiming === 'now',
+                                onChange: function() { setSendTiming('now'); },
+                            }),
+                            h('span', null, t.now)
+                        ),
+                        h('label', null,
+                            h('input', {
+                                type: 'radio',
+                                name: 'campaign_send_timing',
+                                value: 'scheduled',
+                                checked: sendTiming === 'scheduled',
+                                onChange: function() { setSendTiming('scheduled'); },
+                            }),
+                            h('span', null, t.schedule)
+                        )
+                    ),
+                    sendTiming === 'scheduled' ? h('label', { className: 'smark-dashboard-campaign-composer__schedule' },
+                        h('span', null, t.scheduleAt),
+                        h('input', {
+                            type: 'datetime-local',
+                            value: scheduledAt,
+                            onChange: function(event) { setScheduledAt(event.target.value); },
+                        })
+                    ) : null
+                ),
+                h('div', { className: 'smark-dashboard-campaign-composer__audience-row' },
+                    h('label', { className: 'smark-dashboard-campaign-composer__field' },
+                        h('span', null, t.audience),
+                        h('select', {
+                            value: audience,
+                            onChange: function(event) {
+                                const value = event.target.value;
+                                setAudience(value);
+                                if (value !== 'selected') {
+                                    setRules([]);
+                                }
+                            },
+                        },
+                            h('option', { value: '', disabled: true }, t.audiencePlaceholder),
+                            h('option', { value: 'all' }, t.allContacts),
+                            h('option', { value: 'selected' }, t.selectedContacts)
+                        )
+                    ),
+                    audience === 'selected' ? h('button', {
+                        type: 'button',
+                        className: 'smark-dashboard-campaign-composer__add-rule',
+                        onClick: addRule,
+                    },
+                        h('span', { className: 'dashicons dashicons-plus-alt2', 'aria-hidden': true }),
+                        h('span', null, t.addRule)
+                    ) : null
+                ),
+                audience === 'selected' && rules.length > 0 ? h('section', { className: 'smark-dashboard-campaign-composer__rules' },
+                    h('h3', null, t.rules),
+                    h('div', { className: 'smark-dashboard-campaign-composer__rules-list' },
+                        rules.map(function(rule) {
+                            return h('div', { className: 'smark-dashboard-campaign-composer__rule', key: rule.id },
+                                h('label', { className: 'smark-dashboard-campaign-composer__field' },
+                                    h('span', null, t.ruleVariable),
+                                    h('select', {
+                                        value: rule.variable,
+                                        onChange: function(event) {
+                                            const variable = event.target.value;
+                                            setRules(function(currentRules) {
+                                                return currentRules.map(function(currentRule) {
+                                                    return currentRule.id === rule.id
+                                                        ? Object.assign({}, currentRule, { variable: variable, value: '', valueLabel: '' })
+                                                        : currentRule;
+                                                });
+                                            });
+                                        },
+                                    },
+                                        h('option', { value: '', disabled: true }, t.selectVariable),
+                                        h('option', { value: 'contact_name' }, t.contactName),
+                                        h('option', { value: 'contact_email' }, t.contactEmail),
+                                        h('option', { value: 'contact_tag' }, t.contactTag),
+                                        h('option', { value: 'contact_list' }, t.contactList)
+                                    )
+                                ),
+                                h('label', { className: 'smark-dashboard-campaign-composer__field' },
+                                    h('span', null, t.ruleValue),
+                                    h(CampaignRuleValueSearch, {
+                                        variable: rule.variable,
+                                        value: rule.value,
+                                        valueLabel: rule.valueLabel,
+                                        searchPlaceholder: t.searchValue,
+                                        selectVariableFirst: t.selectVariableFirst,
+                                        searching: t.searching,
+                                        noResults: t.noResults,
+                                        onSelect: function(value, valueLabel) {
+                                            setRules(function(currentRules) {
+                                                return currentRules.map(function(currentRule) {
+                                                    return currentRule.id === rule.id
+                                                        ? Object.assign({}, currentRule, { value: value, valueLabel: valueLabel })
+                                                        : currentRule;
+                                                });
+                                            });
+                                        },
+                                    })
+                                ),
+                                h('button', {
+                                    type: 'button',
+                                    className: 'smark-dashboard-campaign-composer__remove-rule',
+                                    'aria-label': t.removeRule,
+                                    title: t.removeRule,
+                                    onClick: function() { removeRule(rule.id); },
+                                }, h('span', { className: 'dashicons dashicons-trash', 'aria-hidden': true }))
+                            );
+                        })
+                    )
+                ) : null,
+                h('label', { className: 'smark-dashboard-campaign-composer__field' },
+                    h('span', null, t.message),
+                    h('textarea', {
+                        rows: 8,
+                        value: campaignText,
+                        placeholder: t.messagePlaceholder,
+                        onChange: function(event) { setCampaignText(event.target.value); },
+                    })
+                ),
+                notice ? h('div', {
+                    className: 'smark-dashboard-campaign-composer__notice is-' + notice.type,
+                    role: notice.type === 'error' ? 'alert' : 'status',
+                }, notice.message) : null,
+                h('div', { className: 'smark-dashboard-campaign-composer__footer' },
+                    h('button', { type: 'button', className: 'smark-dashboard-campaign-composer__button is-secondary' }, t.save),
+                    h('button', {
+                        type: 'button',
+                        className: 'smark-dashboard-campaign-composer__button is-primary',
+                        disabled: sending,
+                        onClick: sendCampaign,
+                    }, sending ? t.sending : t.send)
+                )
+            )
+        );
+    }
+
+    function CampaignList(props) {
+        const language = props.language === 'fa' ? 'fa' : 'en';
+        const cfg = window.SMarkDashboard || {};
+        const labels = {
+            en: {
+                loading: 'Loading campaigns...',
+                empty: 'No campaigns have been sent or scheduled yet.',
+                loadError: 'Campaign history could not be loaded.',
+                recipients: 'Recipients',
+                sent: 'Sent',
+                failed: 'Failed',
+                statuses: {
+                    sending: 'Sending',
+                    sent: 'Sent',
+                    partial: 'Partially sent',
+                    failed: 'Failed',
+                    scheduled: 'Scheduled',
+                },
+            },
+            fa: {
+                loading: 'در حال دریافت کمپین‌ها...',
+                empty: 'هنوز کمپینی ارسال یا زمان‌بندی نشده است.',
+                loadError: 'دریافت تاریخچه کمپین‌ها ممکن نشد.',
+                recipients: 'مخاطبین',
+                sent: 'ارسال‌شده',
+                failed: 'ناموفق',
+                statuses: {
+                    sending: 'در حال ارسال',
+                    sent: 'ارسال‌شده',
+                    partial: 'ارسال ناقص',
+                    failed: 'ناموفق',
+                    scheduled: 'زمان‌بندی‌شده',
+                },
+            },
+        };
+        const t = labels[language];
+        const [campaigns, setCampaigns] = useState([]);
+        const [loading, setLoading] = useState(true);
+        const [error, setError] = useState('');
+
+        useEffect(function() {
+            const body = new window.URLSearchParams();
+            body.append('action', 'smark_crm_campaign_list');
+            body.append('nonce', cfg.telegramNonce || '');
+            window.fetch(cfg.ajaxUrl, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                body: body.toString(),
+            }).then(function(response) {
+                return response.json();
+            }).then(function(response) {
+                if (!response || !response.success || !response.data) {
+                    throw new Error(t.loadError);
+                }
+                setCampaigns(Array.isArray(response.data.campaigns) ? response.data.campaigns : []);
+                setError('');
+            }).catch(function() {
+                setError(t.loadError);
+            }).finally(function() {
+                setLoading(false);
+            });
+        }, []);
+
+        if (loading) {
+            return h('div', { className: 'smark-dashboard-campaign-list__state' }, t.loading);
+        }
+        if (error) {
+            return h('div', { className: 'smark-dashboard-campaign-list__state is-error' }, error);
+        }
+        if (campaigns.length === 0) {
+            return h('div', { className: 'smark-dashboard-campaign-list__state' }, t.empty);
+        }
+
+        return h('div', { className: 'smark-dashboard-campaign-list', dir: language === 'fa' ? 'rtl' : 'ltr' },
+            campaigns.map(function(campaign) {
+                const status = campaign.status || 'sent';
+                const displayDate = campaign.scheduledAt || campaign.sentAt || campaign.createdAt;
+                return h('article', { className: 'smark-dashboard-campaign-list__item', key: campaign.id },
+                    h('div', { className: 'smark-dashboard-campaign-list__main' },
+                        h('div', { className: 'smark-dashboard-campaign-list__title-row' },
+                            h('h3', null, campaign.title),
+                            h('span', { className: 'smark-dashboard-campaign-list__status is-' + status }, t.statuses[status] || status)
+                        ),
+                        h('p', null, campaign.text),
+                        h('time', null, formatMessengerTime(displayDate, language))
+                    ),
+                    h('div', { className: 'smark-dashboard-campaign-list__metrics' },
+                        h('span', null, h('strong', null, campaign.recipientCount), t.recipients),
+                        h('span', null, h('strong', null, campaign.sentCount), t.sent),
+                        campaign.failedCount > 0 ? h('span', { className: 'is-failed' }, h('strong', null, campaign.failedCount), t.failed) : null
+                    )
+                );
+            })
         );
     }
 
@@ -478,6 +1436,7 @@
                 placeholder: 'Configuration for this section will be available soon.',
                 expand: 'Expand section',
                 collapse: 'Collapse section',
+                addCampaign: 'Add campaign',
             },
             fa: {
                 title: 'CRM',
@@ -491,10 +1450,12 @@
                 placeholder: 'تنظیمات این بخش به‌زودی در دسترس قرار می‌گیرد.',
                 expand: 'باز کردن بخش',
                 collapse: 'بستن بخش',
+                addCampaign: 'افزودن کمپین',
             },
         };
         const t = crmStrings[language];
         const [openSections, setOpenSections] = useState({ messenger: true, workflows: true, campaigns: true });
+        const [campaignComposerOpen, setCampaignComposerOpen] = useState(false);
         const toggleSection = function(id) {
             setOpenSections(function(prev) {
                 const next = Object.assign({}, prev);
@@ -502,6 +1463,13 @@
                 return next;
             });
         };
+
+        if (campaignComposerOpen) {
+            return h(CampaignComposer, {
+                language: language,
+                onClose: function() { setCampaignComposerOpen(false); },
+            });
+        }
 
         return h('div', { className: 'smark-dashboard-crm smark-dashboard-view', 'aria-label': t.title },
             h('header', { className: 'smark-dashboard-crm__header' },
@@ -517,6 +1485,7 @@
                 expandLabel: t.expand,
                 collapseLabel: t.collapse,
                 onToggle: function() { toggleSection('messenger'); },
+                body: openSections.messenger ? h(MessengerPanel, { language: language }) : null,
             }),
             h(CRMSection, {
                 key: 'workflows',
@@ -537,6 +1506,15 @@
                 expandLabel: t.expand,
                 collapseLabel: t.collapse,
                 onToggle: function() { toggleSection('campaigns'); },
+                body: openSections.campaigns ? h(CampaignList, { language: language }) : null,
+                headerAction: h('button', {
+                    type: 'button',
+                    className: 'smark-dashboard-crm__add-campaign',
+                    onClick: function() { setCampaignComposerOpen(true); },
+                },
+                    h('span', { className: 'dashicons dashicons-plus-alt2', 'aria-hidden': true }),
+                    h('span', null, t.addCampaign)
+                ),
             })
         );
     }
@@ -676,6 +1654,10 @@
         const [offerProductSaving, setOfferProductSaving] = useState(false);
         const [offerProductNotice, setOfferProductNotice] = useState('');
         const [offerProductNoticeType, setOfferProductNoticeType] = useState('success');
+        const [productFeedbackOpen, setProductFeedbackOpen] = useState(false);
+        const [commentDraft, setCommentDraft] = useState(config.productFeedback || '');
+        const [commentSaving, setCommentSaving] = useState(false);
+        const commentAutoSaveTimeoutRef = useRef(null);
         const [dailyGuideSmartRunningKey, setDailyGuideSmartRunningKey] = useState('');
         const [dailyGuideCardState, setDailyGuideCardState] = useState(dailyGuideCards);
         const [signalhireForm, setSignalhireForm] = useState(config.signalhireContactSearchSettings || {});
@@ -989,6 +1971,104 @@
             });
         };
 
+        const createProductWithAgent = function() {
+            if (dailyGuideSmartRunningKey === 'offer_product_monthly') {
+                return;
+            }
+
+            setDailyGuideSmartRunningKey('offer_product_monthly');
+            setOfferProductSaving(true);
+            setOfferProductNoticeType('success');
+            setOfferProductNotice(text('smartRunning', 'Agent is working...'));
+
+            const body = new window.URLSearchParams();
+            body.append('action', 'smark_dashboard_product_agent_create');
+            body.append('nonce', config.productAgentNonce || '');
+
+            window.fetch(config.ajaxUrl || window.ajaxurl || '', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                },
+                body: body.toString(),
+            }).then(function(response) {
+                return response.json();
+            }).then(function(response) {
+                if (response && response.success && response.data && response.data.sections && typeof response.data.sections === 'object') {
+                    setOfferItemsBySection(response.data.sections);
+                    setOfferProductForm(emptyOfferProductForm);
+                    setOfferProductEditingId('');
+                    setActive('offer');
+                    setLanguageOpen(false);
+                    setMarkOpen(false);
+                    setSettingsOpen(false);
+                    setOfferActiveSection('product');
+                    setOfferProductNoticeType('success');
+                    setOfferProductNotice(response.data.message || text('smartDone', 'Agent action completed.'));
+                    return;
+                }
+
+                setOfferProductNoticeType('error');
+                setOfferProductNotice((response && response.data && response.data.message) || text('smartError', 'Agent action failed. Please try again.'));
+            }).catch(function() {
+                setOfferProductNoticeType('error');
+                setOfferProductNotice(text('smartError', 'Agent action failed. Please try again.'));
+            }).finally(function() {
+                setOfferProductSaving(false);
+                setDailyGuideSmartRunningKey('');
+            });
+        };
+
+        const createAudienceWithAgent = function() {
+            if (dailyGuideSmartRunningKey === 'offer_audience_biweekly') {
+                return;
+            }
+
+            setDailyGuideSmartRunningKey('offer_audience_biweekly');
+            setOfferProductSaving(true);
+            setOfferProductNoticeType('success');
+            setOfferProductNotice(text('smartRunning', 'Agent is working...'));
+
+            const body = new window.URLSearchParams();
+            body.append('action', 'smark_dashboard_audience_agent_create');
+            body.append('nonce', config.audienceAgentNonce || '');
+
+            window.fetch(config.ajaxUrl || window.ajaxurl || '', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                },
+                body: body.toString(),
+            }).then(function(response) {
+                return response.json();
+            }).then(function(response) {
+                if (response && response.success && response.data && response.data.sections && typeof response.data.sections === 'object') {
+                    setOfferItemsBySection(response.data.sections);
+                    setOfferProductForm(emptyOfferProductForm);
+                    setOfferProductEditingId('');
+                    setActive('offer');
+                    setLanguageOpen(false);
+                    setMarkOpen(false);
+                    setSettingsOpen(false);
+                    setOfferActiveSection('audience_type');
+                    setOfferProductNoticeType('success');
+                    setOfferProductNotice(response.data.message || text('smartDone', 'Agent action completed.'));
+                    return;
+                }
+
+                setOfferProductNoticeType('error');
+                setOfferProductNotice((response && response.data && response.data.message) || text('smartError', 'Agent action failed. Please try again.'));
+            }).catch(function() {
+                setOfferProductNoticeType('error');
+                setOfferProductNotice(text('smartError', 'Agent action failed. Please try again.'));
+            }).finally(function() {
+                setOfferProductSaving(false);
+                setDailyGuideSmartRunningKey('');
+            });
+        };
+
         const createEmailCampaignWithAgent = function() {
             if (dailyGuideSmartRunningKey === 'email_campaign_daily') {
                 return;
@@ -1146,6 +2226,75 @@
             setOfferItemsBySection(nextSections);
             saveOfferSections(nextSections);
         };
+
+        /*
+         * This feedback is general guidance for the product-agent prompt, not tied to
+         * any one generated product - it's stored on the project itself so it survives
+         * that product being deleted or replaced by a newer one. Persisted on every
+         * keystroke (debounced) and again on close, so it's never lost just because
+         * the merchant navigated away instead of explicitly clicking "Save comment".
+         */
+        const persistProductFeedback = function(value) {
+            const trimmed = value.trim();
+            setCommentSaving(true);
+            const body = new window.URLSearchParams();
+            body.append('action', 'smark_dashboard_product_feedback_save');
+            body.append('nonce', config.productFeedbackNonce || '');
+            body.append('feedback', trimmed);
+
+            window.fetch(config.ajaxUrl || window.ajaxurl || '', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                body: body.toString(),
+            }).catch(function() {}).finally(function() {
+                setCommentSaving(false);
+            });
+        };
+
+        const openProductCommentModal = function() {
+            setProductFeedbackOpen(true);
+            const body = new window.URLSearchParams();
+            body.append('action', 'smark_dashboard_product_feedback_get');
+            body.append('nonce', config.productFeedbackNonce || '');
+
+            window.fetch(config.ajaxUrl || window.ajaxurl || '', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                body: body.toString(),
+            }).then(function(response) {
+                return response.json();
+            }).then(function(response) {
+                if (response && response.success && response.data && typeof response.data.feedback === 'string') {
+                    setCommentDraft(response.data.feedback);
+                }
+            }).catch(function() {});
+        };
+
+        const closeProductCommentModal = function() {
+            if (commentAutoSaveTimeoutRef.current) {
+                window.clearTimeout(commentAutoSaveTimeoutRef.current);
+                commentAutoSaveTimeoutRef.current = null;
+            }
+            persistProductFeedback(commentDraft);
+            setProductFeedbackOpen(false);
+        };
+
+        useEffect(function() {
+            if (!productFeedbackOpen) {
+                return undefined;
+            }
+            if (commentAutoSaveTimeoutRef.current) {
+                window.clearTimeout(commentAutoSaveTimeoutRef.current);
+            }
+            commentAutoSaveTimeoutRef.current = window.setTimeout(function() {
+                persistProductFeedback(commentDraft);
+            }, 900);
+            return function() {
+                window.clearTimeout(commentAutoSaveTimeoutRef.current);
+            };
+        }, [commentDraft, productFeedbackOpen]);
 
         const setActiveItem = function(id) {
             setActive(id);
@@ -1409,6 +2558,16 @@
                 return;
             }
 
+            if (key === 'offer_product_monthly') {
+                createProductWithAgent();
+                return;
+            }
+
+            if (key === 'offer_audience_biweekly') {
+                createAudienceWithAgent();
+                return;
+            }
+
             document.dispatchEvent(new window.CustomEvent('smark:daily-guide-smart-action', {
                 detail: {
                     key: key,
@@ -1652,27 +2811,38 @@
                     : h(EmailWorkflowPanel, { key: 'email', language: language, onOpenView: openEmailSubView })
             ) : null,
             active === 'offer' ? h('div', { className: 'smark-dashboard-workspace-content' },
-                h(OfferPanel, {
-                    key: 'offer',
-                    sections: offerSections,
-                    activeSection: offerActiveSection,
-                    itemsBySection: offerItemsBySection,
-                    form: offerProductForm,
-                    editingId: offerProductEditingId,
-                    saving: offerProductSaving,
-                    notice: offerProductNotice,
-                    noticeType: offerProductNoticeType,
-                    onSectionChange: changeOfferSection,
-                    onFormChange: updateOfferProductForm,
-                    onSubmit: submitOfferProduct,
-                    onEdit: editOfferProduct,
-                    onDelete: deleteOfferProduct,
-                    onCancelEdit: function() {
-                        setOfferProductEditingId('');
-                        setOfferProductForm(emptyOfferProductForm);
-                        setOfferProductNotice('');
-                    },
-                })
+                productFeedbackOpen
+                    ? h(ProductCommentPanel, {
+                        key: 'offer-comment',
+                        language: language,
+                        value: commentDraft,
+                        saving: commentSaving,
+                        onChange: setCommentDraft,
+                        onSave: closeProductCommentModal,
+                        onClose: closeProductCommentModal,
+                    })
+                    : h(OfferPanel, {
+                        key: 'offer',
+                        sections: offerSections,
+                        activeSection: offerActiveSection,
+                        itemsBySection: offerItemsBySection,
+                        form: offerProductForm,
+                        editingId: offerProductEditingId,
+                        saving: offerProductSaving,
+                        notice: offerProductNotice,
+                        noticeType: offerProductNoticeType,
+                        onSectionChange: changeOfferSection,
+                        onFormChange: updateOfferProductForm,
+                        onSubmit: submitOfferProduct,
+                        onEdit: editOfferProduct,
+                        onDelete: deleteOfferProduct,
+                        onAddComment: openProductCommentModal,
+                        onCancelEdit: function() {
+                            setOfferProductEditingId('');
+                            setOfferProductForm(emptyOfferProductForm);
+                            setOfferProductNotice('');
+                        },
+                    })
             ) : null,
             active === 'crm' ? h('div', { className: 'smark-dashboard-workspace-content' },
                 h(CRMPanel, { key: 'crm', language: language })

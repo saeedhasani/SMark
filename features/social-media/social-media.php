@@ -227,7 +227,7 @@ class SMarkSocialMedia {
 
         // Check Social Media table
         $sm_table_version = get_option('SMARK_social_media_table_version', '0');
-        $current_version = '3.9'; // Updated version for published_link column in items table
+        $current_version = '4.0'; // Add the project_id column required by item saves
 
         if ($sm_table_version !== $current_version) {
             $table_exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $this->table_name));
@@ -275,6 +275,26 @@ class SMarkSocialMedia {
         $table_sql = $this->escape_db_identifier($this->table_name);
         if ($table_sql === '') {
             return;
+        }
+
+        // Item writes include project_id; older installations only stored the project name.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+        $project_id_exists = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM {$table_sql} LIKE %s", 'project_id'));
+        if (empty($project_id_exists)) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+            $wpdb->query("ALTER TABLE {$table_sql} ADD COLUMN project_id varchar(50) DEFAULT NULL AFTER project, ADD KEY project_id_index (project_id)");
+            $this->log_info('Added project_id column', array('table' => $this->table_name));
+
+            $projects_table_sql = $this->escape_db_identifier($this->projects_table);
+            if ($projects_table_sql !== '') {
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+                $wpdb->query(
+                    "UPDATE {$table_sql} AS items
+                     INNER JOIN {$projects_table_sql} AS projects ON projects.project_name = items.project
+                     SET items.project_id = projects.project_id
+                     WHERE items.project_id IS NULL OR items.project_id = ''"
+                );
+            }
         }
 
         // Check if verification_status column exists
@@ -448,6 +468,7 @@ class SMarkSocialMedia {
         $sql = "CREATE TABLE {$this->table_name} (
             id bigint(20) NOT NULL AUTO_INCREMENT,
             project varchar(255) NOT NULL,
+            project_id varchar(50) DEFAULT NULL,
             headline text NOT NULL,
             visual varchar(500) DEFAULT NULL,
             content_link varchar(1000) DEFAULT NULL,
@@ -463,7 +484,8 @@ class SMarkSocialMedia {
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
-            KEY project_index (project)
+            KEY project_index (project),
+            KEY project_id_index (project_id)
         ) $charset_collate;";
 
         if (!function_exists('dbDelta')) {
@@ -871,9 +893,13 @@ class SMarkSocialMedia {
         // Enqueue Google Font VazirMTN for Persian
         wp_enqueue_style('vazirmatn-font', 'https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap', array(), SMARK_VERSION);
 
-        wp_enqueue_style('smark-social-media', SMARK_PLUGIN_URL . 'features/social-media/assets/social-media.css', array(), SMARK_VERSION);
+        $social_media_css_path = SMARK_PLUGIN_PATH . 'features/social-media/assets/social-media.css';
+        $social_media_css_version = file_exists($social_media_css_path) ? (string) filemtime($social_media_css_path) : SMARK_VERSION;
+        wp_enqueue_style('smark-social-media', SMARK_PLUGIN_URL . 'features/social-media/assets/social-media.css', array(), $social_media_css_version);
 
-        wp_enqueue_script('smark-social-media', SMARK_PLUGIN_URL . 'features/social-media/assets/social-media.js', array('jquery'), SMARK_VERSION, true);
+        $social_media_js_path = SMARK_PLUGIN_PATH . 'features/social-media/assets/social-media.js';
+        $social_media_js_version = file_exists($social_media_js_path) ? (string) filemtime($social_media_js_path) : SMARK_VERSION;
+        wp_enqueue_script('smark-social-media', SMARK_PLUGIN_URL . 'features/social-media/assets/social-media.js', array('jquery'), $social_media_js_version, true);
 
         // Get current language
         $current_lang = get_option('SMARK_panel_language', 'en');
@@ -1160,6 +1186,7 @@ class SMarkSocialMedia {
 
         check_ajax_referer('SMARK_social_media_nonce', 'nonce');
 
+        $project_id = isset($_POST['project_id']) ? sanitize_text_field(wp_unslash($_POST['project_id'])) : '';
         $project_name = isset($_POST['project_name']) ? sanitize_text_field(wp_unslash($_POST['project_name'])) : '';
         $headline = isset($_POST['headline']) ? sanitize_textarea_field(wp_unslash($_POST['headline'])) : '';
         $visual = isset($_POST['visual']) ? esc_url_raw(wp_unslash($_POST['visual'])) : null;
@@ -1201,7 +1228,27 @@ class SMarkSocialMedia {
         $headline_analysis_results = isset($_POST['headline_analysis_results']) ? sanitize_textarea_field(wp_unslash($_POST['headline_analysis_results'])) : null;
         $score = isset($_POST['score']) ? intval($_POST['score']) : 0;
 
-        $this->log_debug('Add item parameters', array('project_name' => $project_name, 'headline_len' => strlen($headline), 'visual' => $visual, 'visual_type' => $visual_type, 'content_link' => $content_link, 'expert_approval_status' => $expert_approval_status, 'score' => $score));
+        $projects_table_sql = $this->escape_db_identifier($this->projects_table);
+        if ($projects_table_sql === '') {
+            wp_send_json_error(array('message' => __('Projects table is invalid', 'smark')), 500);
+        }
+
+        if ($project_name === '' && $project_id !== '') {
+            global $wpdb;
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+            $project_name = (string) $wpdb->get_var(
+                $wpdb->prepare("SELECT project_name FROM {$projects_table_sql} WHERE project_id = %s LIMIT 1", $project_id)
+            );
+        }
+        if ($project_id === '' && $project_name !== '') {
+            global $wpdb;
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+            $project_id = (string) $wpdb->get_var(
+                $wpdb->prepare("SELECT project_id FROM {$projects_table_sql} WHERE project_name = %s LIMIT 1", $project_name)
+            );
+        }
+
+        $this->log_debug('Add item parameters', array('project_id' => $project_id, 'project_name' => $project_name, 'headline_len' => strlen($headline), 'visual' => $visual, 'visual_type' => $visual_type, 'content_link' => $content_link, 'expert_approval_status' => $expert_approval_status, 'score' => $score));
 
         if (empty($project_name)) {
             wp_send_json_error(array(
@@ -1219,9 +1266,13 @@ class SMarkSocialMedia {
 
         if ($item_id) {
             $this->log_info('Item added successfully', array('item_id' => $item_id));
+            $item = $this->get_item($item_id);
             wp_send_json_success(array(
                 'message' => $this->get_translation('item_added_successfully'),
-                'item_id' => $item_id
+                'item_id' => $item_id,
+                'item' => is_array($item) ? $item : array(),
+                'project_id' => $project_id,
+                'project_name' => $project_name
             ));
         } else {
             $this->log_error('Failed to add item');
@@ -2733,9 +2784,9 @@ Requirements:
                 </section>
             </div>
 
-            <!-- Add/Edit Item Modal -->
-            <div id="add_item_modal" class="smark-modal" style="display: none;">
-                <div class="modal-overlay"></div>
+            <!-- Add/Edit Item in-page view -->
+            <div id="add_item_modal" class="smark-modal smark-social-item-editor" style="display: none;" aria-hidden="true">
+                <div class="modal-overlay" aria-hidden="true"></div>
                 <div class="modal-content">
                     <div class="modal-header">
                         <h3 id="modal_title"><?php echo esc_html($this->get_translation('add_new_item')); ?></h3>

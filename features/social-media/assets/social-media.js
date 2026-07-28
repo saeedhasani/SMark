@@ -75,6 +75,31 @@ jQuery(document).ready(function($) {
     };
     let isAutoSaving = false;
 
+    function openItemEditor() {
+        const $page = $('.smark-social-media-page');
+        $page.addClass('is-item-editor-open');
+        $page.find('.smark-social-media-content').stop(true, true).hide();
+        $('#add_item_modal')
+            .attr('aria-hidden', 'false')
+            .stop(true, true)
+            .fadeIn(180);
+
+        const editorTop = $('#add_item_modal').offset();
+        if (editorTop && typeof window.scrollTo === 'function') {
+            window.scrollTo({ top: Math.max(0, editorTop.top - 48), behavior: 'smooth' });
+        }
+    }
+
+    function closeItemEditor() {
+        const $page = $('.smark-social-media-page');
+        $('#add_item_modal')
+            .attr('aria-hidden', 'true')
+            .stop(true, true)
+            .hide();
+        $page.removeClass('is-item-editor-open');
+        $page.find('.smark-social-media-content').stop(true, true).fadeIn(180);
+    }
+
     /**
      * Generate analysis HTML for display
      */
@@ -330,9 +355,13 @@ jQuery(document).ready(function($) {
     /**
      * Render table items
      */
-    function renderTableItems(items) {
+    function renderTableItems(items, replaceExisting = true) {
         const $tbody = $('#data_table_body');
-        $tbody.empty();
+        if (replaceExisting) {
+            $tbody.empty();
+        } else {
+            $tbody.find('.no-data-row').remove();
+        }
 
         items.forEach(function(item) {
             // Format date based on current language
@@ -414,7 +443,11 @@ jQuery(document).ready(function($) {
                 </tr>
             `;
 
-            $tbody.append(row);
+            if (replaceExisting) {
+                $tbody.append(row);
+            } else {
+                $tbody.prepend(row);
+            }
         });
     }
 
@@ -563,8 +596,8 @@ jQuery(document).ready(function($) {
                     // Change save button text to "Update Suggestion"
                     $('#save_btn_text').text(SMarkSocialMedia.strings.updateSuggestion || 'Update Suggestion');
 
-                    // Show modal
-                    $('#add_item_modal').fadeIn(300);
+                    // Open the item editor view
+                    openItemEditor();
                     $('#item_headline').focus();
                 } else {
                     showNotification(SMarkSocialMedia.strings.error, response.data.message, 'error');
@@ -614,8 +647,8 @@ jQuery(document).ready(function($) {
                 if (response.success) {
                     showNotification(SMarkSocialMedia.strings.success, response.data.message || SMarkSocialMedia.strings.suggestionUpdatedSuccessfully, 'success');
 
-                    // Close modal
-                    $('#add_item_modal').fadeOut(300);
+                    // Return to the social media overview
+                    closeItemEditor();
 
                     // Reload suggestions
                     const currentProject = selectedProjectId;
@@ -653,8 +686,8 @@ jQuery(document).ready(function($) {
                 if (response.success) {
                     showNotification(SMarkSocialMedia.strings.success, response.data.message, 'success');
 
-                    // Close modal if open
-                    $('#add_item_modal').fadeOut(300);
+                    // Return to the social media overview if the editor is open
+                    closeItemEditor();
 
                     // Reload both tables
                     const currentProject = selectedProjectId;
@@ -981,7 +1014,7 @@ Provide ONLY the title, nothing else:`;
             $('#empty_state').slideDown();
         });
 
-        // Event: Open add item modal
+        // Event: Open the add item editor view
         $(document).on('click', '#add_new_item_btn', function(e) {
             e.preventDefault();
 
@@ -992,6 +1025,8 @@ Provide ONLY the title, nothing else:`;
 
             // Set to Add mode
             $('#item_id').val('');
+            $('#suggestion_id').val('');
+            $('#is_viewing_suggestion').val('0');
             $('#modal_title').text(SMarkSocialMedia.strings.addNewItem);
             $('#save_btn_text').text(SMarkSocialMedia.strings.saveItem);
 
@@ -1000,6 +1035,13 @@ Provide ONLY the title, nothing else:`;
             $('#item_caption').val('');
             $('#item_visual_text').val('');
             $('#item_source').val('');
+            $('#item_content_link').val('');
+            $('#item_published_link').val('');
+            $('#item_visual').val('');
+            $('#item_visual_type').val('');
+            $('#visual_preview').hide();
+            $('#visual_preview .preview-wrapper').empty();
+            $('#upload_button_wrapper').show();
             $('.char-counter-inside').text('0 / 500');
 
             // Reset auto-save tracking
@@ -1019,8 +1061,8 @@ Provide ONLY the title, nothing else:`;
             // Reset expert status to default and update visual state
             $('#expert_approval_status').val('needs_approval').attr('data-status', 'needs_approval');
 
-            // Show modal
-            $('#add_item_modal').fadeIn(300);
+            // Show the in-page editor
+            openItemEditor();
             $('#item_headline').focus();
         });
 
@@ -1085,10 +1127,10 @@ Provide ONLY the title, nothing else:`;
         });
 
 
-        // Event: Close modal
-        $(document).on('click', '#close_modal, #cancel_item_btn, .modal-overlay', function(e) {
+        // Event: Close the editor and return to the overview
+        $(document).on('click', '#close_modal, #cancel_item_btn', function(e) {
             e.preventDefault();
-            $('#add_item_modal').fadeOut(300);
+            closeItemEditor();
 
             // Reset form fields
             $('#item_caption').val('');
@@ -1570,7 +1612,9 @@ Provide ONLY the title, nothing else:`;
                 return;
             }
 
-            if (!selectedProjectName) {
+            const currentProjectName = getCurrentProjectName();
+            const currentProjectId = selectedProjectId ? String(selectedProjectId).trim() : '';
+            if (!currentProjectId && !currentProjectName) {
                 showNotification(SMarkSocialMedia.strings.error, 'No project selected', 'error');
                 return;
             }
@@ -1580,7 +1624,7 @@ Provide ONLY the title, nothing else:`;
                 updateItem(itemId, headline);
             } else {
                 // Add new item
-                saveItem(selectedProjectName, headline);
+                saveItem(currentProjectId, currentProjectName, headline);
             }
         });
 
@@ -1755,8 +1799,8 @@ Provide ONLY the title, nothing else:`;
                     // Don't analyze automatically - let user click the button
                     // analyzeHeadline(item.headline);
 
-                    // Show modal
-                    $('#add_item_modal').fadeIn(300);
+                    // Open the item editor view
+                    openItemEditor();
                     $('#item_headline').focus();
                 } else {
                     showNotification(SMarkSocialMedia.strings.error, response.data.message, 'error');
@@ -1771,7 +1815,7 @@ Provide ONLY the title, nothing else:`;
     /**
      * Save new item
      */
-    function saveItem(projectName, headline) {
+    function saveItem(projectId, projectName, headline) {
 
         const visual = $('#item_visual').val() || null;
         const visual_type = $('#item_visual_type').val() || null;
@@ -1820,6 +1864,7 @@ Provide ONLY the title, nothing else:`;
             data: {
                 action: 'SMARK_add_item',
                 nonce: SMarkSocialMedia.nonce,
+                project_id: projectId,
                 project_name: projectName,
                 headline: headline,
                 visual: visual,
@@ -1837,21 +1882,46 @@ Provide ONLY the title, nothing else:`;
                 $('#save_item_btn').prop('disabled', true).html('<span class="dashicons dashicons-update"></span> ' + SMarkSocialMedia.strings.saving);
             },
             success: function(response) {
+                const parsedResponse = typeof response === 'string' ? (function() {
+                    try {
+                        return JSON.parse(response.trim());
+                    } catch (error) {
+                        return null;
+                    }
+                })() : response;
 
-                if (response.success) {
-                    showNotification(SMarkSocialMedia.strings.success, response.data.message, 'success');
+                if (parsedResponse && parsedResponse.success) {
+                    const responseData = parsedResponse.data || {};
+                    if (responseData.project_id) {
+                        selectedProjectId = String(responseData.project_id);
+                    }
+                    if (responseData.project_name) {
+                        selectedProjectName = String(responseData.project_name);
+                    }
+                    showNotification(SMarkSocialMedia.strings.success, responseData.message, 'success');
 
-                    // Close modal
-                    $('#add_item_modal').fadeOut(300);
+                    // Return to the social media overview
+                    closeItemEditor();
 
-                    // Reload items
-                    loadProjectItems(selectedProjectId);
+                    // Insert the database-confirmed item into the table immediately.
+                    if (responseData.item && responseData.item.id) {
+                        renderTableItems([responseData.item], false);
+                    } else {
+                        loadProjectItems(selectedProjectId || projectId);
+                    }
                 } else {
-                    showNotification(SMarkSocialMedia.strings.error, response.data.message, 'error');
+                    const message = parsedResponse && parsedResponse.data && parsedResponse.data.message
+                        ? parsedResponse.data.message
+                        : 'The item could not be saved.';
+                    showNotification(SMarkSocialMedia.strings.error, message, 'error');
                 }
             },
-            error: function(xhr, status, error) {
-                showNotification(SMarkSocialMedia.strings.error, 'An error occurred. Please try again.', 'error');
+            error: function(xhr) {
+                const responseData = xhr && xhr.responseJSON && xhr.responseJSON.data ? xhr.responseJSON.data : null;
+                const message = responseData && responseData.message
+                    ? responseData.message
+                    : 'An error occurred. Please try again.';
+                showNotification(SMarkSocialMedia.strings.error, message, 'error');
             },
             complete: function() {
                 $('#save_item_btn').prop('disabled', false).html('<span class="dashicons dashicons-yes"></span> <span id="save_btn_text">Save Item</span>');
@@ -2140,8 +2210,8 @@ Provide ONLY the title, nothing else:`;
 
                     showNotification(SMarkSocialMedia.strings.success, response.data.message, 'success');
 
-                    // Close modal
-                    $('#add_item_modal').fadeOut(300);
+                    // Return to the social media overview
+                    closeItemEditor();
 
                     // Reload items
                     loadProjectItems(selectedProjectId);
