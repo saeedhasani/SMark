@@ -908,6 +908,7 @@ class SMarkSocialMedia {
         wp_localize_script('smark-social-media', 'SMarkSocialMedia', array(
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('SMARK_social_media_nonce'),
+            'competitorNonce' => wp_create_nonce('SMARK_competitor_analysis_nonce'),
             'currentLang' => $current_lang,
             'defaultProject' => $this->get_current_site_project(),
             'strings' => array(
@@ -2088,6 +2089,23 @@ class SMarkSocialMedia {
         $source_url = isset($_POST['source_url']) ? esc_url_raw(wp_unslash($_POST['source_url'])) : '';
         $project_name = isset($_POST['project_name']) ? sanitize_text_field(wp_unslash($_POST['project_name'])) : '';
 
+        // The original workflow required a Source URL, but the redesigned editor
+        // places Source later in the form. Use the active project's website when
+        // the post has no dedicated source so title generation still works.
+        if ($source_url === '' && $project_name !== '' && $this->table_has_column($this->projects_table, 'website')) {
+            global $wpdb;
+            $projects_table_sql = $this->escape_db_identifier($this->projects_table);
+            if ($projects_table_sql !== '') {
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+                $source_url = esc_url_raw((string) $wpdb->get_var(
+                    $wpdb->prepare("SELECT website FROM {$projects_table_sql} WHERE project_name = %s ORDER BY id DESC LIMIT 1", $project_name)
+                ));
+            }
+        }
+        if ($source_url === '') {
+            $source_url = esc_url_raw(home_url('/'));
+        }
+
         if (empty($source_url)) {
             wp_send_json_error(array('message' => __('Source URL is required', 'smark')));
         }
@@ -2110,11 +2128,15 @@ class SMarkSocialMedia {
         }
 
         // Get prompt from Prompt Bank
-        $prompt_data = SMarkPromptBank::get_prompt_by_key('social_media_attractive_title', array(
-            'content' => $source_url,
-            'language' => $project_language,
-            'brand_name' => $project_name
-        ));
+        $prompt_data = null;
+        if (class_exists('SMarkPromptBank')) {
+            $prompt_data = SMarkPromptBank::get_prompt_by_key('social_media_attractive_title', array(
+                'content' => $source_url,
+                'source' => $source_url,
+                'language' => $project_language,
+                'brand_name' => $project_name
+            ));
+        }
 
         // Use Gemini App feature to generate title
         $gemini_app = $this->get_gemini_app_instance();
@@ -2470,7 +2492,7 @@ Requirements:
                 'social_media_designer' => 'Social Media Designer',
                 'create_stunning' => 'Create stunning social media graphics and posts.',
                 'competitor_analysis' => 'Competitor Analysis',
-                'track_competitors' => 'Track competitor websites and their new content.',
+                'track_competitors' => 'Track competitor resources and their new content.',
                 'SMARK_dashboard' => 'SMark Dashboard',
                 'select_or_create_project' => 'Select or Create Project',
                 'choose_existing_project' => 'Choose an existing project or create a new one to get started',
@@ -2482,9 +2504,11 @@ Requirements:
                 'enter_project_name' => 'Enter project name...',
                 'create' => 'Create',
                 'cancel' => 'Cancel',
-                'project_items' => 'Project Items',
-                'project_suggestions' => 'Project Suggestions',
-                'add_new_item' => 'Add New Item',
+                'project_items' => 'Social Media Posts',
+                'project_items_subtitle' => 'Create, manage, and publish your social media content.',
+                'project_suggestions' => 'Suggested Resources',
+                'project_suggestions_subtitle' => 'Review content resources discovered through competitor analysis.',
+                'add_new_item' => 'Add New Post',
                 'id' => 'ID',
                 'headline' => 'Headline',
                 'visual' => 'Visual',
@@ -2515,13 +2539,14 @@ Requirements:
                 'unverified' => 'Unverified',
                 'status' => 'Status',
                 'needs_approval' => 'Needs Expert Approval',
+                'needs_expert_approval' => 'Needs Expert Approval',
                 'sent_to_expert' => 'Sent to Expert',
                 'approved_by_expert' => 'Approved by Expert',
                 'published' => 'Published',
                 'score' => 'Score',
-                'add_new_item' => 'Add New Item',
+                'add_new_item' => 'Add New Post',
                 'edit_item' => 'Edit Item',
-                'headline_label' => 'Headline:',
+                'headline_label' => 'Headline',
                 'enter_headline' => 'Enter your headline...',
                 'analyze_headline' => 'Analyze Headline',
                 'analysis_results' => 'Analysis Results:',
@@ -2534,9 +2559,9 @@ Requirements:
                 'enter_visual_text' => 'Enter text used in video or image...',
                 'caption_label' => 'Caption:',
                 'enter_caption' => 'Enter your caption...',
-                'source_label' => 'Source:',
-                'enter_source' => 'Enter source information...',
-                'source_help_text' => 'Source information is automatically filled when transferred from other features.',
+                'source_label' => 'Source Link',
+                'enter_source' => 'Enter source link...',
+                'source_help_text' => 'The source link is automatically filled when transferred from other features.',
                 'choose_file' => 'Choose File',
                 'published_link_label' => 'Published Link:',
                 'enter_published_link' => 'Paste the social post URL...',
@@ -2558,7 +2583,7 @@ Requirements:
                 'social_media_designer' => 'طراح رسانه‌های اجتماعی',
                 'create_stunning' => 'گرافیک‌ها و پست‌های خیره‌کننده رسانه‌های اجتماعی ایجاد کنید.',
                 'competitor_analysis' => 'تحلیل رقبا',
-                'track_competitors' => 'وبسایت‌های رقیب و محتوای جدید آن‌ها را دنبال کنید.',
+                'track_competitors' => 'منابع رقبا و محتوای جدید آن‌ها را دنبال کنید.',
                 'SMARK_dashboard' => 'داشبورد اسمارک',
                 'select_or_create_project' => 'انتخاب یا ایجاد پروژه',
                 'choose_existing_project' => 'یک پروژه موجود را انتخاب کنید یا یک پروژه جدید ایجاد کنید',
@@ -2570,9 +2595,11 @@ Requirements:
                 'enter_project_name' => 'نام پروژه را وارد کنید...',
                 'create' => 'ایجاد',
                 'cancel' => 'لغو',
-                'project_items' => 'آیتم‌های پروژه',
-                'project_suggestions' => 'پیشنهادهای پروژه',
-                'add_new_item' => 'افزودن آیتم جدید',
+                'project_items' => 'پست‌های سوشال مدیا',
+                'project_items_subtitle' => 'محتوای شبکه‌های اجتماعی خود را ایجاد، مدیریت و منتشر کنید.',
+                'project_suggestions' => 'منابع پیشنهادی',
+                'project_suggestions_subtitle' => 'منابع محتوایی شناسایی‌شده در تحلیل رقبا را بررسی کنید.',
+                'add_new_item' => 'افزودن پست جدید',
                 'id' => 'شناسه',
                 'headline' => 'عنوان',
                 'visual' => 'تصویر/ویدیو',
@@ -2607,9 +2634,9 @@ Requirements:
                 'approved_by_expert' => 'توسط متخصص تایید شد',
                 'published' => 'منتشر شده',
                 'score' => 'امتیاز',
-                'add_new_item' => 'افزودن آیتم جدید',
+                'add_new_item' => 'افزودن پست جدید',
                 'edit_item' => 'ویرایش آیتم',
-                'headline_label' => 'عنوان:',
+                'headline_label' => 'عنوان',
                 'enter_headline' => 'عنوان خود را وارد کنید...',
                 'analyze_headline' => 'تحلیل عنوان',
                 'analysis_results' => 'نتایج تحلیل:',
@@ -2622,9 +2649,9 @@ Requirements:
                 'enter_visual_text' => 'متن استفاده شده در ویدئو یا تصویر را وارد کنید...',
                 'caption_label' => 'کپشن:',
                 'enter_caption' => 'کپشن خود را وارد کنید...',
-                'source_label' => 'منبع:',
-                'enter_source' => 'اطلاعات منبع را وارد کنید...',
-                'source_help_text' => 'اطلاعات منبع هنگام انتقال از سایر فیچرها به طور خودکار پر می‌شود.',
+                'source_label' => 'لینک منبع',
+                'enter_source' => 'لینک منبع را وارد کنید...',
+                'source_help_text' => 'لینک منبع هنگام انتقال از سایر بخش‌ها به‌صورت خودکار تکمیل می‌شود.',
                 'choose_file' => 'انتخاب فایل',
                 'published_link_label' => 'لینک انتشار:',
                 'enter_published_link' => 'لینک پست منتشرشده را وارد کنید...',
@@ -2697,6 +2724,7 @@ Requirements:
                                 <div class="card-header-with-button">
                                     <div>
                                         <h3><?php echo esc_html($this->get_translation('project_items')); ?></h3>
+                                        <p><?php echo esc_html($this->get_translation('project_items_subtitle')); ?></p>
                                     </div>
                                     <button type="button" id="add_new_item_btn" class="btn btn-primary">
                                         <span class="dashicons dashicons-plus-alt"></span>
@@ -2727,37 +2755,6 @@ Requirements:
                             </div>
                         </div>
 
-                        <!-- Project Suggestions Section -->
-                        <div class="data-table-card suggestions-section" id="suggestions_table_card" style="display: none;">
-                            <div class="card">
-                                <div class="card-header-with-button">
-                                    <div>
-                                        <h3><?php echo esc_html($this->get_translation('project_suggestions')); ?></h3>
-                                    </div>
-                                </div>
-
-                                <div class="table-wrapper">
-                                    <table class="data-table">
-                                        <thead>
-                                            <tr>
-                                                <th><?php echo esc_html($this->get_translation('id')); ?></th>
-                                                <th><?php echo esc_html($this->get_translation('headline')); ?></th>
-                                                <th><?php echo esc_html($this->get_translation('visual')); ?></th>
-                                                <th><?php echo esc_html($this->get_translation('created')); ?></th>
-                                                <th><?php echo esc_html($this->get_translation('score')); ?></th>
-                                                <th><?php echo esc_html($this->get_translation('actions')); ?></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="suggestions_table_body">
-                                            <tr class="no-data-row">
-                                                <td colspan="6"><?php echo esc_html($this->get_translation('no_suggestions_found')); ?></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- Empty State -->
                         <div class="empty-state-card" id="empty_state" style="display: block;">
                             <div class="card">
@@ -2772,16 +2769,107 @@ Requirements:
                 </div>
                 <section class="smark-social-competitor-section" aria-label="<?php echo esc_attr($this->get_translation('competitor_analysis')); ?>">
                     <div class="smark-social-competitor-section__header">
-                        <h2><?php echo esc_html($this->get_translation('competitor_analysis')); ?></h2>
-                        <p><?php echo esc_html($this->get_translation('track_competitors')); ?></p>
+                        <div>
+                            <h2><?php echo esc_html($this->get_translation('competitor_analysis')); ?></h2>
+                            <p><?php echo esc_html($this->get_translation('track_competitors')); ?></p>
+                        </div>
+                        <button type="button" id="smark_competitor_add_resource_btn" class="btn btn-primary">
+                            <span class="dashicons dashicons-plus-alt" aria-hidden="true"></span>
+                            <?php echo esc_html($current_lang === 'fa' ? 'افزودن رقیب جدید' : 'Add New Competitor'); ?>
+                        </button>
                     </div>
-                    <iframe
-                        class="smark-social-competitor-section__frame"
-                        src="<?php echo esc_url(add_query_arg(array('page' => 'smark-competitor-analysis', 'smark_embed' => '1'), admin_url('admin.php'))); ?>"
-                        title="<?php echo esc_attr($this->get_translation('competitor_analysis')); ?>"
-                        loading="lazy"
-                    ></iframe>
+                    <div class="smark-competitor-table-wrapper">
+                        <table class="data-table smark-competitor-table">
+                            <thead>
+                                <tr>
+                                    <th><?php echo esc_html($this->get_translation('id')); ?></th>
+                                    <th><?php echo esc_html($current_lang === 'fa' ? 'نام منبع' : 'Resource Name'); ?></th>
+                                    <th><?php echo esc_html($current_lang === 'fa' ? 'آدرس منبع' : 'Resource URL'); ?></th>
+                                    <th><?php echo esc_html($this->get_translation('created')); ?></th>
+                                    <th><?php echo esc_html($this->get_translation('actions')); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody id="smark_competitor_table_body">
+                                <tr class="no-data-row">
+                                    <td colspan="5"><?php echo esc_html($this->get_translation('loading')); ?></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Project Suggestions now belongs to Competitor Analysis. -->
+                    <div class="data-table-card suggestions-section smark-competitor-suggestions" id="suggestions_table_card" style="display: none;">
+                        <div class="card">
+                            <div class="card-header-with-button">
+                                <div>
+                                    <h3><?php echo esc_html($this->get_translation('project_suggestions')); ?></h3>
+                                    <p><?php echo esc_html($this->get_translation('project_suggestions_subtitle')); ?></p>
+                                </div>
+                            </div>
+
+                            <div class="table-wrapper">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th><?php echo esc_html($this->get_translation('id')); ?></th>
+                                            <th><?php echo esc_html($this->get_translation('headline')); ?></th>
+                                            <th><?php echo esc_html($this->get_translation('visual')); ?></th>
+                                            <th><?php echo esc_html($this->get_translation('created')); ?></th>
+                                            <th><?php echo esc_html($this->get_translation('score')); ?></th>
+                                            <th><?php echo esc_html($this->get_translation('actions')); ?></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="suggestions_table_body">
+                                        <tr class="no-data-row">
+                                            <td colspan="6"><?php echo esc_html($this->get_translation('no_suggestions_found')); ?></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </section>
+            </div>
+
+            <!-- Add competitor resource in-page view -->
+            <div id="smark_competitor_resource_editor" class="smark-modal smark-social-item-editor smark-competitor-resource-editor" style="display: none;" aria-hidden="true">
+                <div class="modal-overlay" aria-hidden="true"></div>
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3><?php echo esc_html($current_lang === 'fa' ? 'افزودن رقیب جدید' : 'Add New Competitor'); ?></h3>
+                        <button type="button" class="modal-close" id="smark_close_competitor_resource_editor" aria-label="<?php echo esc_attr($current_lang === 'fa' ? 'بستن' : 'Close'); ?>">
+                            <span class="dashicons dashicons-no"></span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="smark_competitor_resource_form">
+                            <div class="form-group form-group--headline">
+                                <label for="smark_competitor_resource_url"><?php echo esc_html($current_lang === 'fa' ? 'آدرس منبع' : 'Resource URL'); ?></label>
+                                <input type="url" id="smark_competitor_resource_url" class="form-control" placeholder="<?php echo esc_attr($current_lang === 'fa' ? 'آدرس منبع را وارد کنید...' : 'Enter resource URL...'); ?>" required>
+                            </div>
+
+                            <div class="form-group form-group--headline">
+                                <label for="smark_competitor_resource_name"><?php echo esc_html($current_lang === 'fa' ? 'نام منبع (اختیاری)' : 'Resource Name (Optional)'); ?></label>
+                                <input type="text" id="smark_competitor_resource_name" class="form-control" placeholder="<?php echo esc_attr($current_lang === 'fa' ? 'نام منبع را وارد کنید...' : 'Enter resource name...'); ?>">
+                            </div>
+
+                            <div class="form-group form-group--headline">
+                                <label for="smark_competitor_resource_notes"><?php echo esc_html($current_lang === 'fa' ? 'یادداشت‌ها (اختیاری)' : 'Notes (Optional)'); ?></label>
+                                <textarea id="smark_competitor_resource_notes" class="form-control" rows="4" placeholder="<?php echo esc_attr($current_lang === 'fa' ? 'یادداشت‌های خود را وارد کنید...' : 'Enter notes...'); ?>"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" id="smark_cancel_competitor_resource" class="btn btn-secondary">
+                            <span class="dashicons dashicons-no-alt"></span>
+                            <?php echo esc_html($current_lang === 'fa' ? 'لغو' : 'Cancel'); ?>
+                        </button>
+                        <button type="button" id="smark_save_competitor_resource" class="btn btn-primary">
+                            <span class="dashicons dashicons-yes"></span>
+                            <span><?php echo esc_html($current_lang === 'fa' ? 'ذخیره منبع' : 'Save Resource'); ?></span>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Add/Edit Item in-page view -->
@@ -2799,7 +2887,13 @@ Requirements:
                             <input type="hidden" id="item_id" value="">
                             <input type="hidden" id="suggestion_id" value="">
                             <input type="hidden" id="is_viewing_suggestion" value="0">
-                            <div class="form-group">
+                            <div class="form-group form-group--source">
+                                <label for="item_source"><?php echo esc_html($this->get_translation('source_label')); ?></label>
+                                <input type="url" id="item_source" name="source" class="form-control" placeholder="<?php echo esc_attr($this->get_translation('enter_source')); ?>">
+                                <small class="form-text text-muted"><?php echo esc_html($this->get_translation('source_help_text')); ?></small>
+                            </div>
+
+                            <div class="form-group form-group--headline">
                                 <label for="item_headline"><?php echo esc_html($this->get_translation('headline_label')); ?></label>
                                 <div class="textarea-wrapper">
                                     <textarea id="item_headline" name="headline" class="form-control" rows="4" placeholder="<?php echo esc_attr($this->get_translation('enter_headline')); ?>" maxlength="500"></textarea>
@@ -2809,10 +2903,6 @@ Requirements:
                                     <button type="button" id="create_attractive_title_btn" class="btn btn-create-title">
                                         <span class="dashicons dashicons-lightbulb"></span>
                                         <?php echo esc_html($current_lang === 'fa' ? 'ساخت عنوان جذاب' : 'Create Attractive Title'); ?>
-                                    </button>
-                                    <button type="button" id="create_title_with_gpt_btn" class="btn btn-create-title-gpt">
-                                        <span class="dashicons dashicons-admin-site"></span>
-                                        <?php echo esc_html($current_lang === 'fa' ? 'ساخت عنوان با GPT' : 'Create Title with GPT'); ?>
                                     </button>
                                     <button type="button" id="analyze_headline_btn" class="btn btn-analyze">
                                         <span class="dashicons dashicons-chart-line"></span>
@@ -2906,14 +2996,6 @@ Requirements:
                                         <?php echo esc_html($current_lang === 'fa' ? 'ساخت متن با GPT' : 'Create Text with GPT'); ?>
                                     </button>
                                 </div>
-                            </div>
-
-                            <div class="form-divider"></div>
-
-                            <div class="form-group">
-                                <label for="item_source"><?php echo esc_html($this->get_translation('source_label')); ?></label>
-                                <input type="text" id="item_source" name="source" class="form-control" placeholder="<?php echo esc_attr($this->get_translation('enter_source')); ?>">
-                                <small class="form-text text-muted"><?php echo esc_html($this->get_translation('source_help_text')); ?></small>
                             </div>
 
                             <div class="form-divider"></div>

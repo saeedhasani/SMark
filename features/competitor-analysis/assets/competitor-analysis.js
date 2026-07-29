@@ -176,10 +176,16 @@
         // Show loading state
         $('#data_table_body').html('<tr class="no-data-row"><td colspan="5">' + SMarkCompetitorAnalysis.strings.loading + '</td></tr>');
 
-        // Hide empty state and show table
-        $('#empty_state').fadeOut(300, function() {
-            $('#data_table_card').fadeIn(300);
-        });
+        // Embedded mode is already inside a parent card, so reveal its loading
+        // state immediately instead of waiting for two chained animations.
+        if (isEmbedded) {
+            $('#empty_state').hide();
+            $('#data_table_card').show();
+        } else {
+            $('#empty_state').fadeOut(300, function() {
+                $('#data_table_card').fadeIn(300);
+            });
+        }
 
         $.ajax({
             url: SMarkCompetitorAnalysis.ajaxUrl,
@@ -359,14 +365,36 @@
         $('#selected_project_display .project-name').text(defaultProject.name);
         $('#selected_project_display').hide();
         $('#project_select').val(defaultProject.id);
+
+        // In embedded mode PHP renders the active project's rows in the first
+        // response. Do not replace them with a loading state or make a second
+        // request before showing the table.
+        if (SMarkCompetitorAnalysis.embeddedItemsLoaded) {
+            $('#empty_state').hide();
+            $('#data_table_card').show();
+            return;
+        }
+
         loadProjectItems(defaultProject.id, defaultProject.name);
     }
 
     /**
      * Initialize
      */
-    loadProjects();
-    initializeEmbeddedProject();
+    if (isEmbedded) {
+        // The active project is already localized into the iframe. Avoid a
+        // redundant request for every project before rendering its resources.
+        initializeEmbeddedProject();
+    } else {
+        loadProjects();
+        initializeEmbeddedProject();
+    }
+
+    $(document).on('click', '.smark-competitor-show-more', function() {
+        if (selectedProject && selectedProject.id) {
+            loadProjectItems(selectedProject.id, selectedProject.name);
+        }
+    });
 
     /**
      * Event: Project selection changed

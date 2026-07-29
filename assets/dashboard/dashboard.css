@@ -539,6 +539,23 @@ body:has(.smark-dashboard-app-page) #wpbody-content > .litespeed_icon {
   color: #b42318;
   background: rgba(255, 245, 245, 0.72);
 }
+.smark-dashboard-offer__notice-action {
+  display: inline;
+  margin: 0 0 0 6px;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.smark-dashboard-offer__notice-action:hover,
+.smark-dashboard-offer__notice-action:focus-visible {
+  color: #310064;
+}
 .smark-dashboard-offer__tabs {
   display: flex;
   flex-wrap: wrap;
@@ -1003,6 +1020,7 @@ body:has(.smark-dashboard-app-page) #wpbody-content > .litespeed_icon {
 .smark-dashboard-embedded-view .wrap.smark-social-media-page {
   margin: 0;
   padding: 0;
+  padding-top: 0 !important;
   background: transparent;
 }
 .smark-dashboard-embedded-view .wrap.smark-project-settings-page {
@@ -1045,17 +1063,9 @@ body:has(.smark-dashboard-app-page) #wpbody-content > .litespeed_icon {
 .smark-dashboard-embedded-view .smark-social-competitor-section {
   width: 100% !important;
   max-width: 100% !important;
-  margin: 30px 0 0 !important;
+  margin: 22px 0 0 !important;
   box-sizing: border-box !important;
 }
-.smark-dashboard-embedded-view .smark-social-competitor-section__frame {
-  display: block !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  min-height: 980px !important;
-  box-sizing: border-box !important;
-}
-
 .smark-dashboard-app-canvas--rtl {
   font-family: "Vazirmatn", "Inter", "Segoe UI", Tahoma, Arial, sans-serif;
   direction: rtl;

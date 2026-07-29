@@ -2848,6 +2848,7 @@ class SMarkPlugin {
             'social' => array_key_exists('social', $saved) ? (bool) $saved['social'] : true,
             'ads' => array_key_exists('ads', $saved) ? (bool) $saved['ads'] : true,
             'offer' => array_key_exists('offer', $saved) ? (bool) $saved['offer'] : true,
+            'crm' => array_key_exists('crm', $saved) ? (bool) $saved['crm'] : true,
         );
     }
 
@@ -4691,7 +4692,10 @@ class SMarkPlugin {
             $message = ($panel_lang === 'fa')
                 ? 'ابتدا فیلد توضیحات کسب‌وکار را در تنظیمات پروژه تکمیل کنید.'
                 : 'Complete the Business Description field in Project Settings first.';
-            wp_send_json_error(array('message' => $message), 400);
+            wp_send_json_error(array(
+                'message' => $message,
+                'code' => 'business_description_required',
+            ), 400);
         }
 
         $sections = $this->get_dashboard_offer_sections();
@@ -4781,9 +4785,12 @@ class SMarkPlugin {
         $business_description = $this->get_current_project_business_description($project_id);
         if (trim($business_description) === '') {
             $message = ($panel_lang === 'fa')
-                ? 'ابتدا فیلد توضیحات کسب‌وکار را در تنظیمات پروژه تکمیل کنید.'
-                : 'Complete the Business Description field in Project Settings first.';
-            wp_send_json_error(array('message' => $message), 400);
+                ? 'ابتدا توضیحات کسب‌وکار را تکمیل کنید و سپس دوباره روی این دکمه بزنید.'
+                : 'Complete the Business Description, then click this button again.';
+            wp_send_json_error(array(
+                'message' => $message,
+                'code' => 'business_description_required',
+            ), 400);
         }
 
         $sections = $this->get_dashboard_offer_sections();
@@ -4798,7 +4805,10 @@ class SMarkPlugin {
             $message = ($panel_lang === 'fa')
                 ? 'ابتدا حداقل یک محصول اضافه کنید، یا محصول انتخاب‌شده را در تنظیمات ایجنت مخاطب بررسی کنید.'
                 : 'Add at least one product first, or check the selected product in Agent Settings.';
-            wp_send_json_error(array('message' => $message), 400);
+            wp_send_json_error(array(
+                'message' => $message,
+                'code' => 'product_required',
+            ), 400);
         }
 
         $payload = array(

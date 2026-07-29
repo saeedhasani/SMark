@@ -46,8 +46,11 @@ class SMarkCompetitorAnalysis {
         add_action('wp_ajax_SMARK_competitor_mark_reviewed', array($this, 'ajax_mark_reviewed'));
         add_action('wp_ajax_SMARK_competitor_send_to_social', array($this, 'ajax_send_to_social'));
         add_action('wp_ajax_SMARK_save_language', array($this, 'ajax_save_language'));
+        add_action('smark_competitor_monitor_resources', array($this, 'monitor_resources'), 10, 1);
+        add_action('smark_competitor_monitor_resource', array($this, 'monitor_resource'), 10, 1);
         // Defer database operations to avoid headers already sent errors
         add_action('init', array($this, 'init_database_operations'), 20);
+        add_action('init', array($this, 'schedule_resource_monitoring'), 30);
     }
 
     private function escape_db_identifier($identifier) {
@@ -124,6 +127,14 @@ class SMarkCompetitorAnalysis {
      * Initialize database operations after WordPress is fully loaded
      */
     public function init_database_operations() {
+        // The dashboard iframe is a read-only table view. The parent admin
+        // request has already run migrations and maintenance, so repeating
+        // schema checks, cleanup and project-ID synchronization here only
+        // delays the table response.
+        if ($this->is_embed_request()) {
+            return;
+        }
+
         // Check and create table if needed
         $this->maybe_create_table();
 
@@ -138,6 +149,23 @@ class SMarkCompetitorAnalysis {
 
         // Sync project IDs for existing items (one-time sync for items missing project_id)
         $this->sync_project_ids();
+    }
+
+    /**
+     * Ensure competitor resources are checked automatically.
+     *
+     * WP-Cron is traffic-driven. On active admin sites this hourly event runs
+     * shortly after its due time and inserts only previously unseen content.
+     */
+    public function schedule_resource_monitoring() {
+        // Remove events created by the previous argument-bearing schedule.
+        if (wp_next_scheduled('smark_competitor_monitor_resources', array(0))) {
+            wp_clear_scheduled_hook('smark_competitor_monitor_resources', array(0));
+        }
+
+        if (!wp_next_scheduled('smark_competitor_monitor_resources')) {
+            wp_schedule_event(time() + 300, 'hourly', 'smark_competitor_monitor_resources');
+        }
     }
 
     /**
@@ -398,6 +426,7 @@ class SMarkCompetitorAnalysis {
         $sql = "CREATE TABLE IF NOT EXISTS $social_media_suggestions_table (
             id bigint(20) NOT NULL AUTO_INCREMENT,
             project varchar(255) NOT NULL,
+            project_id varchar(50) DEFAULT NULL,
             headline text NOT NULL,
             caption text DEFAULT NULL,
             visual varchar(500) DEFAULT NULL,
@@ -454,6 +483,7 @@ class SMarkCompetitorAnalysis {
 
         // Check and add missing columns
         $columns_to_add = array(
+            'project_id' => 'varchar(50) DEFAULT NULL',
             'source' => 'varchar(500) DEFAULT NULL',
             'source_url' => 'text DEFAULT NULL',
             'source_type' => 'varchar(50) DEFAULT "manual"',
@@ -681,17 +711,25 @@ class SMarkCompetitorAnalysis {
     /**
      * Get items for a specific project by project_id
      */
-    private function get_project_items($project_id) {
+    private function get_project_items($project_id, $limit = 0) {
         global $wpdb;
         $items_table_sql = $this->escape_db_identifier($this->table_name);
         if (empty($items_table_sql)) {
             return array();
         }
 
-        $items = $wpdb->get_results($wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
-            "SELECT * FROM {$items_table_sql} WHERE project_id = %s ORDER BY created_at DESC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-            $project_id
-        ), ARRAY_A);
+        if ($limit > 0) {
+            $items = $wpdb->get_results($wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+                "SELECT * FROM {$items_table_sql} WHERE project_id = %s ORDER BY created_at DESC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+                $project_id,
+                $limit
+            ), ARRAY_A);
+        } else {
+            $items = $wpdb->get_results($wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+                "SELECT * FROM {$items_table_sql} WHERE project_id = %s ORDER BY created_at DESC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+                $project_id
+            ), ARRAY_A);
+        }
 
         // Clean up any undefined/null values before returning
         if ($items) {
@@ -802,6 +840,10 @@ class SMarkCompetitorAnalysis {
         $item_id = $this->add_item($project_name, $website_url, $website_name, $notes);
 
         if ($item_id) {
+            // Import the resource's last seven days asynchronously so saving
+            // the form remains fast.
+            wp_schedule_single_event(time() + 5, 'smark_competitor_monitor_resource', array((int) $item_id));
+
             wp_send_json_success(array(
                 'message' => $this->get_translation('item_added_successfully'),
                 'item_id' => $item_id
@@ -1025,6 +1067,174 @@ class SMarkCompetitorAnalysis {
         // This allows users to fetch pages multiple times and see all available content
         // Pages will only be saved to database when user explicitly clicks "Save Pages" button
         return $new_pages;
+    }
+
+    /**
+     * Check all resources (or one resource) and add unseen content directly to
+     * Suggested Resources.
+     */
+    public function monitor_resources($item_id = 0) {
+        global $wpdb;
+        $items_table_sql = $this->escape_db_identifier($this->table_name);
+        if ($items_table_sql === '') {
+            return;
+        }
+
+        if ((int) $item_id > 0) {
+            $items = $wpdb->get_results($wpdb->prepare(
+                "SELECT * FROM {$items_table_sql} WHERE id = %d LIMIT 1",
+                (int) $item_id
+            ), ARRAY_A);
+        } else {
+            $items = $wpdb->get_results(
+                "SELECT * FROM {$items_table_sql} ORDER BY id ASC",
+                ARRAY_A
+            );
+        }
+
+        foreach ((array) $items as $item) {
+            $this->monitor_resource_item($item);
+        }
+    }
+
+    public function monitor_resource($item_id) {
+        $this->monitor_resources((int) $item_id);
+    }
+
+    private function monitor_resource_item($item) {
+        if (!is_array($item) || empty($item['website_url'])) {
+            return 0;
+        }
+
+        $date_limit = gmdate('Y-m-d H:i:s', strtotime('-1 week'));
+        if ($this->is_instagram_url($item['website_url'])) {
+            $pages = $this->fetch_instagram_posts($item['website_url'], $date_limit);
+        } else {
+            $pages = $this->parse_competitor_content($item['website_url'], $date_limit);
+        }
+
+        return $this->insert_resource_suggestions($item, $pages);
+    }
+
+    private function is_instagram_url($url) {
+        $host = strtolower((string) wp_parse_url($url, PHP_URL_HOST));
+        return $host === 'instagram.com' || $host === 'www.instagram.com';
+    }
+
+    /**
+     * Read public business/creator media through Meta Business Discovery.
+     * Credentials may be supplied as constants or WordPress options.
+     */
+    private function fetch_instagram_posts($profile_url, $date_limit) {
+        $path = trim((string) wp_parse_url($profile_url, PHP_URL_PATH), '/');
+        $username = preg_replace('/[^A-Za-z0-9._]/', '', (string) strtok($path, '/'));
+        if ($username === '') {
+            return array();
+        }
+
+        $access_token = defined('SMARK_INSTAGRAM_ACCESS_TOKEN')
+            ? (string) SMARK_INSTAGRAM_ACCESS_TOKEN
+            : (string) get_option('smark_instagram_access_token', '');
+        $business_account_id = defined('SMARK_INSTAGRAM_BUSINESS_ACCOUNT_ID')
+            ? (string) SMARK_INSTAGRAM_BUSINESS_ACCOUNT_ID
+            : (string) get_option('smark_instagram_business_account_id', '');
+
+        if ($access_token === '' || $business_account_id === '') {
+            $this->log_info('Instagram monitoring skipped: Meta Business Discovery credentials are not configured', array(
+                'username' => $username,
+            ));
+            return array();
+        }
+
+        $fields = sprintf(
+            'business_discovery.username(%s){media.limit(25){caption,media_url,permalink,timestamp,thumbnail_url}}',
+            $username
+        );
+        $endpoint = add_query_arg(array(
+            'fields' => $fields,
+            'access_token' => $access_token,
+        ), 'https://graph.facebook.com/' . rawurlencode($business_account_id));
+
+        $response = wp_remote_get($endpoint, array('timeout' => 20));
+        if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+            $this->log_error('Instagram Business Discovery request failed', array(
+                'username' => $username,
+                'status' => is_wp_error($response) ? 0 : wp_remote_retrieve_response_code($response),
+            ));
+            return array();
+        }
+
+        $payload = json_decode(wp_remote_retrieve_body($response), true);
+        $media = $payload['business_discovery']['media']['data'] ?? array();
+        $pages = array();
+
+        foreach ((array) $media as $post) {
+            $timestamp = !empty($post['timestamp']) ? strtotime($post['timestamp']) : false;
+            $published_date = $timestamp ? gmdate('Y-m-d H:i:s', $timestamp) : null;
+            if ($date_limit && $published_date && $published_date < $date_limit) {
+                continue;
+            }
+
+            $caption = isset($post['caption']) ? sanitize_textarea_field($post['caption']) : '';
+            $title = $caption !== '' ? wp_trim_words($caption, 14, '…') : sprintf('Instagram post by @%s', $username);
+            $pages[] = array(
+                'url' => isset($post['permalink']) ? esc_url_raw($post['permalink']) : '',
+                'title' => $title,
+                'caption' => $caption,
+                'visual' => esc_url_raw($post['media_url'] ?? ($post['thumbnail_url'] ?? '')),
+                'type' => 'instagram',
+                'published_date' => $published_date,
+            );
+        }
+
+        return $pages;
+    }
+
+    private function insert_resource_suggestions($competitor, $pages) {
+        global $wpdb;
+        $suggestions_table = $wpdb->prefix . 'SMARK_social_media_suggestions';
+        $suggestions_table_sql = $this->escape_db_identifier($suggestions_table);
+        if ($suggestions_table_sql === '' || empty($pages)) {
+            return 0;
+        }
+
+        $inserted = 0;
+        foreach ((array) $pages as $page) {
+            $url = isset($page['url']) ? esc_url_raw($page['url']) : '';
+            $headline = isset($page['title']) ? sanitize_text_field($page['title']) : '';
+            if ($url === '' || $headline === '') {
+                continue;
+            }
+
+            $exists = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM {$suggestions_table_sql} WHERE source_url = %s LIMIT 1",
+                $url
+            ));
+            if ($exists) {
+                continue;
+            }
+
+            $result = $wpdb->insert($suggestions_table, array(
+                'project' => sanitize_text_field($competitor['project'] ?? ''),
+                'project_id' => sanitize_text_field($competitor['project_id'] ?? ''),
+                'headline' => $headline,
+                'caption' => sanitize_textarea_field($page['caption'] ?? ''),
+                'visual' => esc_url_raw($page['visual'] ?? ''),
+                'source' => $url,
+                'source_url' => $url,
+                'source_type' => ($page['type'] ?? '') === 'instagram' ? 'instagram' : 'competitor_analysis',
+                'competitor_name' => sanitize_text_field($competitor['website_name'] ?? ''),
+                'published_date' => !empty($page['published_date']) ? $page['published_date'] : null,
+                'discovered_at' => current_time('mysql'),
+                'created_at' => current_time('mysql'),
+            ));
+
+            if ($result !== false) {
+                $inserted++;
+            }
+        }
+
+        return $inserted;
     }
 
     /**
@@ -1645,23 +1855,35 @@ class SMarkCompetitorAnalysis {
         // Add body class for competitor analysis page
         add_filter('admin_body_class', array($this, 'add_admin_body_class'));
 
-        // Enqueue Google Font VazirMTN for Persian
-        wp_enqueue_style('vazirmatn-font', 'https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap', array(), SMARK_VERSION);
+        // The embedded table inherits the dashboard typography. Avoid blocking
+        // its first paint on an external font request.
+        if (!$this->is_embed_request()) {
+            wp_enqueue_style('vazirmatn-font', 'https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap', array(), SMARK_VERSION);
+        }
 
-        wp_enqueue_style('smark-competitor-analysis', SMARK_PLUGIN_URL . 'features/competitor-analysis/assets/competitor-analysis.css', array(), SMARK_VERSION);
+        $competitor_css_path = SMARK_PLUGIN_PATH . 'features/competitor-analysis/assets/competitor-analysis.css';
+        $competitor_js_path = SMARK_PLUGIN_PATH . 'features/competitor-analysis/assets/competitor-analysis.js';
+        $competitor_css_version = file_exists($competitor_css_path) ? (string) filemtime($competitor_css_path) : SMARK_VERSION;
+        $competitor_js_version = file_exists($competitor_js_path) ? (string) filemtime($competitor_js_path) : SMARK_VERSION;
 
-        wp_enqueue_script('smark-competitor-analysis', SMARK_PLUGIN_URL . 'features/competitor-analysis/assets/competitor-analysis.js', array('jquery'), SMARK_VERSION, true);
+        wp_enqueue_style('smark-competitor-analysis', SMARK_PLUGIN_URL . 'features/competitor-analysis/assets/competitor-analysis.css', array(), $competitor_css_version);
+
+        wp_enqueue_script('smark-competitor-analysis', SMARK_PLUGIN_URL . 'features/competitor-analysis/assets/competitor-analysis.js', array('jquery'), $competitor_js_version, true);
 
         // Get current language
         $current_lang = get_option('SMARK_panel_language', 'en');
 
         // Localize script
+        $is_embedded = $this->is_embed_request();
+        $default_project = $this->get_current_site_project();
+
         wp_localize_script('smark-competitor-analysis', 'SMarkCompetitorAnalysis', array(
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('SMARK_competitor_analysis_nonce'),
             'currentLang' => $current_lang,
-            'isEmbedded' => $this->is_embed_request(),
-            'defaultProject' => $this->get_current_site_project(),
+            'isEmbedded' => $is_embedded,
+            'defaultProject' => $default_project,
+            'embeddedItemsLoaded' => $is_embedded && !empty($default_project['project_id']),
             'strings' => array(
                 'loading' => $this->get_translation('loading'),
                 'selectProject' => $this->get_translation('select_a_project'),
@@ -1738,8 +1960,13 @@ class SMarkCompetitorAnalysis {
                 margin: 0 !important;
                 background: transparent !important;
             }
-            body {
+            body,
+            body.smark-plugin-page,
+            body.smark-plugin-page #wpbody,
+            body.smark-plugin-page #wpbody-content {
                 background: transparent !important;
+                min-height: 0 !important;
+                height: auto !important;
                 min-width: 0 !important;
             }
             .wrap.smark-competitor-analysis-page {
@@ -1763,7 +1990,12 @@ class SMarkCompetitorAnalysis {
             .smark-competitor-analysis-page #data_table_card {
                 width: 100% !important;
             }
-            .smark-competitor-analysis-page .card {
+            .smark-competitor-analysis-page #data_table_card .card-header-with-button {
+                display: none !important;
+            }
+            .smark-competitor-analysis-page #data_table_card .card {
+                border: 0 !important;
+                background: transparent !important;
                 box-shadow: none !important;
             }
         </style>
@@ -1779,7 +2011,7 @@ class SMarkCompetitorAnalysis {
         $translations = array(
             'en' => array(
                 'competitor_analysis' => 'Competitor Analysis',
-                'track_competitors' => 'Track competitor websites and their new content',
+                'track_competitors' => 'Track competitor resources and their new content',
                 'SMARK_dashboard' => 'SMark Dashboard',
                 'select_or_create_project' => 'Select or Create Project',
                 'choose_existing_project' => 'Choose an existing project or create a new one to get started',
@@ -1793,11 +2025,11 @@ class SMarkCompetitorAnalysis {
                 'enter_project_name' => 'Enter project name...',
                 'create' => 'Create',
                 'cancel' => 'Cancel',
-                'project_items' => 'Competitor Websites',
-                'add_new_item' => 'Add Competitor Website',
+                'project_items' => 'Resources',
+                'add_new_item' => 'Add Resource',
                 'id' => 'ID',
-                'website_name' => 'Website Name',
-                'website_url' => 'Website URL',
+                'website_name' => 'Resource Name',
+                'website_url' => 'Resource URL',
                 'created' => 'Created',
                 'actions' => 'Actions',
                 'no_items_found' => 'No items found',
@@ -1808,12 +2040,12 @@ class SMarkCompetitorAnalysis {
                 'edit' => 'Edit',
                 'delete' => 'Delete',
                 'profile' => 'Profile',
-                'add_new_item' => 'Add New Competitor',
+                'add_new_item' => 'Add New Resource',
                 'edit_item' => 'Edit Competitor',
-                'website_url_label' => 'Website URL:',
-                'enter_website_url' => 'Enter competitor website URL...',
-                'website_name_label' => 'Website Name (Optional):',
-                'enter_website_name' => 'Enter website name...',
+                'website_url_label' => 'Resource URL:',
+                'enter_website_url' => 'Enter resource URL...',
+                'website_name_label' => 'Resource Name (Optional):',
+                'enter_website_name' => 'Enter resource name...',
                 'notes_label' => 'Notes (Optional):',
                 'enter_notes' => 'Enter notes...',
                 'save_item' => 'Save Competitor',
@@ -1865,7 +2097,7 @@ class SMarkCompetitorAnalysis {
             ),
             'fa' => array(
                 'competitor_analysis' => 'تحلیل رقبا',
-                'track_competitors' => 'وبسایت‌های رقیب و محتوای جدید آن‌ها را دنبال کنید',
+                'track_competitors' => 'منابع رقبا و محتوای جدید آن‌ها را دنبال کنید',
                 'SMARK_dashboard' => 'داشبورد اسمارک',
                 'select_or_create_project' => 'انتخاب یا ایجاد پروژه',
                 'choose_existing_project' => 'یک پروژه موجود را انتخاب کنید یا یک پروژه جدید ایجاد کنید',
@@ -1877,11 +2109,11 @@ class SMarkCompetitorAnalysis {
                 'enter_project_name' => 'نام پروژه را وارد کنید...',
                 'create' => 'ایجاد',
                 'cancel' => 'لغو',
-                'project_items' => 'وبسایت‌های رقیب',
-                'add_new_item' => 'افزودن وبسایت رقیب',
+                'project_items' => 'منابع',
+                'add_new_item' => 'افزودن منبع',
                 'id' => 'شناسه',
-                'website_name' => 'نام وبسایت',
-                'website_url' => 'آدرس وبسایت',
+                'website_name' => 'نام منبع',
+                'website_url' => 'آدرس منبع',
                 'created' => 'تاریخ ایجاد',
                 'actions' => 'عملیات',
                 'no_items_found' => 'آیتمی یافت نشد',
@@ -1892,12 +2124,12 @@ class SMarkCompetitorAnalysis {
                 'edit' => 'ویرایش',
                 'delete' => 'حذف',
                 'profile' => 'پروفایل',
-                'add_new_item' => 'افزودن رقیب جدید',
+                'add_new_item' => 'افزودن منبع جدید',
                 'edit_item' => 'ویرایش رقیب',
-                'website_url_label' => 'آدرس وبسایت:',
-                'enter_website_url' => 'آدرس وبسایت رقیب را وارد کنید...',
-                'website_name_label' => 'نام وبسایت (اختیاری):',
-                'enter_website_name' => 'نام وبسایت را وارد کنید...',
+                'website_url_label' => 'آدرس منبع:',
+                'enter_website_url' => 'آدرس منبع را وارد کنید...',
+                'website_name_label' => 'نام منبع (اختیاری):',
+                'enter_website_name' => 'نام منبع را وارد کنید...',
                 'notes_label' => 'یادداشت‌ها (اختیاری):',
                 'enter_notes' => 'یادداشت‌های خود را وارد کنید...',
                 'save_item' => 'ذخیره رقیب',
@@ -1961,6 +2193,15 @@ class SMarkCompetitorAnalysis {
         $current_lang = get_option('SMARK_panel_language', 'en');
         $rtl_class = ($current_lang === 'fa') ? 'rtl' : '';
         $is_rtl = ($current_lang === 'fa');
+        $is_embedded = $this->is_embed_request();
+        $embedded_project = $is_embedded ? $this->get_current_site_project() : null;
+        $embedded_items = (!empty($embedded_project['project_id']))
+            ? $this->get_project_items($embedded_project['project_id'], 6)
+            : array();
+        $embedded_has_more = count($embedded_items) > 5;
+        if ($embedded_has_more) {
+            $embedded_items = array_slice($embedded_items, 0, 5);
+        }
         ?>
         <div class="wrap smark-competitor-analysis-page <?php echo esc_attr($rtl_class); ?>" data-lang="<?php echo esc_attr($current_lang); ?>">
             <div class="smark-page-header">
@@ -2052,13 +2293,9 @@ class SMarkCompetitorAnalysis {
 
                     <!-- Right Column: Data Table -->
                     <div class="right-column">
-                        <div class="data-table-card" id="data_table_card" style="display: none;">
+                        <div class="data-table-card" id="data_table_card" style="display: <?php echo $is_embedded && !empty($embedded_project) ? 'block' : 'none'; ?>;">
                             <div class="card">
                                 <div class="card-header-with-button">
-                                    <div>
-                                        <h3><?php echo esc_html($this->get_translation('project_items')); ?></h3>
-                                        <p class="current-project-name"></p>
-                                    </div>
                                     <button type="button" id="add_new_item_btn" class="btn btn-primary">
                                         <span class="dashicons dashicons-plus-alt"></span>
                                         <?php echo esc_html($this->get_translation('add_new_item')); ?>
@@ -2077,9 +2314,59 @@ class SMarkCompetitorAnalysis {
                                             </tr>
                                         </thead>
                                         <tbody id="data_table_body">
+                                            <?php if ($is_embedded && !empty($embedded_items)) : ?>
+                                                <?php foreach ($embedded_items as $item) : ?>
+                                                    <?php
+                                                    $website_name = !empty($item['website_name']) ? $item['website_name'] : 'N/A';
+                                                    $website_url = !empty($item['website_url']) ? $item['website_url'] : '';
+                                                    $created_at = !empty($item['created_at']) ? strtotime($item['created_at']) : false;
+                                                    $created_date = $created_at
+                                                        ? wp_date('M j, Y', $created_at)
+                                                        : '—';
+                                                    ?>
+                                                    <tr>
+                                                        <td><?php echo esc_html($item['id']); ?></td>
+                                                        <td><?php echo esc_html($website_name); ?></td>
+                                                        <td class="website-url">
+                                                            <?php if ($website_url !== '') : ?>
+                                                                <a href="<?php echo esc_url($website_url); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html($website_url); ?></a>
+                                                            <?php else : ?>
+                                                                <?php echo esc_html($this->get_translation('not_defined')); ?>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                        <td><?php echo esc_html($created_date); ?></td>
+                                                        <td>
+                                                            <div class="action-buttons">
+                                                                <button class="action-btn profile-btn" data-item-id="<?php echo esc_attr($item['id']); ?>">
+                                                                    <span class="dashicons dashicons-admin-users"></span>
+                                                                    <?php echo esc_html($this->get_translation('profile')); ?>
+                                                                </button>
+                                                                <button class="action-btn edit-btn" data-item-id="<?php echo esc_attr($item['id']); ?>">
+                                                                    <span class="dashicons dashicons-edit"></span>
+                                                                    <?php echo esc_html($this->get_translation('edit')); ?>
+                                                                </button>
+                                                                <button class="action-btn delete-btn" data-item-id="<?php echo esc_attr($item['id']); ?>">
+                                                                    <span class="dashicons dashicons-trash"></span>
+                                                                    <?php echo esc_html($this->get_translation('delete')); ?>
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                                <?php if ($embedded_has_more) : ?>
+                                                    <tr class="smark-competitor-more-row">
+                                                        <td colspan="5">
+                                                            <button type="button" class="smark-competitor-show-more">
+                                                                <?php echo esc_html($current_lang === 'fa' ? 'نمایش بیشتر' : 'View More'); ?>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                <?php endif; ?>
+                                            <?php else : ?>
                                             <tr class="no-data-row">
                                                 <td colspan="5"><?php echo esc_html($this->get_translation('no_items_found')); ?></td>
                                             </tr>
+                                            <?php endif; ?>
                                         </tbody>
                                     </table>
                                 </div>
@@ -2087,7 +2374,7 @@ class SMarkCompetitorAnalysis {
                         </div>
 
                         <!-- Empty State -->
-                        <div class="empty-state-card" id="empty_state" style="display: block;">
+                        <div class="empty-state-card" id="empty_state" style="display: <?php echo $is_embedded && !empty($embedded_project) ? 'none' : 'block'; ?>;">
                             <div class="card">
                                 <div class="empty-state-content">
                                     <span class="dashicons dashicons-portfolio"></span>

@@ -308,7 +308,14 @@
                     h('h2', null, text('offerManagementTitle', 'Offering Management')),
                     h('p', null, text('offerManagementDescription', 'Define campaign products, audiences, strategies, and offers in one organized workspace.'))
                 ),
-                props.notice ? h('span', { className: 'smark-dashboard-offer__notice' + (props.noticeType === 'error' ? ' is-error' : '') }, props.notice) : null
+                props.notice ? h('div', { className: 'smark-dashboard-offer__notice' + (props.noticeType === 'error' ? ' is-error' : '') },
+                    h('span', null, props.notice),
+                    props.noticeAction ? h('button', {
+                        type: 'button',
+                        className: 'smark-dashboard-offer__notice-action',
+                        onClick: props.onNoticeAction,
+                    }, props.noticeAction.label) : null
+                ) : null
             ),
             h('div', { className: 'smark-dashboard-offer__tabs', role: 'tablist', 'aria-label': text('offerManagementTitle', 'Offering Management') },
                 sections.map(function(section) {
@@ -1654,6 +1661,7 @@
         const [offerProductSaving, setOfferProductSaving] = useState(false);
         const [offerProductNotice, setOfferProductNotice] = useState('');
         const [offerProductNoticeType, setOfferProductNoticeType] = useState('success');
+        const [offerProductNoticeAction, setOfferProductNoticeAction] = useState(null);
         const [productFeedbackOpen, setProductFeedbackOpen] = useState(false);
         const [commentDraft, setCommentDraft] = useState(config.productFeedback || '');
         const [commentSaving, setCommentSaving] = useState(false);
@@ -1880,7 +1888,7 @@
             { id: 'seo', enabled: moduleVisibility.seo !== false, label: text('seo', 'SEO'), icon: h(SvgIcon, { path: icons.seo, viewBox: '0 0 504 540' }) },
             { id: 'social', enabled: moduleVisibility.social !== false, label: text('social', 'Social Media'), icon: h(SvgIcon, { path: icons.social, viewBox: '0 0 504 540' }) },
             { id: 'offer', enabled: moduleVisibility.offer !== false, label: text('offer', 'Offer'), icon: h(SvgIcon, { path: icons.offer, viewBox: '0 0 432 540' }) },
-            { id: 'crm', enabled: true, label: text('crm', 'CRM'), icon: h(SvgIcon, { path: icons.crm, viewBox: '0 0 540 540' }) },
+            { id: 'crm', enabled: moduleVisibility.crm !== false, label: text('crm', 'CRM'), icon: h(SvgIcon, { path: icons.crm, viewBox: '0 0 540 540' }) },
         ].filter(function(item) {
             return item.enabled;
         });
@@ -1912,6 +1920,8 @@
                     return;
                 }
 
+                setActive('offer');
+                setOfferActiveSection('product');
                 setOfferProductNoticeType('error');
                 setOfferProductNotice((response && response.data && response.data.message) || text('offerProductSaveError', 'Products could not be saved.'));
             }).catch(function() {
@@ -1931,6 +1941,7 @@
             setOfferProductSaving(true);
             setOfferProductNoticeType('success');
             setOfferProductNotice(text('smartRunning', 'Agent is working...'));
+            setOfferProductNoticeAction(null);
 
             const body = new window.URLSearchParams();
             body.append('action', 'smark_dashboard_offer_agent_create');
@@ -1960,6 +1971,8 @@
                     return;
                 }
 
+                setActive('offer');
+                setOfferActiveSection('offer');
                 setOfferProductNoticeType('error');
                 setOfferProductNotice((response && response.data && response.data.message) || text('smartError', 'Agent action failed. Please try again.'));
             }).catch(function() {
@@ -1980,6 +1993,7 @@
             setOfferProductSaving(true);
             setOfferProductNoticeType('success');
             setOfferProductNotice(text('smartRunning', 'Agent is working...'));
+            setOfferProductNoticeAction(null);
 
             const body = new window.URLSearchParams();
             body.append('action', 'smark_dashboard_product_agent_create');
@@ -2006,14 +2020,32 @@
                     setOfferActiveSection('product');
                     setOfferProductNoticeType('success');
                     setOfferProductNotice(response.data.message || text('smartDone', 'Agent action completed.'));
+                    setOfferProductNoticeAction(null);
                     return;
                 }
 
+                setActive('offer');
+                setOfferActiveSection('product');
                 setOfferProductNoticeType('error');
                 setOfferProductNotice((response && response.data && response.data.message) || text('smartError', 'Agent action failed. Please try again.'));
+                const requirementCode = response && response.data ? response.data.code : '';
+                if (requirementCode === 'business_description_required') {
+                    setOfferProductNoticeAction({
+                        type: 'business-description',
+                        label: language === 'fa' ? 'تکمیل توضیحات کسب‌وکار' : 'Complete Business Description',
+                    });
+                } else if (requirementCode === 'product_required') {
+                    setOfferProductNoticeAction({
+                        type: 'product',
+                        label: language === 'fa' ? 'افزودن محصول' : 'Add Product',
+                    });
+                } else {
+                    setOfferProductNoticeAction(null);
+                }
             }).catch(function() {
                 setOfferProductNoticeType('error');
                 setOfferProductNotice(text('smartError', 'Agent action failed. Please try again.'));
+                setOfferProductNoticeAction(null);
             }).finally(function() {
                 setOfferProductSaving(false);
                 setDailyGuideSmartRunningKey('');
@@ -2029,6 +2061,7 @@
             setOfferProductSaving(true);
             setOfferProductNoticeType('success');
             setOfferProductNotice(text('smartRunning', 'Agent is working...'));
+            setOfferProductNoticeAction(null);
 
             const body = new window.URLSearchParams();
             body.append('action', 'smark_dashboard_audience_agent_create');
@@ -2055,14 +2088,32 @@
                     setOfferActiveSection('audience_type');
                     setOfferProductNoticeType('success');
                     setOfferProductNotice(response.data.message || text('smartDone', 'Agent action completed.'));
+                    setOfferProductNoticeAction(null);
                     return;
                 }
 
+                setActive('offer');
+                setOfferActiveSection('audience_type');
                 setOfferProductNoticeType('error');
                 setOfferProductNotice((response && response.data && response.data.message) || text('smartError', 'Agent action failed. Please try again.'));
+                const requirementCode = response && response.data ? response.data.code : '';
+                if (requirementCode === 'business_description_required') {
+                    setOfferProductNoticeAction({
+                        type: 'business-description',
+                        label: language === 'fa' ? 'تکمیل توضیحات کسب‌وکار' : 'Complete Business Description',
+                    });
+                } else if (requirementCode === 'product_required') {
+                    setOfferProductNoticeAction({
+                        type: 'product',
+                        label: language === 'fa' ? 'افزودن محصول' : 'Add Product',
+                    });
+                } else {
+                    setOfferProductNoticeAction(null);
+                }
             }).catch(function() {
                 setOfferProductNoticeType('error');
                 setOfferProductNotice(text('smartError', 'Agent action failed. Please try again.'));
+                setOfferProductNoticeAction(null);
             }).finally(function() {
                 setOfferProductSaving(false);
                 setDailyGuideSmartRunningKey('');
@@ -2526,6 +2577,44 @@
             changeOfferSection(nextSection);
         };
 
+        const handleOfferNoticeAction = function() {
+            const action = offerProductNoticeAction && offerProductNoticeAction.type
+                ? offerProductNoticeAction.type
+                : '';
+
+            if (action === 'product') {
+                openOfferSectionFromDashboard('product');
+                setOfferProductNotice('');
+                setOfferProductNoticeAction(null);
+                window.setTimeout(function() {
+                    const field = document.querySelector('.smark-dashboard-offer__form input');
+                    if (field) {
+                        field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        field.focus({ preventScroll: true });
+                    }
+                }, 50);
+                return;
+            }
+
+            if (action === 'business-description') {
+                openSettingsView('project-settings');
+                let attempts = 0;
+                const focusBusinessDescription = function() {
+                    const field = document.getElementById('smark_business_description');
+                    if (field) {
+                        field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        field.focus({ preventScroll: true });
+                        return;
+                    }
+                    attempts += 1;
+                    if (attempts < 40) {
+                        window.setTimeout(focusBusinessDescription, 100);
+                    }
+                };
+                window.setTimeout(focusBusinessDescription, 50);
+            }
+        };
+
         const openDailyGuideSmartAction = function(card) {
             const key = card && card.key ? String(card.key) : '';
             if (!key) {
@@ -2831,6 +2920,8 @@
                         saving: offerProductSaving,
                         notice: offerProductNotice,
                         noticeType: offerProductNoticeType,
+                        noticeAction: offerProductNoticeAction,
+                        onNoticeAction: handleOfferNoticeAction,
                         onSectionChange: changeOfferSection,
                         onFormChange: updateOfferProductForm,
                         onSubmit: submitOfferProduct,

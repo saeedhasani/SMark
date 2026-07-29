@@ -169,9 +169,11 @@ body.smark-plugin-page #wpbody-content {
     padding-top: 15px !important;
     margin: 0 !important;
     max-width: 100% !important;
+    min-width: 0 !important;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
+    overflow-x: clip;
 }
 
 
@@ -438,52 +440,222 @@ body.smark-plugin-page #wpbody-content {
 /* Content */
 .smark-social-media-content {
     max-width: 100%;
+    min-width: 0;
     margin: 0;
     box-sizing: border-box;
     flex: 1;
     display: flex;
     flex-direction: column;
+    overflow-x: clip;
 }
 
 .smark-social-competitor-section {
-    margin-top: 30px;
+    margin-top: 22px;
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
-    background: #fff;
-    border-radius: 20px;
-    padding: 22px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 24px;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.62);
+    box-shadow: 0 10px 30px rgba(82, 37, 157, 0.08);
+    backdrop-filter: blur(22px) saturate(140%);
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
 }
 
 .smark-social-competitor-section__header {
-    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    min-height: 82px;
+    margin: 0;
+    padding: 20px 28px;
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.46);
 }
 
 .smark-social-competitor-section__header h2 {
-    margin: 0 0 6px;
-    color: #1e293b;
-    font-size: 1.35em;
-    font-weight: 700;
+    margin: 0 0 4px;
+    color: var(--smark-social-ink);
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1.35;
+    letter-spacing: -0.02em;
 }
 
 .smark-social-competitor-section__header p {
     margin: 0;
-    color: #64748b;
-    font-size: 0.95em;
+    color: var(--smark-social-muted);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.55;
 }
 
-.smark-social-competitor-section__frame {
-    display: block;
-    width: 100%;
-    min-height: 980px;
-    border: 0;
+.smark-social-competitor-section__header .btn.btn-primary {
+    min-height: 42px;
+    width: auto;
+    margin: 0;
+    padding: 10px 17px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    flex: 0 0 auto;
+    border: 1px solid var(--smark-social-purple);
+    border-radius: 13px;
+    color: #fff;
+    background: var(--smark-social-purple);
+    box-shadow: 0 8px 18px rgba(49, 0, 100, 0.16);
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
+    transform: none;
+}
+
+.smark-social-competitor-section__header .btn.btn-primary:hover {
+    border-color: var(--smark-social-purple-hover);
+    color: #fff;
+    background: var(--smark-social-purple-hover);
+    box-shadow: 0 10px 22px rgba(49, 0, 100, 0.22);
+    transform: translateY(-1px);
+}
+
+.smark-social-competitor-section__header .btn .dashicons {
+    width: 17px;
+    height: 17px;
+    font-size: 17px;
+}
+
+.smark-competitor-table-wrapper {
+    width: calc(100% - 56px);
+    margin: 0 28px 28px;
+    overflow-x: hidden;
+    border: 1px solid rgba(123, 44, 255, 0.12);
     border-radius: 16px;
-    background: #f8fafc;
+    box-sizing: border-box;
+    min-width: 0;
+}
+
+.smark-competitor-table .website-url {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.smark-competitor-table th:nth-child(2),
+.smark-competitor-table td:nth-child(2) {
+    width: 20% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.smark-competitor-table .website-url a {
+    color: #4361ee;
+    text-decoration: none;
+}
+
+.smark-competitor-table th:nth-child(4),
+.smark-competitor-table td:nth-child(4) {
+    width: 16% !important;
+    min-width: 0 !important;
+    white-space: nowrap;
+}
+
+.smark-competitor-table .smark-competitor-more-row td {
+    padding: 10px 16px;
+    text-align: center;
+}
+
+.smark-competitor-table .smark-competitor-show-more {
+    padding: 6px 14px;
+    border: 0;
+    color: var(--smark-social-purple);
+    background: transparent;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.smark-competitor-table .smark-competitor-show-more:hover {
+    color: var(--smark-social-purple-hover);
+    text-decoration: underline;
+}
+
+.smark-social-media-page .smark-competitor-table {
+    width: 100%;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+}
+
+.smark-social-media-page .smark-competitor-table th:first-child,
+.smark-social-media-page .smark-competitor-table td:first-child {
+    width: 8% !important;
+    min-width: 0 !important;
+    text-align: center;
+}
+
+.smark-social-media-page .smark-competitor-table th:nth-child(3),
+.smark-social-media-page .smark-competitor-table td:nth-child(3) {
+    width: 37% !important;
+    min-width: 0 !important;
+}
+
+.smark-social-media-page .smark-competitor-table th:nth-child(5),
+.smark-social-media-page .smark-competitor-table td:nth-child(5) {
+    width: 19% !important;
+    min-width: 0 !important;
+    text-align: right;
+}
+
+.smark-social-media-page .smark-competitor-table th,
+.smark-social-media-page .smark-competitor-table td {
+    box-sizing: border-box;
+}
+
+.smark-social-media-page .smark-competitor-table tbody .no-data-row td {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+}
+
+.smark-social-media-page .smark-competitor-table th:nth-child(5) {
+    padding-right: 28px;
+}
+
+.smark-social-media-page .smark-competitor-table td:nth-child(5) .table-actions {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
 }
 
 .smark-social-media-page.rtl .smark-social-competitor-section__header {
     text-align: right;
+}
+
+@media (max-width: 782px) {
+    .smark-social-competitor-section__header {
+        padding: 18px;
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .smark-social-competitor-section__header .btn.btn-primary {
+        width: 100%;
+    }
+
+    .smark-competitor-table-wrapper {
+        width: calc(100% - 36px);
+        margin: 0 18px 18px;
+        border-radius: 13px;
+    }
 }
 
 /* Content Grid Layout */
@@ -1973,15 +2145,15 @@ body.rtl .table-actions {
 }
 
 .smark-social-media-page .right-column {
-    min-height: 420px;
+    min-height: 0;
 }
 
 .smark-social-media-page .data-table-card .card {
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.72);
     border-radius: 24px;
-    background: var(--smark-social-surface);
-    box-shadow: var(--smark-social-shadow);
+    background: rgba(255, 255, 255, 0.62);
+    box-shadow: 0 10px 30px rgba(82, 37, 157, 0.08);
     backdrop-filter: blur(22px) saturate(140%);
     -webkit-backdrop-filter: blur(22px) saturate(140%);
 }
@@ -1990,21 +2162,73 @@ body.rtl .table-actions {
     margin-top: 22px;
 }
 
+.smark-social-media-page .smark-social-competitor-section .smark-competitor-suggestions {
+    width: 100%;
+    margin: 0;
+    border-top: 0;
+}
+
+.smark-social-media-page .smark-social-competitor-section .smark-competitor-suggestions .card {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.smark-social-media-page .smark-social-competitor-section .smark-competitor-suggestions .card-header-with-button {
+    min-height: 82px;
+    padding: 20px 28px;
+    background: rgba(255, 255, 255, 0.32);
+}
+
+.smark-social-media-page .smark-social-competitor-section .smark-competitor-suggestions .table-wrapper {
+    width: calc(100% - 56px);
+    margin: 0 28px 28px;
+    overflow-x: auto;
+    border: 1px solid rgba(123, 44, 255, 0.12);
+    border-radius: 16px;
+    box-sizing: border-box;
+}
+
+@media (max-width: 782px) {
+    .smark-social-media-page .smark-social-competitor-section .smark-competitor-suggestions .card-header-with-button {
+        min-height: 0;
+        padding: 18px;
+    }
+
+    .smark-social-media-page .smark-social-competitor-section .smark-competitor-suggestions .table-wrapper {
+        width: calc(100% - 36px);
+        margin: 0 18px 18px;
+        border-radius: 13px;
+    }
+}
+
 .smark-social-media-page .card-header-with-button {
     min-height: 82px;
     padding: 20px 28px;
     gap: 20px;
-    border-bottom: 1px solid var(--smark-social-line);
+    border-bottom: 0;
     background: rgba(255, 255, 255, 0.46);
 }
 
 .smark-social-media-page .card-header-with-button h3 {
-    margin: 0;
+    margin: 0 0 4px;
     color: var(--smark-social-ink);
     font-size: 20px;
     font-weight: 800;
     line-height: 1.35;
     letter-spacing: -0.02em;
+}
+
+.smark-social-media-page .card-header-with-button p {
+    margin: 0;
+    color: var(--smark-social-muted);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.55;
 }
 
 .smark-social-media-page .card-header-with-button .btn.btn-primary {
@@ -2053,6 +2277,14 @@ body.rtl .table-actions {
     background: rgba(255, 255, 255, 0.56);
     scrollbar-color: #c8b7e4 transparent;
     scrollbar-width: thin;
+}
+
+.smark-social-media-page #data_table_card .table-wrapper {
+    width: calc(100% - 56px);
+    margin: 0 28px 28px;
+    border: 1px solid rgba(123, 44, 255, 0.12);
+    border-radius: 16px;
+    box-sizing: border-box;
 }
 
 .smark-social-media-page .data-table {
@@ -2283,10 +2515,10 @@ body.rtl .table-actions {
     max-height: none;
     margin: 0;
     overflow: visible;
-    border: 1px solid rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.72);
     border-radius: 24px;
-    background: var(--smark-social-surface);
-    box-shadow: var(--smark-social-shadow);
+    background: rgba(255, 255, 255, 0.62);
+    box-shadow: 0 10px 30px rgba(82, 37, 157, 0.08);
     animation: smarkSocialEditorIn 220ms ease both;
     backdrop-filter: blur(22px) saturate(140%);
     -webkit-backdrop-filter: blur(22px) saturate(140%);
@@ -2305,12 +2537,13 @@ body.rtl .table-actions {
 }
 
 .smark-social-media-page .smark-social-item-editor .modal-header {
-    min-height: 84px;
-    padding: 20px 28px;
+    min-height: 76px;
+    padding: 16px 28px;
     border-bottom: 1px solid var(--smark-social-line);
     border-radius: 24px 24px 0 0;
     color: var(--smark-social-ink);
     background: rgba(255, 255, 255, 0.52);
+    box-sizing: border-box;
 }
 
 .smark-social-media-page .smark-social-item-editor .modal-header h3 {
@@ -2320,6 +2553,39 @@ body.rtl .table-actions {
     font-weight: 800;
     line-height: 1.35;
     letter-spacing: -0.02em;
+}
+
+.smark-social-media-page .smark-social-item-editor .form-group--source > label,
+.smark-social-media-page .smark-social-item-editor .form-group--headline > label {
+    display: block;
+    margin: 0 0 12px;
+    color: var(--smark-social-ink);
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+}
+
+.smark-social-media-page .smark-competitor-resource-editor .modal-body form {
+    display: grid;
+    gap: 24px;
+}
+
+.smark-social-media-page .smark-competitor-resource-editor .form-group {
+    margin: 0;
+}
+
+.smark-social-media-page .smark-social-item-editor .form-group--source .form-text {
+    display: block;
+    margin-top: 8px;
+    color: var(--smark-social-muted);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.55;
+}
+
+.smark-social-media-page .smark-social-item-editor .form-group--source {
+    margin-bottom: 24px;
 }
 
 .smark-social-media-page .smark-social-item-editor .modal-close {
@@ -2382,10 +2648,81 @@ body.rtl .table-actions {
     padding: 18px 28px;
     border-top: 1px solid var(--smark-social-line);
     border-radius: 0 0 24px 24px;
-    background: rgba(250, 247, 255, 0.92);
+    background: rgba(255, 255, 255, 0.68);
     box-shadow: 0 -8px 22px rgba(64, 27, 119, 0.05);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
+}
+
+.smark-social-media-page .smark-social-item-editor .expert-approval-section {
+    margin: 0;
+}
+
+.smark-social-media-page .smark-social-item-editor .expert-status-select {
+    width: auto;
+    min-width: 220px;
+    height: 42px;
+    margin: 0;
+    padding: 9px 38px 9px 14px;
+    border: 1px solid rgba(123, 44, 255, 0.18);
+    border-radius: 12px;
+    color: #493b5f;
+    background-color: rgba(255, 255, 255, 0.72);
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b4b93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 14px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 6px 16px rgba(82, 37, 157, 0.07);
+    font-size: 12px;
+    font-weight: 750;
+    line-height: 1.2;
+    text-align: left;
+    transform: none;
+}
+
+.smark-social-media-page .smark-social-item-editor .expert-status-select:hover {
+    border-color: rgba(123, 44, 255, 0.34);
+    background-color: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 8px 18px rgba(82, 37, 157, 0.1);
+    transform: none;
+}
+
+.smark-social-media-page .smark-social-item-editor .expert-status-select:focus,
+.smark-social-media-page .smark-social-item-editor .expert-status-select:focus-visible {
+    outline: none;
+    border-color: #8c62c6;
+    background-color: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 0 0 3px rgba(121, 70, 190, 0.14);
+}
+
+.smark-social-media-page .smark-social-item-editor .expert-status-select[data-status="needs_approval"],
+.smark-social-media-page .smark-social-item-editor .expert-status-select:has(option[value="needs_approval"]:checked) {
+    border-color: #efd18a;
+    color: #875c00;
+    background-color: rgba(255, 248, 226, 0.88);
+}
+
+.smark-social-media-page .smark-social-item-editor .expert-status-select[data-status="sent_to_expert"],
+.smark-social-media-page .smark-social-item-editor .expert-status-select:has(option[value="sent_to_expert"]:checked) {
+    border-color: #d7c4ef;
+    color: var(--smark-social-purple);
+    background-color: rgba(247, 242, 255, 0.9);
+}
+
+.smark-social-media-page .smark-social-item-editor .expert-status-select[data-status="approved_by_expert"],
+.smark-social-media-page .smark-social-item-editor .expert-status-select:has(option[value="approved_by_expert"]:checked),
+.smark-social-media-page .smark-social-item-editor .expert-status-select[data-status="published"],
+.smark-social-media-page .smark-social-item-editor .expert-status-select:has(option[value="published"]:checked) {
+    border-color: #b8ead7;
+    color: var(--smark-social-success);
+    background-color: rgba(234, 251, 244, 0.9);
+}
+
+.smark-social-media-page.rtl .smark-social-item-editor .expert-status-select {
+    padding-right: 14px;
+    padding-left: 38px;
+    background-position: left 12px center;
+    text-align: right;
 }
 
 .smark-social-media-page .smark-social-item-editor .modal-footer .btn {
@@ -2428,6 +2765,12 @@ body.rtl .table-actions {
 
     .smark-social-media-page .data-table-card .card {
         border-radius: 18px;
+    }
+
+    .smark-social-media-page #data_table_card .table-wrapper {
+        width: calc(100% - 36px);
+        margin: 0 18px 18px;
+        border-radius: 13px;
     }
 
     .smark-social-media-page .data-table thead th,

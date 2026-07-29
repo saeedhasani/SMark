@@ -224,7 +224,7 @@ jQuery(document).ready(function($) {
         }
 
         // Show loading state
-        $('#data_table_body').html('<tr class="no-data-row"><td colspan="6">' + SMarkSocialMedia.strings.loading + '</td></tr>');
+        $('#data_table_body').html('<tr class="no-data-row"><td colspan="7">' + SMarkSocialMedia.strings.loading + '</td></tr>');
 
         // Hide empty state and show tables
         $('#empty_state').fadeOut(300, function() {
@@ -246,7 +246,7 @@ jQuery(document).ready(function($) {
                         parsedResponse = JSON.parse(cleanResponse);
                     } catch (e) {
                         const errorText = SMarkSocialMedia.currentLang === 'fa' ? 'خطا در بارگذاری آیتم‌ها' : 'Error loading items';
-                        $('#data_table_body').html('<tr class="no-data-row"><td colspan="6">' + errorText + '</td></tr>');
+                        $('#data_table_body').html('<tr class="no-data-row"><td colspan="7">' + errorText + '</td></tr>');
                         return;
                     }
                 }
@@ -267,21 +267,123 @@ jQuery(document).ready(function($) {
                         renderTableItems(items);
                     } else {
                         const noItemsText = SMarkSocialMedia.strings.no_items_found || 'No items found';
-                        $('#data_table_body').html('<tr class="no-data-row"><td colspan="6">' + noItemsText + '</td></tr>');
+                        $('#data_table_body').html('<tr class="no-data-row"><td colspan="7">' + noItemsText + '</td></tr>');
                     }
                 } else {
                     const errorText = SMarkSocialMedia.currentLang === 'fa' ? 'خطا در بارگذاری آیتم‌ها' : 'Error loading items';
-                    $('#data_table_body').html('<tr class="no-data-row"><td colspan="6">' + errorText + '</td></tr>');
+                    $('#data_table_body').html('<tr class="no-data-row"><td colspan="7">' + errorText + '</td></tr>');
                 }
             },
             error: function(xhr, status, error) {
                 const errorText = SMarkSocialMedia.currentLang === 'fa' ? 'خطا در بارگذاری آیتم‌ها' : 'Error loading items';
-                $('#data_table_body').html('<tr class="no-data-row"><td colspan="6">' + errorText + '</td></tr>');
+                $('#data_table_body').html('<tr class="no-data-row"><td colspan="7">' + errorText + '</td></tr>');
             }
         });
 
         // Also load suggestions
         loadProjectSuggestions(normalizedProjectId || selectedProjectId || '');
+        loadCompetitorResources(normalizedProjectId || selectedProjectId || '');
+    }
+
+    let competitorResources = [];
+
+    function loadCompetitorResources(projectId) {
+        const normalizedProjectId = (projectId || '').trim();
+        const defaultProject = SMarkSocialMedia.defaultProject || {};
+        const activeProjectId = normalizedProjectId || defaultProject.project_id || '';
+        const $tbody = $('#smark_competitor_table_body');
+
+        if (!$tbody.length) {
+            return;
+        }
+
+        if (!activeProjectId) {
+            $tbody.html('<tr class="no-data-row"><td colspan="5">' +
+                (SMarkSocialMedia.currentLang === 'fa' ? 'پروژه فعالی یافت نشد' : 'No active project found') +
+                '</td></tr>');
+            return;
+        }
+
+        $tbody.html('<tr class="no-data-row"><td colspan="5">' + SMarkSocialMedia.strings.loading + '</td></tr>');
+
+        $.ajax({
+            url: SMarkSocialMedia.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'SMARK_competitor_get_project_items',
+                nonce: SMarkSocialMedia.competitorNonce,
+                project_id: activeProjectId
+            },
+            success: function(response) {
+                if (response && response.success) {
+                    competitorResources = response.data && response.data.items ? response.data.items : [];
+                    renderCompetitorResources(false);
+                    return;
+                }
+
+                $tbody.html('<tr class="no-data-row"><td colspan="5">' +
+                    (SMarkSocialMedia.currentLang === 'fa' ? 'خطا در بارگذاری رقبا' : 'Error loading competitors') +
+                    '</td></tr>');
+            },
+            error: function() {
+                $tbody.html('<tr class="no-data-row"><td colspan="5">' +
+                    (SMarkSocialMedia.currentLang === 'fa' ? 'خطا در بارگذاری رقبا' : 'Error loading competitors') +
+                    '</td></tr>');
+            }
+        });
+    }
+
+    function renderCompetitorResources(showAll) {
+        const $tbody = $('#smark_competitor_table_body');
+        const visibleItems = showAll ? competitorResources : competitorResources.slice(0, 5);
+
+        if (!visibleItems.length) {
+            $tbody.html('<tr class="no-data-row"><td colspan="5">' +
+                (SMarkSocialMedia.currentLang === 'fa' ? 'موردی یافت نشد' : 'No items found') +
+                '</td></tr>');
+            return;
+        }
+
+        const locale = SMarkSocialMedia.currentLang === 'fa' ? 'fa-IR' : 'en-US';
+        const rows = visibleItems.map(function(item) {
+            const name = $('<div>').text(item.website_name || 'N/A').html();
+            let url = item.website_url && item.website_url !== 'undefined' ? item.website_url : '';
+            try {
+                const parsedUrl = new URL(url);
+                if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+                    url = '';
+                }
+            } catch (error) {
+                url = '';
+            }
+            const safeUrl = $('<div>').text(url).html();
+            const created = item.created_at
+                ? new Date(item.created_at).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' })
+                : '—';
+
+            return '<tr>' +
+                '<td>' + item.id + '</td>' +
+                '<td>' + name + '</td>' +
+                '<td class="website-url">' + (url ? '<a href="' + safeUrl + '" target="_blank" rel="noopener noreferrer">' + safeUrl + '</a>' : '—') + '</td>' +
+                '<td>' + created + '</td>' +
+                '<td><div class="table-actions">' +
+                    '<button type="button" class="table-action-btn edit smark-edit-competitor" data-id="' + item.id + '">' +
+                        (SMarkSocialMedia.currentLang === 'fa' ? 'ویرایش' : 'Edit') +
+                    '</button>' +
+                    '<button type="button" class="table-action-btn delete smark-delete-competitor" data-id="' + item.id + '">' +
+                        (SMarkSocialMedia.currentLang === 'fa' ? 'حذف' : 'Delete') +
+                    '</button>' +
+                '</div></td>' +
+                '</tr>';
+        });
+
+        if (!showAll && competitorResources.length > 5) {
+            rows.push('<tr class="smark-competitor-more-row"><td colspan="5"><button type="button" class="smark-competitor-show-more">' +
+                (SMarkSocialMedia.currentLang === 'fa' ? 'نمایش بیشتر' : 'View More') +
+                '</button></td></tr>');
+        }
+
+        $tbody.html(rows.join(''));
     }
 
     /**
@@ -942,6 +1044,190 @@ Provide ONLY the title, nothing else:`;
      */
     function initEventHandlers() {
 
+        function closeCompetitorResourceEditor() {
+            $('#smark_competitor_resource_editor')
+                .attr('aria-hidden', 'true')
+                .stop(true, true)
+                .hide();
+            $('.smark-social-media-page')
+                .removeClass('is-item-editor-open')
+                .find('.smark-social-media-content')
+                .stop(true, true)
+                .fadeIn(180);
+        }
+
+        // Open a native in-page editor instead of the legacy iframe modal.
+        $(document).on('click', '#smark_competitor_add_resource_btn', function(e) {
+            e.preventDefault();
+
+            $('#smark_competitor_resource_form')[0].reset();
+            $('#smark_competitor_resource_editor').removeData('itemId');
+            $('.smark-social-media-page')
+                .addClass('is-item-editor-open')
+                .find('.smark-social-media-content')
+                .stop(true, true)
+                .hide();
+            $('#smark_competitor_resource_editor')
+                .attr('aria-hidden', 'false')
+                .stop(true, true)
+                .fadeIn(180);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        $(document).on('click', '#smark_close_competitor_resource_editor, #smark_cancel_competitor_resource', function(e) {
+            e.preventDefault();
+            closeCompetitorResourceEditor();
+        });
+
+        $(document).on('click', '#smark_save_competitor_resource', function(e) {
+            e.preventDefault();
+
+            const resourceUrl = $('#smark_competitor_resource_url').val().trim();
+            const resourceName = $('#smark_competitor_resource_name').val().trim();
+            const notes = $('#smark_competitor_resource_notes').val().trim();
+            const defaultProject = SMarkSocialMedia.defaultProject || {};
+            const projectName = defaultProject.project_name || defaultProject.name || '';
+            const itemId = $('#smark_competitor_resource_editor').data('itemId') || '';
+
+            if (!projectName) {
+                showNotification(
+                    SMarkSocialMedia.strings.error,
+                    SMarkSocialMedia.currentLang === 'fa' ? 'پروژه فعال در دسترس نیست.' : 'The active project is unavailable.',
+                    'error'
+                );
+                return;
+            }
+            if (!resourceUrl) {
+                showNotification(
+                    SMarkSocialMedia.strings.error,
+                    SMarkSocialMedia.currentLang === 'fa' ? 'آدرس منبع الزامی است.' : 'Resource URL is required.',
+                    'error'
+                );
+                $('#smark_competitor_resource_url').focus();
+                return;
+            }
+
+            const $button = $(this);
+            const originalHtml = $button.html();
+            $button.prop('disabled', true).html(
+                '<span class="dashicons dashicons-update dashicons-spin"></span>' +
+                (SMarkSocialMedia.currentLang === 'fa' ? 'در حال ذخیره...' : 'Saving...')
+            );
+
+            $.ajax({
+                url: SMarkSocialMedia.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: itemId ? 'SMARK_competitor_update_item' : 'SMARK_competitor_add_item',
+                    nonce: SMarkSocialMedia.competitorNonce,
+                    item_id: itemId,
+                    project_name: projectName,
+                    website_url: resourceUrl,
+                    website_name: resourceName,
+                    notes: notes
+                },
+                success: function(response) {
+                    if (response && response.success) {
+                        closeCompetitorResourceEditor();
+                        showNotification(
+                            SMarkSocialMedia.strings.success,
+                            response.data && response.data.message
+                                ? response.data.message
+                                : (SMarkSocialMedia.currentLang === 'fa' ? 'منبع ذخیره شد.' : 'Resource saved.'),
+                            'success'
+                        );
+                        loadCompetitorResources(defaultProject.project_id || selectedProjectId || '');
+                        return;
+                    }
+
+                    showNotification(
+                        SMarkSocialMedia.strings.error,
+                        response && response.data && response.data.message
+                            ? response.data.message
+                            : (SMarkSocialMedia.currentLang === 'fa' ? 'ذخیره منبع انجام نشد.' : 'Resource could not be saved.'),
+                        'error'
+                    );
+                },
+                error: function(xhr) {
+                    const response = xhr && xhr.responseJSON;
+                    showNotification(
+                        SMarkSocialMedia.strings.error,
+                        response && response.data && response.data.message
+                            ? response.data.message
+                            : (SMarkSocialMedia.currentLang === 'fa' ? 'خطا در ارتباط با سرور.' : 'Unable to contact the server.'),
+                        'error'
+                    );
+                },
+                complete: function() {
+                    $button.prop('disabled', false).html(originalHtml);
+                }
+            });
+        });
+
+        $(document).on('click', '.smark-competitor-show-more', function(e) {
+            e.preventDefault();
+            renderCompetitorResources(true);
+        });
+
+        $(document).on('click', '.smark-edit-competitor', function(e) {
+            e.preventDefault();
+            const itemId = $(this).data('id');
+
+            $.ajax({
+                url: SMarkSocialMedia.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'SMARK_competitor_get_item',
+                    nonce: SMarkSocialMedia.competitorNonce,
+                    item_id: itemId
+                },
+                success: function(response) {
+                    if (!response || !response.success || !response.data) {
+                        return;
+                    }
+
+                    const item = response.data.item || response.data;
+                    $('#smark_competitor_resource_url').val(item.website_url || '');
+                    $('#smark_competitor_resource_name').val(item.website_name || '');
+                    $('#smark_competitor_resource_notes').val(item.notes || '');
+                    $('#smark_competitor_resource_editor').data('itemId', itemId);
+                    $('.smark-social-media-page')
+                        .addClass('is-item-editor-open')
+                        .find('.smark-social-media-content')
+                        .hide();
+                    $('#smark_competitor_resource_editor').attr('aria-hidden', 'false').fadeIn(180);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
+        });
+
+        $(document).on('click', '.smark-delete-competitor', function(e) {
+            e.preventDefault();
+            const itemId = $(this).data('id');
+            const message = SMarkSocialMedia.currentLang === 'fa'
+                ? 'آیا از حذف این رقیب مطمئن هستید؟'
+                : 'Are you sure you want to delete this competitor?';
+
+            if (!window.confirm(message)) {
+                return;
+            }
+
+            $.ajax({
+                url: SMarkSocialMedia.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'SMARK_competitor_delete_item',
+                    nonce: SMarkSocialMedia.competitorNonce,
+                    item_id: itemId
+                },
+                success: function(response) {
+                    if (response && response.success) {
+                        loadCompetitorResources((SMarkSocialMedia.defaultProject || {}).project_id || selectedProjectId || '');
+                    }
+                }
+            });
+        });
+
         // Event: Show new project form
         $(document).on('click', '#show_new_project_form', function(e) {
             e.preventDefault();
@@ -1236,16 +1522,16 @@ Provide ONLY the title, nothing else:`;
             const $btn = $(this);
             const originalText = $btn.html();
 
-            // Check if we have a source URL
+            // Source is optional here. The server falls back to the current
+            // project's website when the post does not have its own source URL.
             const sourceUrl = $('#item_source').val().trim();
-            if (!sourceUrl) {
-                showNotification('خطا', 'لطفاً ابتدا لینک منبع را وارد کنید', 'error');
-                return;
-            }
 
             // Disable button and show loading
             $btn.prop('disabled', true);
-            $btn.html('<span class="dashicons dashicons-update"></span>در حال تولید عنوان...');
+            $btn.html(
+                '<span class="dashicons dashicons-update dashicons-spin"></span>' +
+                (SMarkSocialMedia.currentLang === 'fa' ? 'در حال تولید عنوان...' : 'Generating title...')
+            );
 
             // Get current project name
             const currentProject = getCurrentProjectName();
@@ -1268,12 +1554,13 @@ Provide ONLY the title, nothing else:`;
 
                         // Create new headline with prefix
                         let updatedHeadline;
+                        const titlePrefix = SMarkSocialMedia.currentLang === 'fa' ? 'عنوان جدید: ' : 'New title: ';
                         if (currentHeadline) {
                             // If there's existing content, append new title with prefix
-                            updatedHeadline = currentHeadline + '\n\nعنوان جدید: ' + newTitle;
+                            updatedHeadline = currentHeadline + '\n\n' + titlePrefix + newTitle;
                         } else {
                             // If no existing content, just add the new title
-                            updatedHeadline = 'عنوان جدید: ' + newTitle;
+                            updatedHeadline = titlePrefix + newTitle;
                         }
 
                         // Set the updated headline in the field
@@ -1286,13 +1573,24 @@ Provide ONLY the title, nothing else:`;
                             originalFieldValues.headline = updatedHeadline.trim();
                         }
 
-                        showNotification('موفق!', 'عنوان جذاب تولید شد', 'success');
+                        showNotification(
+                            SMarkSocialMedia.strings.success,
+                            SMarkSocialMedia.currentLang === 'fa' ? 'عنوان جذاب تولید شد' : 'An attractive title was generated',
+                            'success'
+                        );
                     } else {
-                        showNotification('خطا', response.data.message || 'خطا در تولید عنوان', 'error');
+                        const message = response && response.data && response.data.message
+                            ? response.data.message
+                            : (SMarkSocialMedia.currentLang === 'fa' ? 'خطا در تولید عنوان' : 'Unable to generate a title');
+                        showNotification(SMarkSocialMedia.strings.error, message, 'error');
                     }
                 },
-                error: function() {
-                    showNotification('خطا', 'خطا در ارتباط با سرور', 'error');
+                error: function(xhr) {
+                    const response = xhr && xhr.responseJSON;
+                    const message = response && response.data && response.data.message
+                        ? response.data.message
+                        : (SMarkSocialMedia.currentLang === 'fa' ? 'خطا در ارتباط با سرور' : 'Unable to contact the server');
+                    showNotification(SMarkSocialMedia.strings.error, message, 'error');
                 },
                 complete: function() {
                     // Re-enable button

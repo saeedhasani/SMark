@@ -198,6 +198,7 @@ class SMarkProjectSettings {
                 'module_social' => 'Social Media',
                 'module_ads' => 'Ads',
                 'module_offer' => 'Offer',
+                'module_crm' => 'CRM',
                 'module_on' => 'On',
                 'module_off' => 'Off',
                 'main_settings_title' => 'Main Settings',
@@ -292,6 +293,7 @@ class SMarkProjectSettings {
                 'module_social' => 'سوشال مدیا',
                 'module_ads' => 'ادز',
                 'module_offer' => 'آفر',
+                'module_crm' => 'مدیریت ارتباط با مشتری',
                 'module_on' => 'روشن',
                 'module_off' => 'خاموش',
                 'main_settings_title' => 'تنظیمات اصلی',
@@ -366,6 +368,7 @@ class SMarkProjectSettings {
             'social' => true,
             'ads' => true,
             'offer' => true,
+            'crm' => true,
         );
     }
 
@@ -2640,6 +2643,7 @@ class SMarkProjectSettings {
             'social' => $strings['module_social'],
             'ads' => $strings['module_ads'],
             'offer' => $strings['module_offer'],
+            'crm' => $strings['module_crm'],
         );
         $offer_agent_settings = $this->get_offer_agent_settings();
         $email_campaign_agent_settings = $this->get_email_campaign_agent_settings();

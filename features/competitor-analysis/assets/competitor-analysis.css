@@ -1428,3 +1428,165 @@ body.smark-competitor-analysis-page #wpbody-content {
         width: 95%;
     }
 }
+
+.competitors-table .smark-competitor-more-row td {
+    padding: 10px 16px;
+    text-align: center;
+}
+
+.smark-competitor-show-more {
+    padding: 6px 14px;
+    border: 0;
+    color: #4b167d;
+    background: transparent;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.smark-competitor-show-more:hover {
+    color: #310064;
+    text-decoration: underline;
+}
+
+/* Embedded competitor resources: align with the Social Media Posts design system. */
+.smark-competitor-analysis-page #data_table_card .card {
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.smark-competitor-analysis-page #data_table_card .card-header-with-button {
+    min-height: 62px;
+    padding: 6px 28px 14px;
+    justify-content: flex-end;
+    gap: 20px;
+    border-bottom: 0;
+    background: transparent;
+    box-sizing: border-box;
+}
+
+.smark-competitor-analysis-page #data_table_card .card-header-with-button .btn.btn-primary {
+    min-height: 42px;
+    width: auto;
+    margin: 0;
+    padding: 10px 17px;
+    border: 1px solid #310064;
+    border-radius: 13px;
+    color: #fff;
+    background: #310064;
+    box-shadow: 0 8px 18px rgba(49, 0, 100, 0.16);
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
+    transform: none;
+}
+
+.smark-competitor-analysis-page #data_table_card .card-header-with-button .btn.btn-primary:hover {
+    border-color: #47108a;
+    color: #fff;
+    background: #47108a;
+    box-shadow: 0 10px 22px rgba(49, 0, 100, 0.22);
+    transform: translateY(-1px);
+}
+
+.smark-competitor-analysis-page #data_table_card .table-wrapper {
+    width: calc(100% - 56px);
+    margin: 0 28px 28px;
+    overflow-x: auto;
+    border: 1px solid rgba(123, 44, 255, 0.12);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.56);
+    box-sizing: border-box;
+    scrollbar-color: #c8b7e4 transparent;
+    scrollbar-width: thin;
+}
+
+.smark-competitor-analysis-page #data_table_card .competitors-table {
+    min-width: 720px;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: auto;
+}
+
+.smark-competitor-analysis-page #data_table_card .competitors-table thead {
+    background: #f4effb;
+}
+
+.smark-competitor-analysis-page #data_table_card .competitors-table thead th {
+    padding: 14px 16px;
+    border: 0;
+    border-bottom: 1px solid #dfd3f0;
+    color: #5f5273;
+    background: transparent;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.3;
+    letter-spacing: 0.055em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.smark-competitor-analysis-page #data_table_card .competitors-table thead th:first-child,
+.smark-competitor-analysis-page #data_table_card .competitors-table tbody td:first-child {
+    padding-inline-start: 28px;
+}
+
+.smark-competitor-analysis-page #data_table_card .competitors-table thead th:last-child,
+.smark-competitor-analysis-page #data_table_card .competitors-table tbody td:last-child {
+    padding-inline-end: 28px;
+}
+
+.smark-competitor-analysis-page #data_table_card .competitors-table tbody tr {
+    border: 0;
+    background: rgba(255, 255, 255, 0.3);
+    transition: background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.smark-competitor-analysis-page #data_table_card .competitors-table tbody tr:not(.no-data-row):hover {
+    background: rgba(246, 241, 255, 0.76);
+    box-shadow: inset 3px 0 0 #8a5bd0;
+}
+
+.smark-competitor-analysis-page #data_table_card .competitors-table tbody td {
+    padding: 14px 16px;
+    border: 0;
+    border-bottom: 1px solid #eee7f6;
+    color: #342b42;
+    background: transparent;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.45;
+    vertical-align: middle;
+}
+
+.smark-competitor-analysis-page #data_table_card .competitors-table tbody tr.no-data-row td {
+    height: 112px;
+    padding: 42px 24px;
+    color: #91879f;
+    background: radial-gradient(circle at center, rgba(126, 81, 188, 0.055), transparent 48%);
+    font-size: 13px;
+    font-style: normal;
+    font-weight: 700;
+    text-align: center;
+}
+
+@media (max-width: 782px) {
+    .smark-competitor-analysis-page #data_table_card .card-header-with-button {
+        padding: 6px 18px 14px;
+    }
+
+    .smark-competitor-analysis-page #data_table_card .card-header-with-button .btn.btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .smark-competitor-analysis-page #data_table_card .table-wrapper {
+        width: calc(100% - 36px);
+        margin: 0 18px 18px;
+        border-radius: 13px;
+    }
+}
