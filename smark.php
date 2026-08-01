@@ -2,7 +2,7 @@
 /**
  * Plugin Name: SMark
  * Description: SEO, content, email marketing, social media, backlink, keyword research, and project workflow tools for WordPress.
- * Version: 1.0.11
+ * Version: 1.0.13
  * Author: Saeed Hasani
  * Author URI: https://saeedhasani.com
  * Update URI: https://github.com/saeedhasani/SMark
@@ -19,6 +19,11 @@
  * and should remain public distribution metadata.
  *
  * Changelog:
+ * Version 1.0.13 - Strategy Agent settings panel display fix
+ * - Ensure the Strategy Agent product and audience selectors open reliably in the embedded dashboard settings view.
+ * Version 1.0.12 - Strategy Agent settings and creation flow
+ * - Add product and audience selectors to Strategy Agent settings.
+ * - Enable Add Strategy in Daily Guide and save generated strategies in Offering Management.
  * Version 1.0.9 - Offer Agent settings and creation flow
  * - Add Agent Settings to Project Settings for configuring Daily Guide automation agents.
  * - Add Offer Agent controls for selecting product, audience type, and strategy inputs, with random selection support.
@@ -1805,7 +1810,7 @@ if (
 // Define plugin constants
 define('SMARK_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('SMARK_PLUGIN_PATH', plugin_dir_path(__FILE__));
-define('SMARK_VERSION', '1.0.11');
+define('SMARK_VERSION', '1.0.13');
 define('SMARK_PLUGIN_FILE', __FILE__);
 
 require_once SMARK_PLUGIN_PATH . 'includes/class-smark-github-updater.php';
@@ -1830,6 +1835,8 @@ class SMarkPlugin {
     const CENTRAL_OFFER_GENERATE_PATH = '/wp-json/smark-core/v1/offers/generate';
     const CENTRAL_EMAIL_CAMPAIGN_GENERATE_PATH = '/wp-json/smark-core/v1/email-campaigns/generate';
     const CENTRAL_AUDIENCE_GENERATE_PATH = '/wp-json/smark-core/v1/audience/generate';
+    const CENTRAL_STRATEGY_GENERATE_PATH = '/wp-json/smark-core/v1/strategies/generate';
+    const CENTRAL_COMPETITOR_AGENT_PATH = '/wp-json/smark-core/v1/tools/instagram/competitor-agent';
 
     /**
      * Constructor
@@ -1847,6 +1854,8 @@ class SMarkPlugin {
         add_action('wp_ajax_smark_dashboard_offer_agent_create', array($this, 'ajax_dashboard_offer_agent_create'));
         add_action('wp_ajax_smark_dashboard_email_campaign_agent_create', array($this, 'ajax_dashboard_email_campaign_agent_create'));
         add_action('wp_ajax_smark_dashboard_audience_agent_create', array($this, 'ajax_dashboard_audience_agent_create'));
+        add_action('wp_ajax_smark_dashboard_strategy_agent_create', array($this, 'ajax_dashboard_strategy_agent_create'));
+        add_action('wp_ajax_smark_dashboard_competitor_agent_create', array($this, 'ajax_dashboard_competitor_agent_create'));
         add_action('wp_ajax_smark_dashboard_offer_products_save', array($this, 'ajax_dashboard_offer_products_save'));
         add_action('wp_ajax_smark_dashboard_offer_sections_get', array($this, 'ajax_dashboard_offer_sections_get'));
         add_action('wp_ajax_smark_dashboard_product_feedback_get', array($this, 'ajax_dashboard_product_feedback_get'));
@@ -2611,6 +2620,17 @@ class SMarkPlugin {
         }
 
         $meta = array(
+            'social_add_competitor' => array(
+                'title_en' => 'Add Competitor',
+                'title_fa' => 'افزودن رقیب',
+                'category' => 'social',
+                'translation_key' => 'daily_guide_task_social_add_competitor',
+                'url' => admin_url('admin.php?page=smark-social-media'),
+                'social_view' => 'competitor-analysis',
+                'agent_mark_cost' => 10,
+                'smart_action' => true,
+                'always_active' => true,
+            ),
             'email_contacts_daily' => array(
                 'title_en' => 'Add Contacts',
                 'title_fa' => 'افزودن مخاطب',
@@ -2666,7 +2686,8 @@ class SMarkPlugin {
                 'translation_key' => 'daily_guide_task_offer_strategy_weekly',
                 'url' => '#',
                 'offer_section' => 'strategy',
-                'smart_action' => false,
+                'agent_mark_cost' => 10,
+                'smart_action' => true,
             ),
             'offer_offer_create' => array(
                 'title_en' => 'Create Offer',
@@ -2675,6 +2696,7 @@ class SMarkPlugin {
                 'translation_key' => 'daily_guide_task_offer_create',
                 'url' => '#',
                 'offer_section' => 'offer',
+                'agent_mark_cost' => 10,
                 'smart_action' => true,
             ),
             'gap_transfer' => array(
@@ -2757,6 +2779,7 @@ class SMarkPlugin {
                 'emailView' => isset($item['email_view']) ? sanitize_key((string) $item['email_view']) : (isset($card_meta['email_view']) ? sanitize_key((string) $card_meta['email_view']) : ''),
                 'offerSection' => isset($card_meta['offer_section']) ? sanitize_key((string) $card_meta['offer_section']) : '',
                 'contentView' => isset($card_meta['content_view']) ? sanitize_key((string) $card_meta['content_view']) : '',
+                'socialView' => isset($card_meta['social_view']) ? sanitize_key((string) $card_meta['social_view']) : '',
             );
         }
 
@@ -2977,7 +3000,8 @@ class SMarkPlugin {
                 'daily_guide_task_offer_product_monthly' => 'Add one new product to Offering Management so campaigns always have a fresh offer to promote.',
                 'daily_guide_task_offer_audience_biweekly' => 'Add one focused audience group to Offering Management to keep targeting precise.',
                 'daily_guide_task_offer_strategy_weekly' => 'Add one specific strategy to Offering Management to keep your offers moving with a clear angle.',
-                'daily_guide_task_offer_create' => 'Create one clear offer by connecting the product, audience, and strategy into a focused campaign promise.'
+                'daily_guide_task_offer_create' => 'Create one clear offer by connecting the product, audience, and strategy into a focused campaign promise.',
+                'daily_guide_task_social_add_competitor' => 'Add an Instagram competitor manually, or let the agent discover an active high-engagement competitor for your business.'
             ),
             'fa' => array(
                 'smark_plugin_dashboard' => 'داشبورد پلاگین اسمارک',
@@ -3025,7 +3049,8 @@ class SMarkPlugin {
                 'daily_guide_task_offer_product_monthly' => 'یک محصول جدید به مدیریت آفریینگ اضافه کنید تا کمپین‌ها همیشه پیشنهاد تازه‌ای برای معرفی داشته باشند.',
                 'daily_guide_task_offer_audience_biweekly' => 'یک گروه مخاطب مشخص به مدیریت آفریینگ اضافه کنید تا هدف‌گیری کمپین‌ها دقیق‌تر شود.',
                 'daily_guide_task_offer_strategy_weekly' => 'یک استراتژی مشخص به مدیریت آفریینگ اضافه کنید تا زاویه فروش پیشنهادها روشن و به‌روز بماند.',
-                'daily_guide_task_offer_create' => 'یک آفر شفاف بسازید و محصول، گروه مخاطب و استراتژی را به یک پیشنهاد متمرکز برای کمپین وصل کنید.'
+                'daily_guide_task_offer_create' => 'یک آفر شفاف بسازید و محصول، گروه مخاطب و استراتژی را به یک پیشنهاد متمرکز برای کمپین وصل کنید.',
+                'daily_guide_task_social_add_competitor' => 'یک رقیب اینستاگرامی را دستی اضافه کنید یا اجازه دهید ایجنت یک رقیب فعال و پرتعامل مرتبط با کسب‌وکار شما پیدا کند.'
             )
         );
 
@@ -3449,6 +3474,8 @@ class SMarkPlugin {
             'offerProductsNonce' => wp_create_nonce('smark_dashboard_offer_products'),
             'productAgentNonce' => wp_create_nonce('smark_dashboard_product_agent'),
             'audienceAgentNonce' => wp_create_nonce('smark_dashboard_audience_agent'),
+            'strategyAgentNonce' => wp_create_nonce('smark_dashboard_strategy_agent'),
+            'competitorAgentNonce' => wp_create_nonce('smark_dashboard_competitor_agent'),
             'productFeedback' => $this->get_product_agent_feedback(),
             'productFeedbackNonce' => wp_create_nonce('smark_dashboard_product_feedback'),
             'offerAgentNonce' => wp_create_nonce('smark_dashboard_offer_agent'),
@@ -4499,6 +4526,17 @@ class SMarkPlugin {
         );
     }
 
+    private function get_strategy_agent_settings() {
+        $settings = get_option('smark_strategy_agent_settings', array());
+        $settings = is_array($settings) ? $settings : array();
+        $clean = array();
+        foreach (array('product_id', 'audience_type_id') as $key) {
+            $value = isset($settings[$key]) ? sanitize_key((string) $settings[$key]) : 'random';
+            $clean[$key] = $value !== '' ? $value : 'random';
+        }
+        return $clean;
+    }
+
     private function resolve_offer_agent_section_item($items, $selected_id) {
         $items = is_array($items) ? array_values($items) : array();
         $available = array();
@@ -4771,6 +4809,79 @@ class SMarkPlugin {
         ));
     }
 
+    public function ajax_dashboard_competitor_agent_create() {
+        check_ajax_referer('smark_dashboard_competitor_agent', 'nonce');
+        if (!current_user_can(self::CAP_ACCESS)) {
+            wp_send_json_error(array('message' => __('Permission denied', 'smark')), 403);
+        }
+
+        $panel_lang = get_option('smark_panel_language', 'en') === 'fa' ? 'fa' : 'en';
+        $project_id = (int) $this->resolve_current_project_id();
+        $business_description = $this->get_current_project_business_description($project_id);
+        if (trim($business_description) === '') {
+            wp_send_json_error(array(
+                'message' => $panel_lang === 'fa' ? 'ابتدا فیلد توضیحات کسب‌وکار را در تنظیمات پروژه تکمیل کنید.' : 'Complete the Business Description field in Project Settings first.',
+                'code' => 'business_description_required',
+            ), 400);
+        }
+
+        $brand_language = $this->get_current_project_brand_language($project_id);
+        global $smark_competitor_analysis;
+        $excluded_usernames = is_object($smark_competitor_analysis) && method_exists($smark_competitor_analysis, 'get_agent_excluded_usernames')
+            ? $smark_competitor_analysis->get_agent_excluded_usernames()
+            : array();
+        $token = $this->get_central_sync_token();
+        $headers = array('Content-Type' => 'application/json; charset=utf-8');
+        if ($token !== '') {
+            $headers['x-smark-sync-token'] = $token;
+        }
+        $response = wp_remote_post($this->get_central_endpoint(self::CENTRAL_COMPETITOR_AGENT_PATH), array(
+            'timeout' => 180,
+            'redirection' => 3,
+            'headers' => $headers,
+            'body' => wp_json_encode(array(
+                'business_description' => $business_description,
+                'language' => (string) ($brand_language['name'] ?? 'English'),
+                'project_id' => $project_id,
+                'site_url' => rtrim((string) home_url('/'), '/'),
+                'excluded_usernames' => $excluded_usernames,
+            ), JSON_UNESCAPED_UNICODE),
+            'user-agent' => 'SMark/' . (defined('SMARK_VERSION') ? (string) SMARK_VERSION : '1.0.0') . ' (competitor-agent)',
+        ));
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => $response->get_error_message()), 500);
+        }
+        $status = (int) wp_remote_retrieve_response_code($response);
+        $data = json_decode((string) wp_remote_retrieve_body($response), true);
+        if ($status < 200 || $status >= 300 || !is_array($data) || empty($data['success']) || empty($data['winner'])) {
+            $message = is_array($data) && !empty($data['message']) ? sanitize_text_field((string) $data['message']) : ($panel_lang === 'fa' ? 'رقیب مناسبی پیدا نشد.' : 'No suitable competitor was found.');
+            wp_send_json_error(array('message' => $message), $status >= 400 ? $status : 500);
+        }
+
+        $winner = $data['winner'];
+        if (!is_object($smark_competitor_analysis) || !method_exists($smark_competitor_analysis, 'add_agent_competitor')) {
+            wp_send_json_error(array('message' => __('Competitor Analysis is unavailable.', 'smark')), 500);
+        }
+        $added = $smark_competitor_analysis->add_agent_competitor(
+            (string) ($winner['profile_url'] ?? ''),
+            (string) (($winner['name'] ?? '') !== '' ? $winner['name'] : ($winner['username'] ?? '')),
+            sprintf('Agent discovery topic: %s', sanitize_text_field((string) ($data['topic'] ?? '')))
+        );
+        if (is_wp_error($added)) {
+            wp_send_json_error(array('message' => $added->get_error_message()), 500);
+        }
+
+        wp_send_json_success(array(
+            'message' => $panel_lang === 'fa'
+                ? sprintf('رقیب @%s با نرخ تعامل %s%% انتخاب و اضافه شد.', sanitize_text_field((string) ($winner['username'] ?? '')), number_format_i18n((float) ($winner['engagement_rate'] ?? 0), 4))
+                : sprintf('Competitor @%s was selected and added with a %s%% engagement rate.', sanitize_text_field((string) ($winner['username'] ?? '')), number_format_i18n((float) ($winner['engagement_rate'] ?? 0), 4)),
+            'winner' => $winner,
+            'topic' => sanitize_text_field((string) ($data['topic'] ?? '')),
+            'candidate_count' => (int) ($data['candidate_count'] ?? 0),
+            'added' => $added,
+        ));
+    }
+
     public function ajax_dashboard_audience_agent_create() {
         check_ajax_referer('smark_dashboard_audience_agent', 'nonce');
 
@@ -4878,6 +4989,111 @@ class SMarkPlugin {
             'message' => ($panel_lang === 'fa')
                 ? 'گروه مخاطب با ایجنت ساخته شد و در ردیف اول قرار گرفت.'
                 : 'Agent created the audience group and placed it first.',
+        ));
+    }
+
+    public function ajax_dashboard_strategy_agent_create() {
+        check_ajax_referer('smark_dashboard_strategy_agent', 'nonce');
+
+        if (!current_user_can(self::CAP_ACCESS)) {
+            wp_send_json_error(array('message' => __('Permission denied', 'smark')), 403);
+        }
+
+        $panel_lang = get_option('smark_panel_language', 'en') === 'fa' ? 'fa' : 'en';
+        $project_id = (int) $this->resolve_current_project_id();
+        $brand_language = $this->get_current_project_brand_language($project_id);
+        $business_description = $this->get_current_project_business_description($project_id);
+        if (trim($business_description) === '') {
+            wp_send_json_error(array(
+                'message' => $panel_lang === 'fa' ? 'ابتدا توضیحات کسب‌وکار را تکمیل کنید.' : 'Complete the Business Description first.',
+                'code' => 'business_description_required',
+            ), 400);
+        }
+
+        $sections = $this->get_dashboard_offer_sections();
+        $agent_settings = $this->get_strategy_agent_settings();
+        $product = $this->resolve_offer_agent_section_item(
+            isset($sections['product']) ? $sections['product'] : array(),
+            $agent_settings['product_id']
+        );
+        $audience = $this->resolve_offer_agent_section_item(
+            isset($sections['audience_type']) ? $sections['audience_type'] : array(),
+            $agent_settings['audience_type_id']
+        );
+        if (empty($product)) {
+            wp_send_json_error(array(
+                'message' => $panel_lang === 'fa' ? 'ابتدا حداقل یک محصول اضافه کنید یا تنظیمات ایجنت استراتژی را بررسی کنید.' : 'Add at least one product or check Strategy Agent settings.',
+                'code' => 'product_required',
+            ), 400);
+        }
+        if (empty($audience)) {
+            wp_send_json_error(array(
+                'message' => $panel_lang === 'fa' ? 'ابتدا حداقل یک گروه مخاطب اضافه کنید یا تنظیمات ایجنت استراتژی را بررسی کنید.' : 'Add at least one audience group or check Strategy Agent settings.',
+                'code' => 'audience_required',
+            ), 400);
+        }
+
+        $payload = array(
+            'language' => isset($brand_language['name']) ? (string) $brand_language['name'] : 'English',
+            'brand_language' => isset($brand_language['code']) ? (string) $brand_language['code'] : 'en',
+            'site_url' => rtrim((string) home_url('/'), '/'),
+            'project_id' => $project_id,
+            'business_description' => $business_description,
+            'agent_settings' => $agent_settings,
+            'product' => $this->get_offer_agent_context_item($product, 'product'),
+            'audience' => $this->get_offer_agent_context_item($audience, 'audience_type'),
+        );
+        $headers = array('Content-Type' => 'application/json; charset=utf-8');
+        $token = $this->get_central_sync_token();
+        if ($token !== '') {
+            $headers['x-smark-sync-token'] = $token;
+        }
+        $resp = wp_remote_post($this->get_central_endpoint(self::CENTRAL_STRATEGY_GENERATE_PATH), array(
+            'timeout' => 60,
+            'redirection' => 3,
+            'headers' => $headers,
+            'body' => wp_json_encode($payload, JSON_UNESCAPED_UNICODE),
+            'user-agent' => 'SMark/' . (defined('SMARK_VERSION') ? (string) SMARK_VERSION : '1.0.0') . ' (strategy-agent)',
+        ));
+        if (is_wp_error($resp)) {
+            wp_send_json_error(array('message' => $resp->get_error_message()), 500);
+        }
+        $code = (int) wp_remote_retrieve_response_code($resp);
+        $data = json_decode((string) wp_remote_retrieve_body($resp), true);
+        if ($code < 200 || $code >= 300 || !is_array($data) || (isset($data['success']) && !$data['success'])) {
+            $message = is_array($data) && isset($data['message']) ? sanitize_text_field((string) $data['message']) : __('Strategy generation failed.', 'smark');
+            wp_send_json_error(array('message' => $message), $code >= 400 ? $code : 500);
+        }
+
+        $strategy = isset($data['strategy']) && is_array($data['strategy']) ? $data['strategy'] : array();
+        $name = isset($strategy['name']) ? sanitize_text_field((string) $strategy['name']) : '';
+        if ($name === '') {
+            $name = $panel_lang === 'fa' ? 'استراتژی پیشنهادی هوش مصنوعی' : 'AI suggested strategy';
+        }
+        $new_strategy = array(
+            'id' => 'strategy-agent-' . (string) time(),
+            'name' => $name,
+            'price' => '',
+            'url' => '',
+            'audience_details' => '',
+            'strategy_details' => isset($strategy['strategy_details']) ? sanitize_textarea_field((string) $strategy['strategy_details']) : '',
+            'offer_details' => '',
+            'product_id' => isset($product['id']) ? sanitize_key((string) $product['id']) : '',
+            'strategy_id' => '',
+            'audience_type_id' => isset($audience['id']) ? sanitize_key((string) $audience['id']) : '',
+            'notes' => '',
+            'createdAt' => current_time('mysql'),
+            'updatedAt' => current_time('mysql'),
+        );
+        $items = isset($sections['strategy']) && is_array($sections['strategy']) ? $sections['strategy'] : array();
+        array_unshift($items, $new_strategy);
+        $sections['strategy'] = $this->sanitize_dashboard_offer_items($items);
+        update_option('smark_dashboard_offer_sections', $sections, false);
+
+        wp_send_json_success(array(
+            'strategy' => $new_strategy,
+            'sections' => $sections,
+            'message' => $panel_lang === 'fa' ? 'استراتژی با ایجنت ساخته شد و در ردیف اول قرار گرفت.' : 'Agent created the strategy and placed it first.',
         ));
     }
 

@@ -137,6 +137,9 @@
                     } : card.contentView === 'content-management' && typeof props.onOpenContentManagementView === 'function' ? function(event) {
                         event.preventDefault();
                         props.onOpenContentManagementView();
+                    } : card.socialView && typeof props.onOpenSocialView === 'function' ? function(event) {
+                        event.preventDefault();
+                        props.onOpenSocialView(card.socialView);
                     } : undefined,
                 }, textForLanguage(language, 'open', 'Open')),
                 h('button', {
@@ -151,7 +154,7 @@
                             event.preventDefault();
                             event.stopPropagation();
                             props.onSmartAction(card);
-                        } else if ((card.key === 'offer_product_monthly' || card.key === 'offer_offer_create' || card.key === 'offer_audience_biweekly') && typeof props.onSmartAction === 'function') {
+                        } else if ((card.key === 'social_add_competitor' || card.key === 'offer_product_monthly' || card.key === 'offer_offer_create' || card.key === 'offer_audience_biweekly' || card.key === 'offer_strategy_weekly') && typeof props.onSmartAction === 'function') {
                             event.preventDefault();
                             event.stopPropagation();
                             props.onSmartAction(card);
@@ -218,6 +221,7 @@
                     onOpenEmailView: props.onOpenEmailView,
                     onOpenOfferSection: props.onOpenOfferSection,
                     onOpenContentManagementView: props.onOpenContentManagementView,
+                    onOpenSocialView: props.onOpenSocialView,
                     onSmartAction: props.onSmartAction,
                     smartRunningKey: props.smartRunningKey,
                 });
@@ -1668,6 +1672,7 @@
         const commentAutoSaveTimeoutRef = useRef(null);
         const [dailyGuideSmartRunningKey, setDailyGuideSmartRunningKey] = useState('');
         const [dailyGuideCardState, setDailyGuideCardState] = useState(dailyGuideCards);
+        const [dashboardAgentNotice, setDashboardAgentNotice] = useState(null);
         const [signalhireForm, setSignalhireForm] = useState(config.signalhireContactSearchSettings || {});
         const [signalhireSaving, setSignalhireSaving] = useState(false);
         const [signalhireMessage, setSignalhireMessage] = useState('');
@@ -2052,6 +2057,46 @@
             });
         };
 
+        const createCompetitorWithAgent = function() {
+            if (dailyGuideSmartRunningKey) {
+                return;
+            }
+            setDailyGuideSmartRunningKey('social_add_competitor');
+            setDashboardAgentNotice({ type: 'info', message: text('smartRunning', 'Agent is working...') });
+            setOfferProductNotice(text('smartRunning', 'Agent is working...'));
+            const body = new window.URLSearchParams();
+            body.append('action', 'smark_dashboard_competitor_agent_create');
+            body.append('nonce', config.competitorAgentNonce || '');
+            window.fetch(config.ajaxUrl, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                body: body.toString(),
+            }).then(function(response) {
+                return response.json();
+            }).then(function(response) {
+                if (!response || !response.success) {
+                    const message = response && response.data && response.data.message ? response.data.message : text('smartError', 'Agent action failed. Please try again.');
+                    setDashboardAgentNotice({ type: 'error', message: message });
+                    setOfferProductNotice(message);
+                    if (response && response.data && response.data.code === 'business_description_required') {
+                        openSettingsAction({ type: 'business-description' });
+                    }
+                    return;
+                }
+                setOfferProductNotice(response.data.message || text('smartDone', 'Agent action completed.'));
+                setDashboardAgentNotice({ type: 'success', message: response.data.message || text('smartDone', 'Agent action completed.') });
+                window.setTimeout(function() {
+                    openSocialView('competitor-analysis');
+                }, 900);
+            }).catch(function() {
+                setDashboardAgentNotice({ type: 'error', message: text('smartError', 'Agent action failed. Please try again.') });
+                setOfferProductNotice(text('smartError', 'Agent action failed. Please try again.'));
+            }).finally(function() {
+                setDailyGuideSmartRunningKey('');
+            });
+        };
+
         const createAudienceWithAgent = function() {
             if (dailyGuideSmartRunningKey === 'offer_audience_biweekly') {
                 return;
@@ -2114,6 +2159,59 @@
                 setOfferProductNoticeType('error');
                 setOfferProductNotice(text('smartError', 'Agent action failed. Please try again.'));
                 setOfferProductNoticeAction(null);
+            }).finally(function() {
+                setOfferProductSaving(false);
+                setDailyGuideSmartRunningKey('');
+            });
+        };
+
+        const createStrategyWithAgent = function() {
+            if (dailyGuideSmartRunningKey === 'offer_strategy_weekly') {
+                return;
+            }
+            setDailyGuideSmartRunningKey('offer_strategy_weekly');
+            setOfferProductSaving(true);
+            setOfferProductNoticeType('success');
+            setOfferProductNotice(text('smartRunning', 'Agent is working...'));
+            setOfferProductNoticeAction(null);
+
+            const body = new window.URLSearchParams();
+            body.append('action', 'smark_dashboard_strategy_agent_create');
+            body.append('nonce', config.strategyAgentNonce || '');
+            window.fetch(config.ajaxUrl || window.ajaxurl || '', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                body: body.toString(),
+            }).then(function(response) {
+                return response.json();
+            }).then(function(response) {
+                setActive('offer');
+                setOfferActiveSection('strategy');
+                if (response && response.success && response.data && response.data.sections) {
+                    setOfferItemsBySection(response.data.sections);
+                    setOfferProductForm(emptyOfferProductForm);
+                    setOfferProductEditingId('');
+                    setLanguageOpen(false);
+                    setMarkOpen(false);
+                    setSettingsOpen(false);
+                    setOfferProductNoticeType('success');
+                    setOfferProductNotice(response.data.message || text('smartDone', 'Agent action completed.'));
+                    return;
+                }
+                setOfferProductNoticeType('error');
+                setOfferProductNotice((response && response.data && response.data.message) || text('smartError', 'Agent action failed. Please try again.'));
+                const code = response && response.data ? response.data.code : '';
+                if (code === 'business_description_required') {
+                    setOfferProductNoticeAction({ type: 'business-description', label: language === 'fa' ? 'تکمیل توضیحات کسب‌وکار' : 'Complete Business Description' });
+                } else if (code === 'product_required') {
+                    setOfferProductNoticeAction({ type: 'product', label: language === 'fa' ? 'افزودن محصول' : 'Add Product' });
+                } else if (code === 'audience_required') {
+                    setOfferProductNoticeAction({ type: 'audience_type', label: language === 'fa' ? 'افزودن گروه مخاطب' : 'Add Audience Group' });
+                }
+            }).catch(function() {
+                setOfferProductNoticeType('error');
+                setOfferProductNotice(text('smartError', 'Agent action failed. Please try again.'));
             }).finally(function() {
                 setOfferProductSaving(false);
                 setDailyGuideSmartRunningKey('');
@@ -2416,7 +2514,24 @@
             });
         };
 
-        const openSocialView = function() {
+        const scrollToSocialSection = function(section, attempt) {
+            if (section !== 'competitor-analysis') {
+                return;
+            }
+            const target = document.querySelector('.smark-dashboard-embedded-view .smark-social-competitor-section');
+            if (!target) {
+                if ((attempt || 0) < 30) {
+                    window.setTimeout(function() {
+                        scrollToSocialSection(section, (attempt || 0) + 1);
+                    }, 100);
+                }
+                return;
+            }
+            target.style.scrollMarginTop = '24px';
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+
+        const openSocialView = function(section) {
             setActive('social');
             setLanguageOpen(false);
             setMarkOpen(false);
@@ -2424,6 +2539,7 @@
             setSocialError('');
 
             if (socialHtml) {
+                window.setTimeout(function() { scrollToSocialSection(section, 0); }, 0);
                 return;
             }
 
@@ -2431,6 +2547,7 @@
 
             loadEmailEmbeddedView('smark_dashboard_social_view', config.socialViewNonce || '', {}, function(html) {
                 setSocialHtml(html);
+                window.setTimeout(function() { scrollToSocialSection(section, 0); }, 0);
             }, function(message) {
                 setSocialError(message);
             }, function() {
@@ -2596,6 +2713,13 @@
                 return;
             }
 
+            if (action === 'audience_type') {
+                openOfferSectionFromDashboard('audience_type');
+                setOfferProductNotice('');
+                setOfferProductNoticeAction(null);
+                return;
+            }
+
             if (action === 'business-description') {
                 openSettingsView('project-settings');
                 let attempts = 0;
@@ -2647,6 +2771,11 @@
                 return;
             }
 
+            if (key === 'social_add_competitor') {
+                createCompetitorWithAgent();
+                return;
+            }
+
             if (key === 'offer_product_monthly') {
                 createProductWithAgent();
                 return;
@@ -2654,6 +2783,11 @@
 
             if (key === 'offer_audience_biweekly') {
                 createAudienceWithAgent();
+                return;
+            }
+
+            if (key === 'offer_strategy_weekly') {
+                createStrategyWithAgent();
                 return;
             }
 
@@ -2833,7 +2967,11 @@
         return h('main', { className: 'smark-dashboard-app-canvas smark-dashboard-app-canvas--' + (language === 'fa' ? 'rtl' : 'ltr'), 'aria-label': text('workspace', 'SMark dashboard workspace') },
             active === 'smark' ? h('div', { className: 'smark-dashboard-workspace-content' },
                 h('div', { key: 'smark', className: 'smark-dashboard-view' },
-                    h(DailyGuideGrid, { cards: dailyGuideCardsWithOfferStatus, language: language, moduleVisibility: moduleVisibility, onOpenEmailView: openEmailSubViewFromDashboard, onOpenOfferSection: openOfferSectionFromDashboard, onOpenContentManagementView: openContentManagementView, onSmartAction: openDailyGuideSmartAction, smartRunningKey: dailyGuideSmartRunningKey })
+                    dashboardAgentNotice ? h('div', {
+                        className: 'smark-dashboard-agent-toast is-' + dashboardAgentNotice.type,
+                        role: dashboardAgentNotice.type === 'error' ? 'alert' : 'status',
+                    }, dashboardAgentNotice.message) : null,
+                    h(DailyGuideGrid, { cards: dailyGuideCardsWithOfferStatus, language: language, moduleVisibility: moduleVisibility, onOpenEmailView: openEmailSubViewFromDashboard, onOpenOfferSection: openOfferSectionFromDashboard, onOpenContentManagementView: openContentManagementView, onOpenSocialView: openSocialView, onSmartAction: openDailyGuideSmartAction, smartRunningKey: dailyGuideSmartRunningKey })
                 )
             ) : null,
             active === 'seo' ? h('div', { className: 'smark-dashboard-workspace-content' },

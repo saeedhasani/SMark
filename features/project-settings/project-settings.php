@@ -22,6 +22,7 @@ class SMarkProjectSettings {
     const OPTION_OFFER_AGENT_SETTINGS = 'smark_offer_agent_settings';
     const OPTION_EMAIL_CAMPAIGN_AGENT_SETTINGS = 'smark_email_campaign_agent_settings';
     const OPTION_AUDIENCE_AGENT_SETTINGS = 'smark_audience_agent_settings';
+    const OPTION_STRATEGY_AGENT_SETTINGS = 'smark_strategy_agent_settings';
     const CENTRAL_SYNC_TOKEN_HEADER = 'x-smark-sync-token';
     const DEFAULT_CENTRAL_BASE_URL = 'https://saeedhasani.com';
     const CENTRAL_SYNC_PATH = '/wp-json/smark-core/v1/projects/sync';
@@ -52,6 +53,7 @@ class SMarkProjectSettings {
         add_action('wp_ajax_smark_project_settings_save_offer_agent', array($this, 'ajax_save_offer_agent_settings'));
         add_action('wp_ajax_smark_project_settings_save_email_campaign_agent', array($this, 'ajax_save_email_campaign_agent_settings'));
         add_action('wp_ajax_smark_project_settings_save_audience_agent', array($this, 'ajax_save_audience_agent_settings'));
+        add_action('wp_ajax_smark_project_settings_save_strategy_agent', array($this, 'ajax_save_strategy_agent_settings'));
         add_action('wp_ajax_smark_project_settings_regenerate_telegram_key', array($this, 'ajax_regenerate_telegram_ingest_key'));
         add_action('rest_api_init', array($this, 'register_sc_oauth_broker_routes'));
     }
@@ -249,6 +251,12 @@ class SMarkProjectSettings {
                 'audience_agent_product' => 'For which product?',
                 'audience_agent_saved' => 'Audience Agent settings saved.',
                 'audience_agent_save_error' => 'Audience Agent settings could not be saved.',
+                'strategy_agent_title' => 'Strategy Agent',
+                'strategy_agent_help' => 'Choose which product and audience group the Strategy Agent should create a strategy for.',
+                'strategy_agent_product' => 'For which product?',
+                'strategy_agent_audience' => 'For which audience?',
+                'strategy_agent_saved' => 'Strategy Agent settings saved.',
+                'strategy_agent_save_error' => 'Strategy Agent settings could not be saved.',
             ),
             'fa' => array(
                 'menu' => 'تنظیمات پروژه',
@@ -344,6 +352,12 @@ class SMarkProjectSettings {
                 'audience_agent_product' => 'برای چه محصولی؟',
                 'audience_agent_saved' => 'تنظیمات ایجنت مخاطب ذخیره شد.',
                 'audience_agent_save_error' => 'ذخیره تنظیمات ایجنت مخاطب انجام نشد.',
+                'strategy_agent_title' => 'ایجنت استراتژی',
+                'strategy_agent_help' => 'مشخص کنید ایجنت استراتژی برای کدام محصول و گروه مخاطب استراتژی بسازد.',
+                'strategy_agent_product' => 'برای چه محصولی؟',
+                'strategy_agent_audience' => 'برای چه گروه مخاطبی؟',
+                'strategy_agent_saved' => 'تنظیمات ایجنت استراتژی ذخیره شد.',
+                'strategy_agent_save_error' => 'ذخیره تنظیمات ایجنت استراتژی انجام نشد.',
             ),
         );
 
@@ -438,6 +452,20 @@ class SMarkProjectSettings {
 
     private function get_audience_agent_settings() {
         return $this->sanitize_audience_agent_settings(get_option(self::OPTION_AUDIENCE_AGENT_SETTINGS, array()));
+    }
+
+    private function sanitize_strategy_agent_settings($settings) {
+        $settings = is_array($settings) ? $settings : array();
+        $clean = array();
+        foreach (array('product_id', 'audience_type_id') as $key) {
+            $value = isset($settings[$key]) ? sanitize_key((string) $settings[$key]) : 'random';
+            $clean[$key] = $value !== '' ? $value : 'random';
+        }
+        return $clean;
+    }
+
+    private function get_strategy_agent_settings() {
+        return $this->sanitize_strategy_agent_settings(get_option(self::OPTION_STRATEGY_AGENT_SETTINGS, array()));
     }
 
     private function get_offer_agent_options() {
@@ -1840,6 +1868,7 @@ class SMarkProjectSettings {
             'offerAgentNonce' => wp_create_nonce('smark_offer_agent_settings'),
             'emailCampaignAgentNonce' => wp_create_nonce('smark_email_campaign_agent_settings'),
             'audienceAgentNonce' => wp_create_nonce('smark_audience_agent_settings'),
+            'strategyAgentNonce' => wp_create_nonce('smark_strategy_agent_settings'),
             'telegramRegenerateNonce' => wp_create_nonce('smark_project_settings_regenerate_telegram_key'),
             'currentLang' => $this->get_panel_language(),
             'projectId' => $project_id,
@@ -1867,6 +1896,8 @@ class SMarkProjectSettings {
                 'emailCampaignAgentSaveError' => $strings['email_campaign_agent_save_error'],
                 'audienceAgentSaved' => $strings['audience_agent_saved'],
                 'audienceAgentSaveError' => $strings['audience_agent_save_error'],
+                'strategyAgentSaved' => $strings['strategy_agent_saved'],
+                'strategyAgentSaveError' => $strings['strategy_agent_save_error'],
             ),
         ));
     }
@@ -2648,13 +2679,14 @@ class SMarkProjectSettings {
         $offer_agent_settings = $this->get_offer_agent_settings();
         $email_campaign_agent_settings = $this->get_email_campaign_agent_settings();
         $audience_agent_settings = $this->get_audience_agent_settings();
+        $strategy_agent_settings = $this->get_strategy_agent_settings();
         $offer_agent_options = $this->get_offer_agent_options();
         $agent_cards = array(
             array('label' => $strings['agent_add_contacts'], 'category' => 'email'),
             array('label' => $strings['agent_send_campaign'], 'category' => 'email', 'agent' => 'email_campaign'),
             array('label' => $strings['agent_add_product'], 'category' => 'offer'),
             array('label' => $strings['agent_define_audience'], 'category' => 'offer', 'agent' => 'audience'),
-            array('label' => $strings['agent_add_strategy'], 'category' => 'offer'),
+            array('label' => $strings['agent_add_strategy'], 'category' => 'offer', 'agent' => 'strategy'),
             array('label' => $strings['agent_create_offer'], 'category' => 'offer', 'agent' => 'offer'),
             array('label' => $strings['agent_keyword_transfer'], 'category' => 'seo'),
             array('label' => $strings['agent_rankings_update'], 'category' => 'seo'),
@@ -2884,7 +2916,7 @@ def forward_to_smark(update: dict):
                             $agent_category = isset($agent_card['category']) ? (string) $agent_card['category'] : 'seo';
                             $agent_view_box = $agent_category === 'offer' ? '0 0 432 540' : '0 0 504 540';
                             $agent_key = isset($agent_card['agent']) ? sanitize_key((string) $agent_card['agent']) : '';
-                            $is_configurable_agent = in_array($agent_key, array('offer', 'email_campaign', 'audience'), true);
+                            $is_configurable_agent = in_array($agent_key, array('offer', 'email_campaign', 'audience', 'strategy'), true);
                             $agent_tag = $is_configurable_agent ? 'button' : 'div';
                             $agent_panel_id = 'smark_' . $agent_key . '_agent_settings_panel';
                             ?>
@@ -2894,6 +2926,9 @@ def forward_to_smark(update: dict):
                                     data-smark-agent-panel-trigger="<?php echo esc_attr($agent_key); ?>"
                                     aria-controls="<?php echo esc_attr($agent_panel_id); ?>"
                                     aria-expanded="false"
+                                    <?php if ($agent_key === 'strategy') : ?>
+                                        onclick="event.preventDefault();event.stopPropagation();var panel=document.getElementById('smark_strategy_agent_settings_panel');if(!panel){return false;}var opening=panel.hidden;document.querySelectorAll('.smark-agent-config-window').forEach(function(item){if(item!==panel){item.hidden=true;}});document.querySelectorAll('[data-smark-agent-panel-trigger]').forEach(function(item){if(item!==this){item.setAttribute('aria-expanded','false');}},this);panel.hidden=!opening;this.setAttribute('aria-expanded',opening?'true':'false');if(opening){var select=panel.querySelector('select');if(select){window.setTimeout(function(){select.focus();},80);}}return false;"
+                                    <?php endif; ?>
                                 <?php endif; ?>
                                 class="smark-agent-card smark-agent-card--<?php echo esc_attr($agent_category); ?><?php echo $is_configurable_agent ? ' is-configurable' : ''; ?>"
                             >
@@ -2979,6 +3014,35 @@ def forward_to_smark(update: dict):
                                     <option value="random" <?php selected($audience_agent_settings['product_id'], 'random'); ?>><?php echo esc_html($strings['offer_agent_random']); ?></option>
                                     <?php foreach ($offer_agent_options['product'] as $option) : ?>
                                         <option value="<?php echo esc_attr($option['id']); ?>" <?php selected($audience_agent_settings['product_id'], $option['id']); ?>><?php echo esc_html($option['name']); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+                    <div id="smark_strategy_agent_settings_panel" class="smark-agent-config-window" data-agent-panel="strategy" hidden>
+                        <div class="smark-agent-config-window__header">
+                            <div>
+                                <h3><?php echo esc_html($strings['strategy_agent_title']); ?></h3>
+                                <p><?php echo esc_html($strings['strategy_agent_help']); ?></p>
+                            </div>
+                            <span class="smark-agent-config-window__status" data-strategy-agent-save-state></span>
+                        </div>
+                        <div class="smark-agent-config-window__fields">
+                            <label>
+                                <span><?php echo esc_html($strings['strategy_agent_product']); ?></span>
+                                <select name="product_id" data-strategy-agent-setting>
+                                    <option value="random" <?php selected($strategy_agent_settings['product_id'], 'random'); ?>><?php echo esc_html($strings['offer_agent_random']); ?></option>
+                                    <?php foreach ($offer_agent_options['product'] as $option) : ?>
+                                        <option value="<?php echo esc_attr($option['id']); ?>" <?php selected($strategy_agent_settings['product_id'], $option['id']); ?>><?php echo esc_html($option['name']); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </label>
+                            <label>
+                                <span><?php echo esc_html($strings['strategy_agent_audience']); ?></span>
+                                <select name="audience_type_id" data-strategy-agent-setting>
+                                    <option value="random" <?php selected($strategy_agent_settings['audience_type_id'], 'random'); ?>><?php echo esc_html($strings['offer_agent_random']); ?></option>
+                                    <?php foreach ($offer_agent_options['audience_type'] as $option) : ?>
+                                        <option value="<?php echo esc_attr($option['id']); ?>" <?php selected($strategy_agent_settings['audience_type_id'], $option['id']); ?>><?php echo esc_html($option['name']); ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </label>
@@ -3104,6 +3168,28 @@ def forward_to_smark(update: dict):
         $strings = $this->get_strings();
         wp_send_json_success(array(
             'message' => $strings['audience_agent_saved'],
+            'settings' => $settings,
+        ));
+    }
+
+    public function ajax_save_strategy_agent_settings() {
+        check_ajax_referer('smark_strategy_agent_settings', 'nonce');
+
+        if (!current_user_can('smark_access')) {
+            wp_send_json_error(array(
+                'message' => esc_html__('You do not have sufficient permissions to perform this action.', 'smark'),
+            ), 403);
+        }
+
+        $settings = $this->sanitize_strategy_agent_settings(array(
+            'product_id' => isset($_POST['product_id']) ? wp_unslash($_POST['product_id']) : 'random',
+            'audience_type_id' => isset($_POST['audience_type_id']) ? wp_unslash($_POST['audience_type_id']) : 'random',
+        ));
+        update_option(self::OPTION_STRATEGY_AGENT_SETTINGS, $settings, false);
+
+        $strings = $this->get_strings();
+        wp_send_json_success(array(
+            'message' => $strings['strategy_agent_saved'],
             'settings' => $settings,
         ));
     }

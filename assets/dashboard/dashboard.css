@@ -91,7 +91,33 @@ body:has(.smark-dashboard-app-page) #wpbody-content > .litespeed_icon {
   top: 25px;
   right: 128px;
   left: 44px;
+  padding-bottom: 28px;
+  box-sizing: border-box;
   z-index: 1;
+}
+
+.smark-dashboard-agent-toast {
+  position: fixed;
+  top: 48px;
+  right: 124px;
+  z-index: 40;
+  max-width: min(440px, calc(100vw - 180px));
+  padding: 11px 16px;
+  border: 1px solid rgba(98, 54, 160, 0.18);
+  border-radius: 12px;
+  color: #3f2369;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 30px rgba(63, 35, 105, 0.16);
+}
+.smark-dashboard-agent-toast.is-error {
+  border-color: rgba(190, 24, 93, 0.22);
+  color: #9f1239;
+  background: rgba(255, 241, 242, 0.97);
+}
+.smark-dashboard-agent-toast.is-success {
+  border-color: rgba(5, 150, 105, 0.22);
+  color: #047857;
+  background: rgba(236, 253, 245, 0.97);
 }
 
 .smark-dashboard-view {
@@ -119,6 +145,8 @@ body:has(.smark-dashboard-app-page) #wpbody-content > .litespeed_icon {
 
 .smark-dashboard-daily-card {
   position: relative;
+  isolation: isolate;
+  contain: paint;
   overflow: hidden;
   min-height: 286px;
   display: flex;
@@ -150,6 +178,9 @@ body:has(.smark-dashboard-app-page) #wpbody-content > .litespeed_icon {
   backdrop-filter: blur(2px) saturate(132%);
   -webkit-backdrop-filter: blur(2px) saturate(132%);
   pointer-events: none;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 .smark-dashboard-daily-card__complete-overlay .smark-dashboard-glass-menu__svg-icon {
   width: 72px;
@@ -268,6 +299,9 @@ body:has(.smark-dashboard-app-page) #wpbody-content > .litespeed_icon {
   border-radius: 999px;
   flex: 0 0 auto;
   animation: smark-dashboard-button-spin 780ms linear infinite;
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 .smark-dashboard-app-canvas--rtl .smark-dashboard-daily-card__button-spinner {
   margin-right: 0;
@@ -369,8 +403,11 @@ body:has(.smark-dashboard-app-page) #wpbody-content > .litespeed_icon {
 }
 
 @keyframes smark-dashboard-button-spin {
+  from {
+    transform: translateZ(0) rotate(0deg);
+  }
   to {
-    transform: rotate(360deg);
+    transform: translateZ(0) rotate(360deg);
   }
 }
 
@@ -1385,6 +1422,10 @@ body:has(.smark-dashboard-app-page) #wpbody-content > .litespeed_icon {
     top: 25px;
     right: 106px;
     left: 18px;
+    padding-bottom: 24px;
+  }
+  .smark-dashboard-agent-toast {
+    right: 104px;
   }
   .smark-dashboard-daily-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1411,6 +1452,10 @@ body:has(.smark-dashboard-app-page) #wpbody-content > .litespeed_icon {
   }
   .smark-dashboard-daily-grid {
     grid-template-columns: 1fr;
+  }
+  .smark-dashboard-agent-toast {
+    right: 96px;
+    max-width: calc(100vw - 116px);
   }
   .smark-dashboard-offer {
     padding: 18px;

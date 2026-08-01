@@ -761,6 +761,52 @@
     audienceAgentSaveTimer = window.setTimeout(saveAudienceAgentSettings, 450);
   }
 
+  let strategyAgentSaveTimer = null;
+
+  function setStrategyAgentStatus(message, type) {
+    $("[data-strategy-agent-save-state]").first()
+      .removeClass("is-error")
+      .toggleClass("is-error", type === "error")
+      .text(message || "");
+  }
+
+  function saveStrategyAgentSettings() {
+    const cfg = window.SMarkProjectSettings || {};
+    if (!cfg.ajaxUrl || !cfg.strategyAgentNonce) {
+      return;
+    }
+
+    const settings = { product_id: "random", audience_type_id: "random" };
+    $("[data-strategy-agent-setting]").each(function () {
+      settings[String($(this).attr("name") || "")] = String($(this).val() || "random");
+    });
+    const strings = cfg.strings || {};
+    setStrategyAgentStatus(strings.offerAgentSaving || "Saving...");
+
+    $.post(cfg.ajaxUrl, {
+      action: "smark_project_settings_save_strategy_agent",
+      nonce: cfg.strategyAgentNonce,
+      product_id: settings.product_id,
+      audience_type_id: settings.audience_type_id,
+    }).done(function (resp) {
+      if (resp && resp.success) {
+        setStrategyAgentStatus((resp.data && resp.data.message) || strings.strategyAgentSaved || "Saved");
+        return;
+      }
+      setStrategyAgentStatus((resp && resp.data && resp.data.message) || strings.strategyAgentSaveError || "Unable to save.", "error");
+    }).fail(function (xhr) {
+      const message = xhr && xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message
+        ? xhr.responseJSON.data.message
+        : strings.strategyAgentSaveError || "Unable to save.";
+      setStrategyAgentStatus(message, "error");
+    });
+  }
+
+  function scheduleStrategyAgentSave() {
+    window.clearTimeout(strategyAgentSaveTimer);
+    strategyAgentSaveTimer = window.setTimeout(saveStrategyAgentSettings, 450);
+  }
+
   function toggleAgentPanel($trigger) {
     const agent = String($trigger.attr("data-smark-agent-panel-trigger") || "").trim();
     const panelId = "smark_" + agent + "_agent_settings_panel";
@@ -779,6 +825,7 @@
       const statusSetters = {
         email_campaign: setEmailCampaignAgentStatus,
         audience: setAudienceAgentStatus,
+        strategy: setStrategyAgentStatus,
         offer: setOfferAgentStatus,
       };
       (statusSetters[agent] || setOfferAgentStatus)("");
@@ -958,6 +1005,9 @@
 
     $(document).on("change", "[data-audience-agent-setting]", function () {
       scheduleAudienceAgentSave();
+    });
+    $(document).on("change", "[data-strategy-agent-setting]", function () {
+      scheduleStrategyAgentSave();
     });
 
     maybeHandleBrokerClaim();

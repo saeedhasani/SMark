@@ -404,7 +404,7 @@ jQuery(document).ready(function($) {
         }
 
         // Show loading state
-        $('#suggestions_table_body').html('<tr class="no-data-row"><td colspan="6">' + SMarkSocialMedia.strings.loading + '</td></tr>');
+        $('#suggestions_table_body').html('<tr class="no-data-row"><td colspan="5">' + SMarkSocialMedia.strings.loading + '</td></tr>');
 
         $.ajax({
             url: SMarkSocialMedia.ajaxUrl,
@@ -420,7 +420,7 @@ jQuery(document).ready(function($) {
                         parsedResponse = JSON.parse(cleanResponse);
                     } catch (e) {
                         const errorText = SMarkSocialMedia.currentLang === 'fa' ? 'خطا در بارگذاری پیشنهادها' : 'Error loading suggestions';
-                        $('#suggestions_table_body').html('<tr class="no-data-row"><td colspan="6">' + errorText + '</td></tr>');
+                        $('#suggestions_table_body').html('<tr class="no-data-row"><td colspan="5">' + errorText + '</td></tr>');
                         return;
                     }
                 }
@@ -440,16 +440,16 @@ jQuery(document).ready(function($) {
                         renderTableSuggestions(suggestions);
                     } else {
                         const noSuggestionsText = SMarkSocialMedia.strings.no_suggestions_found || 'No suggestions found';
-                        $('#suggestions_table_body').html('<tr class="no-data-row"><td colspan="6">' + noSuggestionsText + '</td></tr>');
+                        $('#suggestions_table_body').html('<tr class="no-data-row"><td colspan="5">' + noSuggestionsText + '</td></tr>');
                     }
                 } else {
                     const errorText = SMarkSocialMedia.currentLang === 'fa' ? 'خطا در بارگذاری پیشنهادها' : 'Error loading suggestions';
-                    $('#suggestions_table_body').html('<tr class="no-data-row"><td colspan="6">' + errorText + '</td></tr>');
+                    $('#suggestions_table_body').html('<tr class="no-data-row"><td colspan="5">' + errorText + '</td></tr>');
                 }
             },
             error: function(xhr, status, error) {
                 const errorText = SMarkSocialMedia.currentLang === 'fa' ? 'خطا در بارگذاری پیشنهادها' : 'Error loading suggestions';
-                $('#suggestions_table_body').html('<tr class="no-data-row"><td colspan="6">' + errorText + '</td></tr>');
+                $('#suggestions_table_body').html('<tr class="no-data-row"><td colspan="5">' + errorText + '</td></tr>');
             }
         });
     }
@@ -572,27 +572,27 @@ jQuery(document).ready(function($) {
             // For Persian, use Persian calendar if available, otherwise fallback to Gregorian
             let createdDate;
             try {
-                createdDate = new Date(suggestion.created_at).toLocaleDateString(locale, dateOptions);
+                createdDate = new Date(suggestion.published_date || suggestion.created_at).toLocaleDateString(locale, dateOptions);
             } catch (e) {
                 // Fallback to basic formatting
-                createdDate = new Date(suggestion.created_at).toLocaleDateString('en-US', dateOptions);
+                createdDate = new Date(suggestion.published_date || suggestion.created_at).toLocaleDateString('en-US', dateOptions);
             }
 
-            // Score badge - suggestions don't have scores initially
-            const score = 0;
-            const scoreClass = 'score-badge-normal';
-            const scoreBadge = '<span class="score-badge ' + scoreClass + '">' + score + '/100</span>';
-
-            // Visual preview - suggestions usually don't have visuals
-            let visualPreview = '<span class="no-visual">—</span>';
+            const rate = Number.parseFloat(suggestion.engagement_rate);
+            const engagementRate = Number.isFinite(rate) ? rate.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 4 }) + '%' : '—';
+            const likes = Number.parseInt(suggestion.like_count || 0, 10);
+            const comments = Number.parseInt(suggestion.comments_count || 0, 10);
+            const followers = Number.parseInt(suggestion.followers_count || 0, 10);
+            const engagementTitle = followers > 0
+                ? `${likes.toLocaleString(locale)} likes + ${comments.toLocaleString(locale)} comments ÷ ${followers.toLocaleString(locale)} followers × 100`
+                : '';
 
             const row = `
                 <tr data-id="${suggestion.id}">
                     <td>${suggestion.id}</td>
                     <td>${suggestion.headline}</td>
-                    <td>${visualPreview}</td>
                     <td>${createdDate}</td>
-                    <td>${scoreBadge}</td>
+                    <td><span class="engagement-rate" title="${engagementTitle}">${engagementRate}</span></td>
                     <td style="text-align: right !important; direction: rtl !important;">
                         <div class="table-actions" style="justify-content: flex-start !important; text-align: right !important; direction: rtl !important; width: 100% !important;">
                             <button class="table-action-btn view-suggestion" data-id="${suggestion.id}">${SMarkSocialMedia.strings.view}</button>
@@ -1129,14 +1129,34 @@ Provide ONLY the title, nothing else:`;
                 success: function(response) {
                     if (response && response.success) {
                         closeCompetitorResourceEditor();
-                        showNotification(
-                            SMarkSocialMedia.strings.success,
-                            response.data && response.data.message
-                                ? response.data.message
-                                : (SMarkSocialMedia.currentLang === 'fa' ? 'منبع ذخیره شد.' : 'Resource saved.'),
-                            'success'
-                        );
-                        loadCompetitorResources(defaultProject.project_id || selectedProjectId || '');
+                        const projectId = defaultProject.project_id || selectedProjectId || '';
+                        // Both tables are refreshed from AJAX. The add request
+                        // has already imported the competitor's last seven days.
+                        loadCompetitorResources(projectId);
+
+                        if (response.data && response.data.monitor_error) {
+                            const monitorError = SMarkSocialMedia.currentLang === 'fa'
+                                ? 'دسترسی اینستاگرام تنظیم نشده است. برای دریافت پست‌ها، Meta Access Token و Instagram Business Account ID را تنظیم کنید.'
+                                : response.data.monitor_error;
+                            $('#suggestions_table_card').show();
+                            $('#suggestions_table_body').html(
+                                '<tr class="no-data-row"><td colspan="5"></td></tr>'
+                            ).find('td').text(monitorError);
+                            showNotification(
+                                SMarkSocialMedia.strings.error,
+                                monitorError,
+                                'error'
+                            );
+                        } else {
+                            showNotification(
+                                SMarkSocialMedia.strings.success,
+                                response.data && response.data.message
+                                    ? response.data.message
+                                    : (SMarkSocialMedia.currentLang === 'fa' ? 'منبع ذخیره شد.' : 'Resource saved.'),
+                                'success'
+                            );
+                            loadProjectSuggestions(projectId);
+                        }
                         return;
                     }
 

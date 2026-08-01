@@ -527,7 +527,7 @@ class SMarkSocialMedia {
         // Check and add missing columns
         $columns_to_check = array(
             'caption' => 'text DEFAULT NULL',
-            'visual' => 'varchar(500) DEFAULT NULL',
+            'visual' => 'text DEFAULT NULL',
             'visual_type' => 'varchar(50) DEFAULT NULL',
             'visual_text' => 'text DEFAULT NULL',
             'expert_approval_status' => 'varchar(20) DEFAULT "needs_approval"',
@@ -538,6 +538,11 @@ class SMarkSocialMedia {
             'competitor_name' => 'varchar(255) DEFAULT NULL',
             'published_date' => 'datetime DEFAULT NULL',
             'discovered_at' => 'datetime DEFAULT NULL'
+            ,'engagement_rate' => 'decimal(8,4) DEFAULT NULL'
+            ,'engagement_count' => 'bigint(20) DEFAULT 0'
+            ,'followers_count' => 'bigint(20) DEFAULT 0'
+            ,'like_count' => 'bigint(20) DEFAULT 0'
+            ,'comments_count' => 'bigint(20) DEFAULT 0'
         );
 
         foreach ($columns_to_check as $column_name => $column_definition) {
@@ -1068,10 +1073,10 @@ class SMarkSocialMedia {
 
         if (!empty($project_id)) {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-            $suggestions = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$suggestions_table_sql} WHERE project_id = %s ORDER BY created_at DESC", $project_id), ARRAY_A);
+            $suggestions = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$suggestions_table_sql} WHERE project_id = %s ORDER BY COALESCE(published_date, created_at) DESC", $project_id), ARRAY_A);
         } else {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-            $suggestions = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$suggestions_table_sql} WHERE project = %s ORDER BY created_at DESC", $project_name), ARRAY_A);
+            $suggestions = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$suggestions_table_sql} WHERE project = %s ORDER BY COALESCE(published_date, created_at) DESC", $project_name), ARRAY_A);
         }
 
         return $suggestions ? $suggestions : array();
@@ -2813,15 +2818,14 @@ Requirements:
                                         <tr>
                                             <th><?php echo esc_html($this->get_translation('id')); ?></th>
                                             <th><?php echo esc_html($this->get_translation('headline')); ?></th>
-                                            <th><?php echo esc_html($this->get_translation('visual')); ?></th>
-                                            <th><?php echo esc_html($this->get_translation('created')); ?></th>
-                                            <th><?php echo esc_html($this->get_translation('score')); ?></th>
+                                            <th><?php echo esc_html($current_lang === 'fa' ? 'تاریخ انتشار' : 'Published'); ?></th>
+                                            <th title="<?php echo esc_attr($current_lang === 'fa' ? 'تعاملات عمومی قابل مشاهده (لایک + کامنت) ÷ تعداد دنبال‌کنندگان × ۱۰۰' : 'Publicly available interactions (likes + comments) ÷ followers × 100'); ?>"><?php echo esc_html($current_lang === 'fa' ? 'نرخ تعامل' : 'Engagement Rate'); ?></th>
                                             <th><?php echo esc_html($this->get_translation('actions')); ?></th>
                                         </tr>
                                     </thead>
                                     <tbody id="suggestions_table_body">
                                         <tr class="no-data-row">
-                                            <td colspan="6"><?php echo esc_html($this->get_translation('no_suggestions_found')); ?></td>
+                                            <td colspan="5"><?php echo esc_html($this->get_translation('no_suggestions_found')); ?></td>
                                         </tr>
                                     </tbody>
                                 </table>

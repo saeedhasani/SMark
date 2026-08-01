@@ -17,6 +17,7 @@ class SMarkCompetitorAnalysis {
     private $table_name;
     private $projects_table;
     private $fetched_items_table;
+    private $last_monitor_error = '';
 
     /**
      * Constructor
@@ -429,7 +430,7 @@ class SMarkCompetitorAnalysis {
             project_id varchar(50) DEFAULT NULL,
             headline text NOT NULL,
             caption text DEFAULT NULL,
-            visual varchar(500) DEFAULT NULL,
+            visual text DEFAULT NULL,
             visual_type varchar(50) DEFAULT NULL,
             visual_text text DEFAULT NULL,
             expert_approval_status varchar(20) DEFAULT 'needs_approval',
@@ -440,6 +441,11 @@ class SMarkCompetitorAnalysis {
             competitor_name varchar(255) DEFAULT NULL,
             published_date datetime DEFAULT NULL,
             discovered_at datetime DEFAULT NULL,
+            engagement_rate decimal(8,4) DEFAULT NULL,
+            engagement_count bigint(20) DEFAULT 0,
+            followers_count bigint(20) DEFAULT 0,
+            like_count bigint(20) DEFAULT 0,
+            comments_count bigint(20) DEFAULT 0,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
@@ -481,6 +487,13 @@ class SMarkCompetitorAnalysis {
             return;
         }
 
+        // Meta CDN media URLs are frequently longer than 500 characters.
+        // Keep the complete signed URL instead of rejecting the suggestion.
+        $visual_column = $wpdb->get_row("SHOW COLUMNS FROM {$social_media_suggestions_table_sql} LIKE 'visual'", ARRAY_A);
+        if (is_array($visual_column) && isset($visual_column['Type']) && strtolower((string) $visual_column['Type']) !== 'text') {
+            $wpdb->query("ALTER TABLE {$social_media_suggestions_table_sql} MODIFY COLUMN visual text DEFAULT NULL");
+        }
+
         // Check and add missing columns
         $columns_to_add = array(
             'project_id' => 'varchar(50) DEFAULT NULL',
@@ -490,6 +503,11 @@ class SMarkCompetitorAnalysis {
             'competitor_name' => 'varchar(255) DEFAULT NULL',
             'published_date' => 'datetime DEFAULT NULL',
             'discovered_at' => 'datetime DEFAULT NULL'
+            ,'engagement_rate' => 'decimal(8,4) DEFAULT NULL'
+            ,'engagement_count' => 'bigint(20) DEFAULT 0'
+            ,'followers_count' => 'bigint(20) DEFAULT 0'
+            ,'like_count' => 'bigint(20) DEFAULT 0'
+            ,'comments_count' => 'bigint(20) DEFAULT 0'
         );
 
         foreach ($columns_to_add as $column_name => $column_definition) {
@@ -814,6 +832,75 @@ class SMarkCompetitorAnalysis {
         return $wpdb->insert_id;
     }
 
+    /** Add an agent-discovered Instagram profile to the active project. */
+    public function add_agent_competitor($website_url, $website_name = '', $notes = '') {
+        global $wpdb;
+        $project = $this->get_current_site_project();
+        if (!is_array($project) || empty($project['project_name'])) {
+            return new WP_Error('smark_competitor_project_missing', __('No active project was found.', 'smark'));
+        }
+
+        $website_url = esc_url_raw((string) $website_url);
+        if ($website_url === '') {
+            return new WP_Error('smark_competitor_url_missing', __('Instagram profile URL is required.', 'smark'));
+        }
+        $items_table_sql = $this->escape_db_identifier($this->table_name);
+        if ($items_table_sql !== '') {
+            $existing_id = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM {$items_table_sql} WHERE project_id = %s AND website_url = %s LIMIT 1",
+                (string) $project['project_id'],
+                $website_url
+            ));
+            if ($existing_id > 0) {
+                return array('item_id' => $existing_id, 'created' => false, 'suggestions_added' => 0);
+            }
+        }
+
+        $item_id = $this->add_item(
+            sanitize_text_field((string) $project['project_name']),
+            $website_url,
+            sanitize_text_field((string) $website_name),
+            sanitize_textarea_field((string) $notes)
+        );
+        if (!$item_id) {
+            return new WP_Error('smark_competitor_insert_failed', __('Could not add the competitor.', 'smark'));
+        }
+        $item = $this->get_item((int) $item_id);
+        $this->last_monitor_error = '';
+        $inserted = $item ? $this->monitor_resource_item($item) : 0;
+        return array(
+            'item_id' => (int) $item_id,
+            'created' => true,
+            'suggestions_added' => (int) $inserted,
+            'monitor_error' => $this->last_monitor_error,
+        );
+    }
+
+    /** Return Instagram usernames already registered for the active project. */
+    public function get_agent_excluded_usernames() {
+        global $wpdb;
+        $project = $this->get_current_site_project();
+        $items_table_sql = $this->escape_db_identifier($this->table_name);
+        if (!is_array($project) || empty($project['project_id']) || $items_table_sql === '') {
+            return array();
+        }
+        $urls = $wpdb->get_col($wpdb->prepare(
+            "SELECT website_url FROM {$items_table_sql} WHERE project_id = %s AND website_url LIKE %s",
+            (string) $project['project_id'],
+            '%instagram.com%'
+        ));
+        $usernames = array();
+        foreach ((array) $urls as $url) {
+            $path = trim((string) wp_parse_url((string) $url, PHP_URL_PATH), '/');
+            $parts = $path !== '' ? explode('/', $path) : array();
+            $username = strtolower(preg_replace('/[^a-z0-9._]/i', '', (string) ($parts[0] ?? '')));
+            if ($username !== '') {
+                $usernames[$username] = true;
+            }
+        }
+        return array_keys($usernames);
+    }
+
     /**
      * AJAX: Add new item
      */
@@ -840,13 +927,18 @@ class SMarkCompetitorAnalysis {
         $item_id = $this->add_item($project_name, $website_url, $website_name, $notes);
 
         if ($item_id) {
-            // Import the resource's last seven days asynchronously so saving
-            // the form remains fast.
-            wp_schedule_single_event(time() + 5, 'smark_competitor_monitor_resource', array((int) $item_id));
+            // Run the initial seven-day import in this AJAX request. Relying on
+            // WP-Cron here leaves the UI stale on installations where cron is
+            // disabled or only invoked infrequently.
+            $item = $this->get_item((int) $item_id);
+            $this->last_monitor_error = '';
+            $inserted = $item ? $this->monitor_resource_item($item) : 0;
 
             wp_send_json_success(array(
                 'message' => $this->get_translation('item_added_successfully'),
-                'item_id' => $item_id
+                'item_id' => $item_id,
+                'suggestions_added' => (int) $inserted,
+                'monitor_error' => $this->last_monitor_error,
             ));
         } else {
             wp_send_json_error(array(
@@ -1132,32 +1224,29 @@ class SMarkCompetitorAnalysis {
             return array();
         }
 
-        $access_token = defined('SMARK_INSTAGRAM_ACCESS_TOKEN')
-            ? (string) SMARK_INSTAGRAM_ACCESS_TOKEN
-            : (string) get_option('smark_instagram_access_token', '');
-        $business_account_id = defined('SMARK_INSTAGRAM_BUSINESS_ACCOUNT_ID')
-            ? (string) SMARK_INSTAGRAM_BUSINESS_ACCOUNT_ID
-            : (string) get_option('smark_instagram_business_account_id', '');
-
-        if ($access_token === '' || $business_account_id === '') {
-            $this->log_info('Instagram monitoring skipped: Meta Business Discovery credentials are not configured', array(
-                'username' => $username,
-            ));
-            return array();
+        $central_base = defined('SMARK_CENTRAL_BASE_URL')
+            ? (string) constant('SMARK_CENTRAL_BASE_URL')
+            : (string) get_option('smark_central_base_url', 'https://saeedhasani.com');
+        $central_token = defined('SMARK_CENTRAL_SYNC_TOKEN')
+            ? (string) constant('SMARK_CENTRAL_SYNC_TOKEN')
+            : (string) get_option('smark_central_sync_token', get_option('smark_core_sync_token', ''));
+        $endpoint = rtrim(esc_url_raw($central_base), '/') . '/wp-json/smark-core/v1/tools/instagram/business-discovery';
+        $headers = array('Content-Type' => 'application/json; charset=utf-8');
+        if (trim($central_token) !== '') {
+            $headers['x-smark-sync-token'] = trim($central_token);
         }
-
-        $fields = sprintf(
-            'business_discovery.username(%s){media.limit(25){caption,media_url,permalink,timestamp,thumbnail_url}}',
-            $username
-        );
-        $endpoint = add_query_arg(array(
-            'fields' => $fields,
-            'access_token' => $access_token,
-        ), 'https://graph.facebook.com/' . rawurlencode($business_account_id));
-
-        $response = wp_remote_get($endpoint, array('timeout' => 20));
+        $response = wp_remote_post($endpoint, array(
+            'timeout' => 25,
+            'redirection' => 0,
+            'headers' => $headers,
+            'body' => wp_json_encode(array('username' => $username, 'days' => 7, 'limit' => 25)),
+        ));
         if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
-            $this->log_error('Instagram Business Discovery request failed', array(
+            $payload = is_wp_error($response) ? array() : json_decode((string) wp_remote_retrieve_body($response), true);
+            $this->last_monitor_error = isset($payload['message'])
+                ? sanitize_text_field((string) $payload['message'])
+                : __('SMark Core could not import Instagram posts.', 'smark');
+            $this->log_error('Central Instagram Business Discovery request failed', array(
                 'username' => $username,
                 'status' => is_wp_error($response) ? 0 : wp_remote_retrieve_response_code($response),
             ));
@@ -1165,7 +1254,7 @@ class SMarkCompetitorAnalysis {
         }
 
         $payload = json_decode(wp_remote_retrieve_body($response), true);
-        $media = $payload['business_discovery']['media']['data'] ?? array();
+        $media = isset($payload['posts']) && is_array($payload['posts']) ? $payload['posts'] : array();
         $pages = array();
 
         foreach ((array) $media as $post) {
@@ -1181,9 +1270,12 @@ class SMarkCompetitorAnalysis {
                 'url' => isset($post['permalink']) ? esc_url_raw($post['permalink']) : '',
                 'title' => $title,
                 'caption' => $caption,
-                'visual' => esc_url_raw($post['media_url'] ?? ($post['thumbnail_url'] ?? '')),
+                'visual' => esc_url_raw($post['thumbnail_url'] ?? ($post['media_url'] ?? '')),
                 'type' => 'instagram',
                 'published_date' => $published_date,
+                'like_count' => max(0, (int) ($post['like_count'] ?? 0)),
+                'comments_count' => max(0, (int) ($post['comments_count'] ?? 0)),
+                'followers_count' => max(0, (int) ($post['followers_count'] ?? 0)),
             );
         }
 
@@ -1202,6 +1294,7 @@ class SMarkCompetitorAnalysis {
         foreach ((array) $pages as $page) {
             $url = isset($page['url']) ? esc_url_raw($page['url']) : '';
             $headline = isset($page['title']) ? sanitize_text_field($page['title']) : '';
+            $visual = esc_url_raw($page['visual'] ?? '');
             if ($url === '' || $headline === '') {
                 continue;
             }
@@ -1210,7 +1303,19 @@ class SMarkCompetitorAnalysis {
                 "SELECT id FROM {$suggestions_table_sql} WHERE source_url = %s LIMIT 1",
                 $url
             ));
+            $likes = max(0, (int) ($page['like_count'] ?? 0));
+            $comments = max(0, (int) ($page['comments_count'] ?? 0));
+            $followers = max(0, (int) ($page['followers_count'] ?? 0));
+            $engagement_count = $likes + $comments;
+            $engagement_rate = $followers > 0 ? round(($engagement_count / $followers) * 100, 4) : null;
             if ($exists) {
+                $wpdb->update($suggestions_table, array(
+                    'engagement_rate' => $engagement_rate,
+                    'engagement_count' => $engagement_count,
+                    'followers_count' => $followers,
+                    'like_count' => $likes,
+                    'comments_count' => $comments,
+                ), array('id' => (int) $exists), array('%f', '%d', '%d', '%d', '%d'), array('%d'));
                 continue;
             }
 
@@ -1219,13 +1324,18 @@ class SMarkCompetitorAnalysis {
                 'project_id' => sanitize_text_field($competitor['project_id'] ?? ''),
                 'headline' => $headline,
                 'caption' => sanitize_textarea_field($page['caption'] ?? ''),
-                'visual' => esc_url_raw($page['visual'] ?? ''),
+                'visual' => $visual,
                 'source' => $url,
                 'source_url' => $url,
                 'source_type' => ($page['type'] ?? '') === 'instagram' ? 'instagram' : 'competitor_analysis',
                 'competitor_name' => sanitize_text_field($competitor['website_name'] ?? ''),
                 'published_date' => !empty($page['published_date']) ? $page['published_date'] : null,
                 'discovered_at' => current_time('mysql'),
+                'engagement_rate' => $engagement_rate,
+                'engagement_count' => $engagement_count,
+                'followers_count' => $followers,
+                'like_count' => $likes,
+                'comments_count' => $comments,
                 'created_at' => current_time('mysql'),
             ));
 
